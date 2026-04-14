@@ -28,6 +28,8 @@ By the end of this lab, you will be able to:
 - Implement Lambda functions for agent tools
 - Integrate personalized recommendations into a React application
 
+**Course Repository:** [github.com/AWSClassroom-com/kiro_on_aws](https://github.com/AWSClassroom-com/kiro_on_aws)
+
 ---
 
 ## Part A: Creating the Security Scanning Hook

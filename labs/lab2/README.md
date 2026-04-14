@@ -20,7 +20,7 @@ By the end of this lab, you will be able to:
 - Integrate Amazon Bedrock for AI-powered features
 - Implement a complete feature using spec-driven development
 
-**Course Repository:** [github.com/AWSClassroom-com/kiro_on_aws](https://github.com/AWSClassroom-com/kiro_on_aws)
+**Course Repository:** **https://github.com/AWSClassroom-com/kiro_on_aws**
 
 ---
 

@@ -21,7 +21,7 @@ By the end of this lab, you will be able to:
 - Navigate the Kiro interface and understand key panels
 - Use vibe coding to add features through natural language prompts
 
-**Course Repository:** [github.com/AWSClassroom-com/kiro_on_aws](https://github.com/AWSClassroom-com/kiro_on_aws)
+**Course Repository:** **https://github.com/AWSClassroom-com/kiro_on_aws**
 
 ---
 

@@ -31,7 +31,7 @@ By the end of this lab, you will be able to:
 - Implement least-privilege IAM policies
 - Configure CloudWatch alarms for production monitoring
 
-**Course Repository:** [github.com/AWSClassroom-com/kiro_on_aws](https://github.com/AWSClassroom-com/kiro_on_aws)
+**Course Repository:** **https://github.com/AWSClassroom-com/kiro_on_aws**
 
 ---
 

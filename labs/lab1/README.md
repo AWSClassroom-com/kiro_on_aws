@@ -169,10 +169,12 @@ sudo rpm -i kiro_*.rpm
 ### Step 7: Navigate the IDE
 
 1. **File Explorer:** In the left sidebar, click the top icon (folder) to open the file explorer. Expand the `src` folder to see:
-   - `components/` - React UI components
-   - `pages/` - Page-level components
-   - `services/` - API and service modules
-   - `utils/` - Utility functions
+   - `.kiro/` - The Kiro configuration
+   - `src/` - The application source code
+   - `src/db/` - Database layer
+   - `src/routes/` - file-based routing
+   - `src/components` - Top navigation, reusable UI
+   - `docker-compose.yml` - Postgres container config
 
 2. **Specs Panel:** Click the document icon (below the file explorer). This panel displays structured development artifacts (currently empty).
 
@@ -186,12 +188,10 @@ sudo rpm -i kiro_*.rpm
 
 **Expected Result:** You are familiar with the location of key panels in Kiro.
 
-### Step 8: Explore the Codebase
+### Step 9: Explore the Codebase
 
-1. Open `src/pages/ProductList.tsx` - This is the main product listing page
-2. Open `src/components/ProductCard.tsx` - This renders individual product cards
-3. Open `src/services/api.ts` - This handles API calls
-4. Open `package.json` - Notice the AWS SDK packages are pre-installed
+1. Open `.kiro/specs/food-tracker/requirements.md` - Read at least one requirement
+2. Open `src/routes/food-tracker.tsx` - This is where we'll make changes 
 
 **Expected Result:** You understand the basic structure of the starter application.
 
@@ -201,13 +201,16 @@ sudo rpm -i kiro_*.rpm
 
 ### Step 9: Add a Feature with Natural Language
 
-**Scenario:** Your product manager wants a "NEW" badge on products added within the last 7 days.
+**Scenario:** Your product manager wants a "EXPIRING SOON" badge on any food entry that's within 3 days of its expiration date.
 
 1. Open the AI Chat panel (Kiro icon in the activity bar)
 
 2. Type the following prompt and press Enter:
    ```
-   Add a NEW badge to ProductCard that displays on products where the createdAt date is within the last 7 days. Make the badge red with white text, positioned in the top-right corner of the card.
+    On the food tracker page (src/routes/food-tracker.tsx), add an "EXPIRING SOON" badge to each food entry card. The
+    badge should appear only when the entry's expirationDate is within the next 3 days (today through 3 days from now).
+    The badge should be orange with white text, positioned in the top-right corner of the card. Handle the case where
+    expirationDate is null gracefully (do not show the badge). Do not change any other behavior.
    ```
 
 3. Wait for Kiro to analyze the codebase and generate code
@@ -221,13 +224,13 @@ sudo rpm -i kiro_*.rpm
 
 6. Refresh your browser at `http://localhost:3000`
 
-**Expected Result:** Products with recent `createdAt` dates display a red "NEW" badge in the top-right corner.
+**Expected Result:** Products with expiration date display an orange "EXPIRING SOON" badge in the top-right corner.
 
 ### Step 10: Iterate on the Feature
 
 1. In the AI Chat, type:
    ```
-   Add a subtle pulse animation to the NEW badge to draw attention
+   Add a subtle pulse animation to the "EXPIRING SOON" badge to draw attention
    ```
 
 2. Review and apply the generated code
@@ -241,7 +244,7 @@ sudo rpm -i kiro_*.rpm
 
 5. Review and apply the code
 
-**Expected Result:** The NEW badge now has a subtle pulse animation.
+**Expected Result:** The EXPIRING SOON badge now has a subtle pulse animation.
 
 ---
 
@@ -252,8 +255,8 @@ Verify your lab completion by confirming:
 - [ ] Kiro is installed and running
 - [ ] Your Builder ID is displayed in the bottom-left corner of Kiro
 - [ ] The starter application runs at `http://localhost:3000`
-- [ ] Products display correctly on the storefront
-- [ ] The NEW badge appears on recent products
+- [ ] Food Entries display correctly
+- [ ] The EXPIRING SOON badge appears on expiring food entries
 - [ ] The badge has a pulse animation
 
 ---
@@ -272,11 +275,11 @@ Verify your lab completion by confirming:
 ### Issue: `npm` command not found
 **Solution:** Install Node.js from https://nodejs.org (version 18 or higher). Restart your terminal after installation.
 
-### Issue: NEW badge does not appear
+### Issue: EXPIRING SOON badge does not appear
 **Solution:**
 1. Verify the code changes were applied (check for the modified file indicator in the tab)
 2. Hard refresh your browser with `Ctrl + Shift + R` (Windows/Linux) or `Cmd + Shift + R` (macOS)
-3. Check that products in the sample data have recent `createdAt` dates
+3. Check that sample food entries in the sample data have `expiration dates` set
 
 ### Issue: Application shows errors on localhost:3000
 **Solution:**

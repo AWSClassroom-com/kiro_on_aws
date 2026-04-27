@@ -31,8 +31,8 @@ By the end of this lab, you will be able to:
 
 ### Step 1: Download Kiro
 
-1. Open your web browser and navigate to **https://kiro.dev**
-2. Click the **Download** button on the homepage
+1. Open your web browser and navigate to **https://kiro.dev**.
+2. Click the **Download** button on the homepage.
 3. Select the installer for your operating system:
    - **Windows:** Download the `.exe` installer
    - **macOS:** Download the `.dmg` file
@@ -43,20 +43,20 @@ By the end of this lab, you will be able to:
 ### Step 2: Install Kiro
 
 **Windows:**
-1. Double-click the downloaded `.exe` file
-2. Accept the license agreement
-3. Keep the default installation location
-4. Click **Install**
-5. When installation completes, click **Launch Kiro**
+1. Double-click the downloaded `.exe` file.
+2. Accept the license agreement.
+3. Keep the default installation location.
+4. Click **Install**.
+5. When installation completes, click **Launch Kiro**.
 
 **macOS:**
-1. Double-click the downloaded `.dmg` file
-2. Drag the Kiro icon into the **Applications** folder
-3. Open **Applications** and double-click **Kiro**
+1. Double-click the downloaded `.dmg` file.
+2. Drag the Kiro icon into the **Applications** folder.
+3. Open **Applications** and double-click **Kiro**.
 4. If macOS blocks the application:
-   - Go to **System Preferences** > **Security & Privacy**
-   - Click **Open Anyway** next to the Kiro message
-   - Click **Open** in the confirmation dialog
+   - Go to **System Preferences** > **Security & Privacy**.
+   - Click **Open Anyway** next to the Kiro message.
+   - Click **Open** in the confirmation dialog.
 
 **Linux (Debian/Ubuntu):**
 ```bash
@@ -72,16 +72,16 @@ sudo rpm -i kiro_*.rpm
 
 ### Step 3: Authenticate with Builder ID
 
-1. In the Kiro welcome screen, click **Sign in with Builder ID**
+1. In the Kiro welcome screen, click **Sign in with Builder ID**.
 2. If you already have an AWS Builder ID:
-   - Enter your email and password
-   - Complete any MFA verification if enabled
+   - Enter your email and password.
+   - Complete any MFA verification if enabled.
 3. If you do not have a Builder ID:
-   - Click **Create one**
-   - Enter your email address
-   - Create a password (minimum 8 characters)
-   - Check your email for a verification code
-   - Enter the verification code to complete registration
+   - Click **Create one**.
+   - Enter your email address.
+   - Create a password (minimum 8 characters).
+   - Check your email for a verification code.
+   - Enter the verification code to complete registration.
 
 **Expected Result:** You are signed in and see the main Kiro interface. Your Builder ID email appears in the bottom-left corner of the window.
 
@@ -95,7 +95,7 @@ sudo rpm -i kiro_*.rpm
 
 1. In Kiro, open the integrated terminal:
    - **Windows/Linux:** Press `Ctrl + `` (backtick)
-   - **macOS:** Press `ctrl + `` (backtick)
+   - **macOS:** Press `Ctrl + `` (backtick)
    - Or go to **View** > **Terminal**
 
 2. Create and navigate to your projects directory:
@@ -117,10 +117,10 @@ sudo rpm -i kiro_*.rpm
 
 ### Step 5: Open the Project in Kiro
 
-1. In Kiro, go to **File** > **Open Folder**
-2. Navigate to the `sample-food-tracker-tanstack-kiro` folder you just cloned
-3. Click **Select folder**
-4. When prompted "Do you trust the authors of the files in this folder?", click **Yes, I trust the authors**
+1. In Kiro, go to **File** > **Open Folder**.
+2. Navigate to the `sample-food-tracker-tanstack-kiro` folder you just cloned.
+3. Click **Select folder**.
+4. When prompted "Do you trust the authors of the files in this folder?", click **Yes, I trust the authors**.
 
 **Expected Result:** The project opens in Kiro. You will see an indexing indicator in the status bar as Kiro analyzes the codebase.
 
@@ -132,13 +132,13 @@ sudo rpm -i kiro_*.rpm
    ```
    Wait for the installation to complete.
 
-2. Create your environment file
+2. Create your environment file.
    ```bash
    cp .env.example .env
    ```
    Wait for the installation to complete.
 
-3. Generate the Drizzle migrations
+3. Generate the Drizzle migrations.
    ```bash
    npm run db:generate
    ```
@@ -190,8 +190,8 @@ sudo rpm -i kiro_*.rpm
 
 ### Step 9: Explore the Codebase
 
-1. Open `.kiro/specs/food-tracker/requirements.md` - Read at least one requirement
-2. Open `src/routes/food-tracker.tsx` - This is where we'll make changes 
+1. Open `.kiro/specs/food-tracker/requirements.md` - Read at least one requirement.
+2. Open `src/routes/food-tracker.tsx` - This is where we'll make changes.
 
 **Expected Result:** You understand the basic structure of the starter application.
 
@@ -203,7 +203,7 @@ sudo rpm -i kiro_*.rpm
 
 **Scenario:** Your product manager wants a "EXPIRING SOON" badge on any food entry that's within 3 days of its expiration date.
 
-1. Open the AI Chat panel (Kiro icon in the activity bar)
+1. Open the AI Chat panel (Kiro icon in the activity bar).
 
 2. Type the following prompt and press Enter:
    ```
@@ -213,16 +213,16 @@ sudo rpm -i kiro_*.rpm
     expirationDate is null gracefully (do not show the badge). Do not change any other behavior.
    ```
 
-3. Wait for Kiro to analyze the codebase and generate code
+3. Wait for Kiro to analyze the codebase and generate code.
 
 4. Review the diff view showing proposed changes:
-   - Verify the date calculation logic is correct
-   - Check that styling is appropriate
-   - Confirm edge cases are handled (e.g., missing createdAt)
+   - Verify the date calculation logic is correct.
+   - Check that styling is appropriate.
+   - Confirm edge cases are handled (e.g., missing createdAt).
 
-5. Click **Apply** to add the code to your file
+5. Click **Apply** to add the code to your file.
 
-6. Refresh your browser at `http://localhost:3000`
+6. Refresh your browser at `http://localhost:3000`.
 
 **Expected Result:** Products with expiration date display an orange "EXPIRING SOON" badge in the top-right corner.
 
@@ -233,16 +233,16 @@ sudo rpm -i kiro_*.rpm
    Add a subtle pulse animation to the "EXPIRING SOON" badge to draw attention
    ```
 
-2. Review and apply the generated code
+2. Review and apply the generated code.
 
-3. Refresh your browser to see the pulse animation
+3. Refresh your browser to see the pulse animation.
 
 4. If the animation is too aggressive, refine it:
    ```
    Make the pulse animation slower and less pronounced
    ```
 
-5. Review and apply the code
+5. Review and apply the code.
 
 **Expected Result:** The EXPIRING SOON badge now has a subtle pulse animation.
 
@@ -277,15 +277,15 @@ Verify your lab completion by confirming:
 
 ### Issue: EXPIRING SOON badge does not appear
 **Solution:**
-1. Verify the code changes were applied (check for the modified file indicator in the tab)
-2. Hard refresh your browser with `Ctrl + Shift + R` (Windows/Linux) or `Cmd + Shift + R` (macOS)
-3. Check that sample food entries in the sample data have `expiration dates` set
+1. Verify the code changes were applied (check for the modified file indicator in the tab).
+2. Hard refresh your browser with `Ctrl + Shift + R` (Windows/Linux) or `Cmd + Shift + R` (macOS).
+3. Check that sample food entries in the sample data have `expiration dates` set.
 
 ### Issue: Application shows errors on localhost:3000
 **Solution:**
-1. Ensure `npm install` completed without errors
-2. Check that `npm run dev` is still running in the terminal
-3. Look for error messages in the terminal output
+1. Ensure `npm install` completed without errors.
+2. Check that `npm run dev` is still running in the terminal.
+3. Look for error messages in the terminal output.
 
 ---
 

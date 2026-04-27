@@ -28,7 +28,7 @@ By the end of this lab, you will be able to:
 
 ### Step 1: Open the Specs Panel
 
-1. In Kiro, click the **Kiro** icon in the activity bar (the ghost icon)
+1. In Kiro, click the **Kiro** icon in the activity bar (the ghost icon).
 2. In the Kiro pane, find the **Specs** section. You should see one existing spec — `food-tracker` — that ships with
    the project. We're going to add a second one for our new feature.
 3. Click the **+** button under the **Specs** section header.
@@ -63,15 +63,15 @@ instead of calling Bedrock
 - The result must NOT be persisted to PostgreSQL; it is a transient view-only summary
 ```
 
-2. Click **Generate Requirements**
+2. Click **Generate Requirements**.
 
-3. Wait for Kiro to process (this may take 30-60 seconds)
+3. Wait for Kiro to process (this may take 30-60 seconds).
 
 **Expected Result:** Kiro generates a requirements document with user stories, acceptance criteria, non-functional requirements, and edge cases.
 
 ### Step 3: Review the Generated Requirements
 
-1. Open the generated `requirements.md` file in the Specs panel
+1. Open the generated `requirements.md` file in the Specs panel.
 
 2. Locate and review each section:
 
@@ -87,13 +87,13 @@ instead of calling Bedrock
 
 ### Step 4: Refine and Approve Requirements
 
-1. Review the requirements for completeness
+1. Review the requirements for completeness.
 
 2. If you need to add a requirement, either:
    - Edit the document directly, OR
    - Ask Kiro in the chat: "Add a requirement for caching summaries to avoid repeated Bedrock calls"
 
-3. When satisfied, click **Approve Requirements**
+3. When satisfied, click **Approve Requirements**.
 
 **Expected Result:** Requirements are locked and you can proceed to design.
 
@@ -103,15 +103,15 @@ instead of calling Bedrock
 
 ### Step 5: Generate Technical Design
 
-1. In the Specs panel, click **Generate Design**
+1. In the Specs panel, click **Generate Design**.
 
-2. Wait for Kiro to generate the technical design (this may take 1-2 minutes)
+2. Wait for Kiro to generate the technical design (this may take 1-2 minutes).
 
 **Expected Result:** Kiro generates a design document with architecture, interfaces, and error handling strategies.
 
 ### Step 6: Review Design Components
 
-1. Open the generated `design.md` file
+1. Open the generated `design.md` file.
 
 2. Review each section:
 
@@ -162,13 +162,13 @@ instead of calling Bedrock
 
 ### Step 7: Approve the Design
 
-1. Review the design for technical feasibility
+1. Review the design for technical feasibility.
 
-2. Verify interfaces align with existing codebase patterns
+2. Verify interfaces align with existing codebase patterns.
 
-3. Confirm error handling covers all edge cases from requirements
+3. Confirm error handling covers all edge cases from requirements.
 
-4. Click **Approve Design**
+4. Click **Approve Design**.
 
 **Expected Result:** Design is locked and you can proceed to task generation.
 
@@ -178,7 +178,7 @@ instead of calling Bedrock
 
 ### Step 8: Generate Tasks
 
-1. Open the Kiro chat panel (ghost icon in the activity bar)
+1. Open the Kiro chat panel (ghost icon in the activity bar).
    
 2. Paste the following prompt:
 
@@ -186,13 +186,13 @@ instead of calling Bedrock
 Generate tasks for the weekly-nutrition-summary spec based on the approved design.
 ```
 
-3. Wait for Kiro to break down the work (30-60 seconds)
+3. Wait for Kiro to break down the work (30-60 seconds).
 
 **Expected Result:** Kiro generates a list of discrete implementation tasks with dependencies.
 
 ### Step 9: Review Task Sequence
 
-1. Open the generated `.kiro/specs/weekly-nutrition-summary/tasks.md` file
+1. Open the generated `.kiro/specs/weekly-nutrition-summary/tasks.md` file.
 
 2. The exact list will vary depending on what Kiro inferred from your design — that's normal. Review the tasks and confirm the shape of the plan looks roughly like this:   
 
@@ -254,7 +254,7 @@ npm install @aws-sdk/client-bedrock-runtime @aws-sdk/credential-providers
 
 ### Step 11a: Implement Task 1 - Bedrock Service Client
 
-Next we will create the Bedrock Service Client with Kiro
+Next we will create the Bedrock Service Client with Kiro.
 
 1. In the Kiro chat panel, provide the following prompt:
 
@@ -347,7 +347,7 @@ Implement Task 4 from the weekly-nutrition-summary spec.
 
 ### Step 15: End-to-end test
 
-1. Restart your web server if it's not running
+1. Restart your web server if it's not running.
 
 2. Open your browser at http://localhost:3000/food-tracker.
 
@@ -377,9 +377,9 @@ Verify your lab completion by confirming:
 
 ### Issue: "Access Denied" when calling Bedrock
 **Solution:**
-1. Run `aws configure` to verify credentials are set
-2. In the AWS Console, go to **Bedrock** > **Model access** and ensure Claude models are enabled
-3. Verify your IAM role/user has `bedrock:InvokeModel` permission
+1. Run `aws configure` to verify credentials are set.
+2. In the AWS Console, go to **Bedrock** > **Model access** and ensure Claude models are enabled.
+3. Verify your IAM role/user has `bedrock:InvokeModel` permission.
 
 ### Issue: Requirements document seems incomplete
 **Solution:** You can edit the document directly or ask Kiro to add specific requirements. The document is editable until approved.
@@ -389,18 +389,18 @@ Verify your lab completion by confirming:
 
 ### Issue: Summary takes longer than 3 seconds
 **Solution:**
-1. Verify caching is working (second load should be fast)
-2. Check network latency to Bedrock in your region
-3. Consider reducing the number of reviews sent to Bedrock
+1. Verify caching is working (second load should be fast).
+2. Check network latency to Bedrock in your region.
+3. Consider reducing the number of reviews sent to Bedrock.
 
 ### Issue: "Insufficient reviews" error for products with reviews
 **Solution:** Verify the reviews are being fetched correctly from DynamoDB. Check that the table name matches your environment configuration.
 
 ### Issue: Component shows loading spinner indefinitely
 **Solution:**
-1. Check browser console for errors
-2. Verify the API endpoint is deployed and accessible
-3. Check Lambda function logs in CloudWatch
+1. Check browser console for errors.
+2. Verify the API endpoint is deployed and accessible.
+3. Check Lambda function logs in CloudWatch.
 
 ---
 
@@ -425,4 +425,4 @@ You now have:
 - Task history showing the implementation sequence
 - Code that handles edge cases and errors gracefully
 
-This spec-driven approach ensures your features are documented, testable, and maintainable - ready for production deployment and team collaboration.
+This spec-driven approach ensures your features are documented, testable, and maintainable-ready for production deployment and team collaboration.

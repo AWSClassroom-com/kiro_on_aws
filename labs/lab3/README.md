@@ -38,15 +38,15 @@ In this section, you will create a pre-commit hook that automatically scans for 
 
 ### Step 1: Open the Hooks Panel
 
-1. In Kiro, locate the **Hooks** icon in the activity bar on the left side (lightning bolt symbol)
-2. Click the Hooks icon to open the panel
-3. Review any existing hooks from previous labs
+1. In Kiro, locate the **Hooks** icon in the activity bar on the left side (lightning bolt symbol).
+2. Click the Hooks icon to open the panel.
+3. Review any existing hooks from previous labs.
 
 **Expected Result:** The Hooks panel opens, displaying a list of existing hooks (if any) and a button to create new hooks.
 
 ### Step 2: Create a New Security Hook
 
-1. Click **Create New Hook**
+1. Click **Create New Hook**.
 2. In the description field, enter the following:
 
 ```
@@ -60,7 +60,7 @@ Create a pre-commit hook that scans TypeScript and JavaScript files for accident
 If any secrets are found, block the commit and show exactly where the secret is located. Ignore environment variable references like process.env.SECRET and common placeholder values like "YOUR_KEY_HERE".
 ```
 
-3. Click **Generate Hook**
+3. Click **Generate Hook**.
 
 **Expected Result:** Kiro generates a YAML configuration for the hook. Wait for the generation to complete (5-10 seconds).
 
@@ -105,14 +105,14 @@ system_prompt: |
   {"blocked": boolean, "findings": [{"type": string, "line": number, "match": string, "recommendation": string}]}
 ```
 
-1. Verify the trigger is set to `event: pre-commit`
-2. Confirm the action is set to `block`
-3. Check that `node_modules/**` and `dist/**` are excluded
+1. Verify the trigger is set to `event: pre-commit`.
+2. Confirm the action is set to `block`.
+3. Check that `node_modules/**` and `dist/**` are excluded.
 
 ### Step 4: Save the Security Hook
 
-1. Make any necessary adjustments to the patterns or exclusions
-2. Click **Save Hook**
+1. Make any necessary adjustments to the patterns or exclusions.
+2. Click **Save Hook**.
 
 **Expected Result:** The hook appears in your Hooks panel with an enabled status.
 
@@ -131,7 +131,7 @@ system_prompt: |
    const apiKey = "sk-1234567890abcdef";
    ```
 
-3. Save the file
+3. Save the file.
 4. In the terminal, attempt to commit:
    ```bash
    git add src/test-secrets.ts
@@ -165,7 +165,7 @@ In this section, you will create a non-blocking hook that warns about code quali
 
 ### Step 7: Create the Code Quality Hook
 
-1. In the Hooks panel, click **Create New Hook**
+1. In the Hooks panel, click **Create New Hook**.
 2. Enter the following description:
 
 ```
@@ -189,22 +189,22 @@ Don't block, just show warnings. Also suggest fixes where possible.
    - `action: alert` (not `block`)
    - File patterns for `.ts` and `.tsx` files
 
-2. Click **Save Hook**
+2. Click **Save Hook**.
 
 **Expected Result:** The code quality hook appears in the Hooks panel.
 
 ### Step 9: Test the Code Quality Hook
 
-1. Open any TypeScript file in your project (e.g., `src/App.tsx`)
+1. Open any TypeScript file in your project (e.g., `src/App.tsx`).
 2. Add a console.log statement anywhere in the file:
    ```typescript
    console.log("debug output");
    ```
-3. Save the file
+3. Save the file.
 
 **Expected Result:** A warning notification appears indicating the console.log statement. The save completes successfully (not blocked).
 
-4. Remove the console.log statement and save again
+4. Remove the console.log statement and save again.
 
 **Expected Result:** The warning disappears.
 
@@ -217,16 +217,16 @@ In this section, you will create a Bedrock Agent that provides personalized prod
 ### Step 10: Navigate to Bedrock Agents
 
 1. Open the AWS Console at https://console.aws.amazon.com
-2. Ensure you are in the `us-east-1` region
-3. Search for **Bedrock** in the services search bar
-4. Click **Amazon Bedrock**
-5. In the left navigation, click **Agents**
+2. Ensure you are in the `us-east-1` region.
+3. Search for **Bedrock** in the services search bar.
+4. Click **Amazon Bedrock**.
+5. In the left navigation, click **Agents**.
 
 **Expected Result:** The Bedrock Agents page displays with options to create and manage agents.
 
 ### Step 11: Create the Recommendation Agent
 
-1. Click **Create Agent**
+1. Click **Create Agent**.
 2. Configure the agent with these settings:
    - **Name:** `ProductRecommendationAgent`
    - **Description:** `Provides personalized product recommendations based on user history and preferences`
@@ -255,13 +255,13 @@ Be conversational and helpful. If you don't have enough data,
 ask clarifying questions.
 ```
 
-2. Click **Save**
+2. Click **Save**.
 
 **Expected Result:** The agent configuration is saved. Note the Agent ID displayed on the page.
 
 ### Step 13: Create the Action Group
 
-1. In the agent configuration, click **Add action group**
+1. In the agent configuration, click **Add action group**.
 2. Configure the action group:
    - **Action group name:** `UserDataTools`
    - **Description:** `Tools for retrieving user data`
@@ -303,7 +303,7 @@ Click **Create action group**
 
 ### Step 15: Create the Lambda Function for Tools
 
-1. In Kiro, create a new file `api/functions/agent-tools.ts`
+1. In Kiro, create a new file `api/functions/agent-tools.ts`.
 2. Add the following code:
 
 ```typescript
@@ -429,9 +429,9 @@ async function getProductDetails(productId: string) {
 
 ### Step 16: Connect Lambda to the Action Group
 
-1. Return to the AWS Console (Bedrock Agents page)
-2. In your agent's action group configuration, set the Lambda function to the deployed `agent-tools` function
-3. Save the action group
+1. Return to the AWS Console (Bedrock Agents page).
+2. In your agent's action group configuration, set the Lambda function to the deployed `agent-tools` function.
+3. Save the action group.
 
 **Note:** You will deploy this Lambda function in Lab 4. For now, ensure the code is ready.
 
@@ -443,7 +443,7 @@ In this section, you will create the API endpoint and frontend component for the
 
 ### Step 17: Create the Recommendations API
 
-1. Create a new file `api/functions/recommendations.ts`
+1. Create a new file `api/functions/recommendations.ts`.
 2. Add the following code:
 
 ```typescript
@@ -558,7 +558,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
 ### Step 18: Create the Frontend Component
 
-1. Create a new file `src/components/RecommendationChat.tsx`
+1. Create a new file `src/components/RecommendationChat.tsx`.
 2. Add the following code:
 
 ```tsx
@@ -648,13 +648,13 @@ export const RecommendationChat: React.FC = () => {
 };
 ```
 
-3. Save the file
+3. Save the file.
 
 **Expected Result:** The React component for the recommendation chat interface is created.
 
 ### Step 19: Add the Component to Your Application
 
-1. Open your main page component (e.g., `src/App.tsx` or a product page)
+1. Open your main page component (e.g., `src/App.tsx` or a product page).
 2. Import the RecommendationChat component:
    ```typescript
    import { RecommendationChat } from "./components/RecommendationChat";
@@ -663,7 +663,7 @@ export const RecommendationChat: React.FC = () => {
    ```tsx
    <RecommendationChat />
    ```
-4. Save the file
+4. Save the file.
 
 **Expected Result:** The recommendation chat component is integrated into your application.
 
@@ -694,39 +694,39 @@ Use this checklist to verify your lab completion:
 **Symptoms:** No response when saving files or attempting commits.
 
 **Solution:**
-1. Open the Hooks panel and verify the hook is enabled (toggle should be on)
-2. Check that the file patterns match the files you are editing
-3. Open the Kiro Output panel (View > Output) and check for error messages
-4. Try restarting Kiro if hooks were recently created
+1. Open the Hooks panel and verify the hook is enabled (toggle should be on).
+2. Check that the file patterns match the files you are editing.
+3. Open the Kiro Output panel (View > Output) and check for error messages.
+4. Try restarting Kiro if hooks were recently created.
 
 ### Issue: Agent returns generic responses
 
 **Symptoms:** Recommendations are not personalized to the user.
 
 **Solution:**
-1. Verify the Lambda function is connected to the action group in Bedrock
-2. Check that the Lambda function has DynamoDB read permissions
-3. Ensure the test user has purchase and browsing history in the database
-4. Check CloudWatch logs for Lambda execution errors
+1. Verify the Lambda function is connected to the action group in Bedrock.
+2. Check that the Lambda function has DynamoDB read permissions.
+3. Ensure the test user has purchase and browsing history in the database.
+4. Check CloudWatch logs for Lambda execution errors.
 
 ### Issue: Rate limit exceeded (429 error)
 
 **Symptoms:** Bedrock returns "ThrottlingException" or 429 status.
 
 **Solution:**
-1. Reduce the frequency of test requests
-2. Wait 1-2 minutes before retrying
-3. Implement exponential backoff in your application code
-4. If this persists, contact AWS Support to request a quota increase
+1. Reduce the frequency of test requests.
+2. Wait 1-2 minutes before retrying.
+3. Implement exponential backoff in your application code.
+4. If this persists, contact AWS Support to request a quota increase.
 
 ### Issue: Prompt validation rejects legitimate messages
 
 **Symptoms:** User messages are blocked with "Invalid prompt content" error.
 
 **Solution:**
-1. Review the BLOCKED_PATTERNS in `recommendations.ts`
-2. Adjust patterns if they are too aggressive for your use case
-3. For production, consider using Amazon Bedrock Guardrails for more sophisticated filtering
+1. Review the BLOCKED_PATTERNS in `recommendations.ts`.
+2. Adjust patterns if they are too aggressive for your use case.
+3. For production, consider using Amazon Bedrock Guardrails for more sophisticated filtering.
 
 ---
 

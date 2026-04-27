@@ -8,6 +8,8 @@ In this lab, you will set up your development environment with Amazon Kiro, clon
 - Internet connection
 - Git installed (download from https://git-scm.com if needed)
 - Node.js v18 or higher (download from https://nodejs.org if needed)
+- pnpm
+- Docker Desktop
 - An AWS Builder ID (free, no AWS account required)
 
 ## Time Estimate
@@ -107,12 +109,12 @@ sudo rpm -i kiro_*.rpm
 
 3. Clone the starter repository:
    ```bash
-   git clone https://github.com/aws-samples/kiro-shopping-starter.git
+   git clone https://github.com/aws-samples/sample-food-tracker-tanstack-kiro
    ```
 
 4. Change into the project directory:
    ```bash
-   cd kiro-shopping-starter
+   cd sample-food-tracker-tanstack-kiro
    ```
 
 **Expected Result:** The repository is cloned and you are in the project directory.
@@ -120,8 +122,8 @@ sudo rpm -i kiro_*.rpm
 ### Step 5: Open the Project in Kiro
 
 1. In Kiro, go to **File** > **Open Folder**
-2. Navigate to the `kiro-shopping-starter` folder you just cloned
-3. Click **Open**
+2. Navigate to the `sample-food-tracker-tanstack-kiro` folder you just cloned
+3. Click **Select folder**
 4. When prompted "Do you trust the authors of the files in this folder?", click **Yes, I trust the authors**
 
 **Expected Result:** The project opens in Kiro. You will see an indexing indicator in the status bar as Kiro analyzes the codebase.
@@ -134,12 +136,30 @@ sudo rpm -i kiro_*.rpm
    ```
    Wait for the installation to complete.
 
-2. Start the development server:
+2. Create your environment file
+   ```bash
+   cp .env.example .env
+   ```
+   Wait for the installation to complete.
+
+3. Generate the Drizzle migrations
+   ```bash
+   npm run db:generate
+   ```
+   What you should see:
+   ```bash
+   > drizzle-kit generate
+     Reading config file '...drizzle.config.ts'
+     1 tables
+     food_items 14 columns 0 indexes 0 fks 
+   ```
+   
+4. Start the development server:
    ```bash
    npm run dev
    ```
 
-3. Open your web browser and navigate to:
+5. Open your web browser and navigate to:
    ```
    http://localhost:3000
    ```

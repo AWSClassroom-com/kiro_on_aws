@@ -41,64 +41,64 @@ In this section, you will create the DynamoDB tables required for storing applic
 
 ### Step 1: Navigate to DynamoDB
 
-1. Open the AWS Console at https://console.aws.amazon.com
-2. Ensure you are in the `us-east-1` region
-3. Search for **DynamoDB** in the services search bar
-4. Click **DynamoDB**
+1. Open the AWS Console at https://console.aws.amazon.com.
+2. Ensure you are in the `us-east-1` region.
+3. Search for **DynamoDB** in the services search bar.
+4. Click **DynamoDB**.
 
 **Expected Result:** The DynamoDB dashboard displays with options to create and manage tables.
 
 ### Step 2: Create the Products Table
 
-1. Click **Create table**
+1. Click **Create table**.
 2. Configure the table:
    - **Table name:** `Products`
    - **Partition key:** `productId` (String)
    - **Sort key:** Leave empty
-3. Under Table settings, select **Default settings** (uses on-demand capacity)
-4. Click **Create table**
+3. Under Table settings, select **Default settings** (uses on-demand capacity).
+4. Click **Create table**.
 
 **Expected Result:** The Products table is created. Wait for the status to show "Active" (1-2 minutes).
 
 ### Step 3: Create the Reviews Table
 
-1. Click **Create table**
+1. Click **Create table**.
 2. Configure the table:
    - **Table name:** `Reviews`
    - **Partition key:** `productId` (String)
    - **Sort key:** `reviewId` (String)
-3. Keep default settings
-4. Click **Create table**
+3. Keep default settings.
+4. Click **Create table**.
 
 **Expected Result:** The Reviews table is created with a composite key allowing multiple reviews per product.
 
 ### Step 4: Create the Purchases Table
 
-1. Click **Create table**
+1. Click **Create table**.
 2. Configure the table:
    - **Table name:** `Purchases`
    - **Partition key:** `userId` (String)
    - **Sort key:** `purchaseId` (String)
-3. Keep default settings
-4. Click **Create table**
+3. Keep default settings.
+4. Click **Create table**.
 
 **Expected Result:** The Purchases table is created for storing user purchase history.
 
 ### Step 5: Create the BrowsingHistory Table
 
-1. Click **Create table**
+1. Click **Create table**.
 2. Configure the table:
    - **Table name:** `BrowsingHistory`
    - **Partition key:** `userId` (String)
    - **Sort key:** `viewedAt` (String)
-3. Keep default settings
-4. Click **Create table**
+3. Keep default settings.
+4. Click **Create table**.
 
 **Expected Result:** The BrowsingHistory table is created. Using `viewedAt` as the sort key enables efficient time-based queries.
 
 ### Step 6: Verify All Tables Are Active
 
-1. In the DynamoDB console, click **Tables** in the left navigation
+1. In the DynamoDB console, click **Tables** in the left navigation.
 2. Verify all four tables show status "Active":
    - Products
    - Reviews
@@ -109,7 +109,7 @@ In this section, you will create the DynamoDB tables required for storing applic
 
 ### Step 7: Seed Sample Data
 
-1. In Kiro, open the terminal
+1. In Kiro, open the terminal.
 2. Check if a seed script exists:
    ```bash
    npm run seed:dynamodb
@@ -212,9 +212,9 @@ In this section, you will create the DynamoDB tables required for storing applic
 
 ### Step 8: Verify Data in DynamoDB
 
-1. In the DynamoDB console, click on the **Products** table
-2. Click **Explore table items**
-3. Verify the sample products appear
+1. In the DynamoDB console, click the **Products** table.
+2. Click **Explore table items**.
+3. Verify the sample products appear.
 
 **Expected Result:** Three products are visible in the table explorer.
 
@@ -226,7 +226,7 @@ In this section, you will create a SAM template and deploy the backend Lambda fu
 
 ### Step 9: Create the SAM Template
 
-1. In your project root, create a file named `template.yaml`
+1. In your project root, create a file named `template.yaml`.
 2. Add the following content:
 
 ```yaml
@@ -408,7 +408,7 @@ Outputs:
     Value: !Sub https://${ShoppingApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
 ```
 
-3. Save the file
+3. Save the file.
 
 **Expected Result:** The SAM template is created with all Lambda functions, API Gateway, and DynamoDB tables defined.
 
@@ -450,15 +450,15 @@ Outputs:
    - **SAM configuration file:** `samconfig.toml`
    - **SAM configuration environment:** `default`
 
-3. Review the changeset and confirm with `y`
+3. Review the changeset and confirm with `y`.
 
 **Expected Result:** CloudFormation creates all resources. This takes 2-3 minutes. Note the **ApiUrl** from the Outputs section.
 
 ### Step 13: Record the API URL
 
-1. Copy the API URL from the SAM deploy output
-2. It will look like: `https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/dev`
-3. Save this URL - you will need it for the frontend configuration
+1. Copy the API URL from the SAM deploy output.
+2. It will look like: `https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/dev`.
+3. Save this URL - you will need it for the frontend configuration.
 
 **Expected Result:** You have the API Gateway URL saved for use in the next section.
 
@@ -470,31 +470,31 @@ In this section, you will deploy the React frontend to AWS Amplify with automati
 
 ### Step 14: Navigate to AWS Amplify
 
-1. In the AWS Console, search for **Amplify**
-2. Click **AWS Amplify**
+1. In the AWS Console, search for **Amplify**.
+2. Click **AWS Amplify**.
 
 **Expected Result:** The Amplify console displays.
 
 ### Step 15: Create a New Amplify App
 
-1. Click **New app**, then **Host web app**
-2. Select **GitHub** as the repository service
-3. Click **Connect to GitHub**
-4. Authorize AWS Amplify to access your GitHub account if prompted
+1. Click **New app**, then **Host web app**.
+2. Select **GitHub** as the repository service.
+3. Click **Connect to GitHub**.
+4. Authorize AWS Amplify to access your GitHub account if prompted.
 
 **Expected Result:** You are redirected to GitHub to authorize, then returned to Amplify.
 
 ### Step 16: Select Your Repository
 
-1. Select your repository from the list
-2. Select the **main** branch
-3. Click **Next**
+1. Select your repository from the list.
+2. Select the **main** branch.
+3. Click **Next**.
 
 **Expected Result:** Amplify detects your repository and branch.
 
 ### Step 17: Review Build Settings
 
-1. Amplify should auto-detect your React/Vite application
+1. Amplify should auto-detect your React/Vite application.
 2. Verify the build settings show:
    ```yaml
    version: 1
@@ -520,27 +520,27 @@ In this section, you will deploy the React frontend to AWS Amplify with automati
 
 ### Step 18: Configure Environment Variables
 
-1. Before clicking "Save and deploy", expand **Advanced settings**
-2. Or, click **Next** and then go to **App settings** > **Environment variables**
+1. Before clicking "Save and deploy", expand **Advanced settings**.
+2. Or, click **Next** and then go to **App settings** > **Environment variables**.
 3. Add the following environment variables:
    - **Key:** `VITE_API_URL` **Value:** Your API Gateway URL from Step 13
    - **Key:** `VITE_ENVIRONMENT` **Value:** `production`
-4. Click **Save**
+4. Click **Save**.
 
 **Expected Result:** Environment variables are configured for the frontend build.
 
 ### Step 19: Deploy the Application
 
-1. Click **Save and deploy**
-2. Wait for the build to complete (2-3 minutes)
-3. Watch the build progress through Provision, Build, Deploy, and Verify stages
+1. Click **Save and deploy**.
+2. Wait for the build to complete (2-3 minutes).
+3. Watch the build progress through Provision, Build, Deploy, and Verify stages.
 
 **Expected Result:** All stages complete with green checkmarks.
 
 ### Step 20: Access Your Live Application
 
-1. Click the URL provided by Amplify (looks like `https://main.xxxxxxxxxx.amplifyapp.com`)
-2. Verify the application loads
+1. Click the URL provided by Amplify (looks like `https://main.xxxxxxxxxx.amplifyapp.com`).
+2. Verify the application loads.
 3. Test basic functionality:
    - Browse products
    - View a product detail page
@@ -558,9 +558,9 @@ In this section, you will create a CI/CD pipeline that automatically tests, scan
 
 OIDC authentication is more secure than access keys because it uses short-lived tokens.
 
-1. In the AWS Console, go to **IAM**
-2. Click **Identity providers** in the left navigation
-3. Click **Add provider**
+1. In the AWS Console, go to **IAM**.
+2. Click **Identity providers** in the left navigation.
+3. Click **Add provider**.
 4. Configure the provider:
    - **Provider type:** OpenID Connect
    - **Provider URL:** `https://token.actions.githubusercontent.com`
@@ -571,22 +571,22 @@ OIDC authentication is more secure than access keys because it uses short-lived 
 
 ### Step 22: Create IAM Role for GitHub Actions
 
-1. In IAM, click **Roles** > **Create role**
-2. Select **Web identity** as the trusted entity type
+1. In IAM, click **Roles** > **Create role**.
+2. Select **Web identity** as the trusted entity type.
 3. Configure the trust:
    - **Identity provider:** `token.actions.githubusercontent.com`
    - **Audience:** `sts.amazonaws.com`
-4. Click **Next**
+4. Click **Next**.
 5. Attach policies. For this lab, you can use **AdministratorAccess** (note: use more restrictive policies in production)
-6. Click **Next**
+6. Click **Next**.
 7. Name the role: `github-actions-deploy-role`
-8. Click **Create role**
+8. Click **Create role**.
 
 ### Step 23: Add Trust Policy Condition
 
-1. Find and click on the role you just created
-2. Click the **Trust relationships** tab
-3. Click **Edit trust policy**
+1. Find and click the role you just created.
+2. Click the **Trust relationships** tab.
+3. Click **Edit trust policy**.
 4. Add a condition to restrict access to your specific repository. Replace `YOUR_ORG` and `YOUR_REPO`:
    ```json
    {
@@ -610,14 +610,14 @@ OIDC authentication is more secure than access keys because it uses short-lived 
      ]
    }
    ```
-5. Click **Update policy**
+5. Click **Update policy**.
 
 **Expected Result:** The IAM role can only be assumed by GitHub Actions running in your specific repository.
 
 ### Step 24: Configure GitHub Secrets
 
-1. Go to your GitHub repository
-2. Click **Settings** > **Secrets and variables** > **Actions**
+1. Go to your GitHub repository.
+2. Click **Settings** > **Secrets and variables** > **Actions**.
 3. Click **New repository secret** and add:
    - **Name:** `AWS_ROLE_ARN`
    - **Value:** Your IAM role ARN (e.g., `arn:aws:iam::123456789012:role/github-actions-deploy-role`)
@@ -771,7 +771,7 @@ OIDC authentication is more secure than access keys because it uses short-lived 
              fi
    ```
 
-3. Save the file
+3. Save the file.
 
 **Expected Result:** The CI/CD workflow file is created with test, security, deploy, and verify jobs.
 
@@ -788,9 +788,9 @@ OIDC authentication is more secure than access keys because it uses short-lived 
 
 ### Step 27: Verify the Pipeline
 
-1. Go to your GitHub repository
-2. Click the **Actions** tab
-3. Click on the running workflow
+1. Go to your GitHub repository.
+2. Click the **Actions** tab.
+3. Click the running workflow.
 4. Watch the jobs execute:
    - **test** - Runs linting, tests, and type checking
    - **security** - Runs Trivy vulnerability scanner
@@ -808,9 +808,9 @@ In this section, you will verify and enhance the security of your deployment.
 
 ### Step 28: Review IAM Role Permissions
 
-1. In the AWS Console, go to **IAM** > **Roles**
-2. Find the Lambda execution roles created by SAM (names include `SummarizeReviewsFunctionRole`)
-3. Click on each role and review the attached policies
+1. In the AWS Console, go to **IAM** > **Roles**.
+2. Find the Lambda execution roles created by SAM (names include `SummarizeReviewsFunctionRole`).
+3. Click each role and review the attached policies.
 
 **Expected Result:** Each role has only the permissions it needs:
 - DynamoDB read access to specific tables
@@ -820,26 +820,26 @@ In this section, you will verify and enhance the security of your deployment.
 ### Step 29: Verify Encryption
 
 1. **DynamoDB Encryption:**
-   - Go to DynamoDB > Tables > Select a table
-   - Click the **Additional settings** tab
-   - Verify "Encryption at rest" shows "Enabled" (AWS owned key)
+   - Go to DynamoDB > Tables > Select a table.
+   - Click the **Additional settings** tab.
+   - Verify "Encryption at rest" shows "Enabled" (AWS owned key).
 
 2. **API Gateway HTTPS:**
-   - Go to API Gateway > Your API
-   - Note that all endpoints use HTTPS only
+   - Go to API Gateway > Your API.
+   - Note that all endpoints use HTTPS only.
 
 3. **Amplify HTTPS:**
-   - Visit your Amplify URL
-   - Verify the browser shows a padlock icon (HTTPS)
+   - Visit your Amplify URL.
+   - Verify the browser shows a padlock icon (HTTPS).
 
 **Expected Result:** All data is encrypted at rest and in transit.
 
 ### Step 30: Create CloudWatch Alarm for Lambda Errors
 
-1. Go to **CloudWatch** > **Alarms** > **Create alarm**
-2. Click **Select metric**
-3. Choose **Lambda** > **By Function Name**
-4. Select `Errors` for your `summarize-reviews-dev` function
+1. Go to **CloudWatch** > **Alarms** > **Create alarm**.
+2. Click **Select metric**.
+3. Choose **Lambda** > **By Function Name**.
+4. Select `Errors` for your `summarize-reviews-dev` function.
 5. Configure the alarm:
    - **Statistic:** Sum
    - **Period:** 5 minutes
@@ -848,34 +848,34 @@ In this section, you will verify and enhance the security of your deployment.
 6. Configure actions:
    - Create a new SNS topic named `lambda-alerts`
    - Add your email address
-7. Name the alarm: `Lambda-Errors-High`
-8. Click **Create alarm**
-9. Confirm the SNS subscription in your email
+7. Name the alarm: `Lambda-Errors-High`.
+8. Click **Create alarm**.
+9. Confirm the SNS subscription in your email.
 
 **Expected Result:** The alarm is created and will notify you when Lambda errors exceed the threshold.
 
 ### Step 31: Create CloudWatch Alarm for API Gateway 5XX Errors
 
-1. Go to **CloudWatch** > **Alarms** > **Create alarm**
-2. Select metric **ApiGateway** > **By Api Name** > **5XXError**
+1. Go to **CloudWatch** > **Alarms** > **Create alarm**.
+2. Select metric **ApiGateway** > **By Api Name** > **5XXError**.
 3. Configure:
    - **Threshold:** Greater than 10
    - **Period:** 5 minutes
-4. Use the same SNS topic (`lambda-alerts`)
-5. Name the alarm: `API-Gateway-5XX-High`
-6. Click **Create alarm**
+4. Use the same SNS topic (`lambda-alerts`).
+5. Name the alarm: `API-Gateway-5XX-High`.
+6. Click **Create alarm**.
 
 **Expected Result:** The alarm is created for API Gateway errors.
 
 ### Step 32: Set Up Billing Alert (Optional but Recommended)
 
-1. Go to **Billing and Cost Management**
-2. Click **Budgets** > **Create budget**
-3. Select **Cost budget**
-4. Set a monthly budget (e.g., $50)
-5. Set an alert threshold (e.g., 80% of budget)
-6. Add your email for notifications
-7. Click **Create budget**
+1. Go to **Billing and Cost Management**.
+2. Click **Budgets** > **Create budget**.
+3. Select **Cost budget**.
+4. Set a monthly budget (e.g., $50).
+5. Set an alert threshold (e.g., 80% of budget).
+6. Add your email for notifications.
+7. Click **Create budget**.
 
 **Expected Result:** You will be notified before exceeding your budget.
 
@@ -912,48 +912,48 @@ Use this checklist to verify your complete production deployment:
 **Symptoms:** Error message "User is not authorized to perform..."
 
 **Solution:**
-1. Verify AWS credentials are correctly configured
-2. Check that your IAM user/role has CloudFormation, Lambda, API Gateway, DynamoDB, and IAM permissions
-3. If using a profile, verify SAM is using the correct profile: `sam deploy --profile your-profile`
+1. Verify AWS credentials are correctly configured.
+2. Check that your IAM user/role has CloudFormation, Lambda, API Gateway, DynamoDB, and IAM permissions.
+3. If using a profile, verify SAM is using the correct profile: `sam deploy --profile your-profile`.
 
 ### Issue: Amplify build fails
 
 **Symptoms:** Build fails in the Amplify console
 
 **Solution:**
-1. Check the build logs in Amplify console for specific errors
-2. Verify the build commands work locally (`npm ci` and `npm run build`)
-3. Ensure environment variables are set correctly
-4. Check that `package.json` has all required scripts
+1. Check the build logs in Amplify console for specific errors.
+2. Verify the build commands work locally (`npm ci` and `npm run build`).
+3. Ensure environment variables are set correctly.
+4. Check that `package.json` has all required scripts.
 
 ### Issue: Lambda timeout (504 Gateway Timeout)
 
 **Symptoms:** API calls fail with timeout errors
 
 **Solution:**
-1. Increase Lambda timeout in `template.yaml` (current: 30s, max: 900s)
-2. Check CloudWatch Logs for the Lambda function to identify slow operations
-3. Optimize database queries or Bedrock calls
-4. Consider adding caching for frequently accessed data
+1. Increase Lambda timeout in `template.yaml` (current: 30s, max: 900s).
+2. Check CloudWatch Logs for the Lambda function to identify slow operations.
+3. Optimize database queries or Bedrock calls.
+4. Consider adding caching for frequently accessed data.
 
 ### Issue: CORS errors in browser
 
 **Symptoms:** Console shows "Access-Control-Allow-Origin" error
 
 **Solution:**
-1. Verify CORS is configured in the SAM template (already present in the provided template)
-2. Check that Lambda functions return CORS headers in the response
-3. If using a custom domain, update the CORS configuration to include that domain
+1. Verify CORS is configured in the SAM template (already present in the provided template).
+2. Check that Lambda functions return CORS headers in the response.
+3. If using a custom domain, update the CORS configuration to include that domain.
 
 ### Issue: GitHub Actions fails to authenticate with AWS
 
 **Symptoms:** "Credentials could not be loaded" or "Access Denied"
 
 **Solution:**
-1. Verify the IAM OIDC provider is configured correctly
-2. Check that the trust policy includes your repository
-3. Verify the `AWS_ROLE_ARN` secret is correct
-4. Ensure the `permissions: id-token: write` is present in the workflow
+1. Verify the IAM OIDC provider is configured correctly.
+2. Check that the trust policy includes your repository.
+3. Verify the `AWS_ROLE_ARN` secret is correct.
+4. Ensure the `permissions: id-token: write` is present in the workflow.
 
 ---
 

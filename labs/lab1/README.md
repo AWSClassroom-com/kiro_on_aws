@@ -95,16 +95,12 @@ sudo rpm -i kiro_*.rpm
 
 1. In Kiro, open the integrated terminal:
    - **Windows/Linux:** Press `Ctrl + `` (backtick)
-   - **macOS:** Press `Cmd + `` (backtick)
+   - **macOS:** Press `ctrl + `` (backtick)
    - Or go to **View** > **Terminal**
 
-2. Navigate to your projects directory:
+2. Create and navigate to your projects directory:
    ```bash
-   cd ~/projects
-   ```
-   If this directory does not exist, create it:
-   ```bash
-   mkdir -p ~/projects && cd ~/projects
+   mkdir -p ~/class-projects && cd ~/class-projects
    ```
 
 3. Clone the starter repository:

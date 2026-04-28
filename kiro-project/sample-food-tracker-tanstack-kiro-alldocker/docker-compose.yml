@@ -11,6 +11,7 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+      - aws_credentials:/root/.aws
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,3 +45,4 @@ networks:
 
 volumes:
   postgres_data:
+  aws_credentials:

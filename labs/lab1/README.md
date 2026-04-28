@@ -176,19 +176,21 @@ sudo rpm -i kiro_*.rpm
    - `src/components` - Top navigation, reusable UI
    - `docker-compose.yml` - Postgres container config
 
-2. **Specs Panel:** Click the document icon (below the file explorer). This panel displays structured development artifacts (currently empty).
+2. **Kiro Panel:** Click the ghost icon in the left sidebar. This opens the Kiro panel. This panel displays:
+   - Specs
+   - Agent Hooks
+   - Agent Steering and Skills
+   - MCP Servers
 
-3. **Hooks Panel:** Click the icon below Specs. This panel shows automation hooks (currently empty).
+3. **AI Chat Panel:** Click the Chat icon in the top right of the window to open the chat interface. You can also open it with:
+   - **Windows/Linux:** `Ctrl + Shift + P`, then type "Chat: Open Chat"
+   - **macOS:** `Cmd + Shift + P`, then type "Chat: Open Chat"
 
-4. **AI Chat Panel:** Click the Kiro icon to open the chat interface. You can also open it with:
-   - **Windows/Linux:** `Ctrl + Shift + P`, then type "Kiro: Open Chat"
-   - **macOS:** `Cmd + Shift + P`, then type "Kiro: Open Chat"
-
-5. **Extensions:** Click the Extensions icon and search for **ESLint**. Click **Install** to add it.
+4. **Extensions:** Click the Extensions icon and search for **ESLint**. Click **Install** to add it.
 
 **Expected Result:** You are familiar with the location of key panels in Kiro.
 
-### Step 9: Explore the Codebase
+### Step 8: Explore the Codebase
 
 1. Open `.kiro/specs/food-tracker/requirements.md` - Read at least one requirement.
 2. Open `src/routes/food-tracker.tsx` - This is where we'll make changes.

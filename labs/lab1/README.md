@@ -205,9 +205,11 @@ sudo rpm -i kiro_*.rpm
 
 **Scenario:** Your product manager wants a "EXPIRING SOON" badge on any food entry that's within 3 days of its expiration date.
 
-1. Open the AI Chat panel (Kiro icon in the activity bar).
+1. Open the AI Chat panel (Chat icon in the top right).
 
-2. Type the following prompt and press Enter:
+2. Toggle "Autopilot" off.
+
+3. Type the following prompt and press Enter:
    ```
     On the food tracker page (src/routes/food-tracker.tsx), add an "EXPIRING SOON" badge to each food entry card. The
     badge should appear only when the entry's expirationDate is within the next 3 days (today through 3 days from now).
@@ -215,16 +217,16 @@ sudo rpm -i kiro_*.rpm
     expirationDate is null gracefully (do not show the badge). Do not change any other behavior.
    ```
 
-3. Wait for Kiro to analyze the codebase and generate code.
+4. Wait for Kiro to analyze the codebase and generate code.
 
-4. Review the diff view showing proposed changes:
+5. Review the diff view showing proposed changes:
    - Verify the date calculation logic is correct.
    - Check that styling is appropriate.
    - Confirm edge cases are handled (e.g., missing createdAt).
 
-5. Click **Apply** to add the code to your file.
+6. Click **Accept** to add the code to your file. (If Kiro produces more steps you may need to also click **Accept All**)
 
-6. Refresh your browser at `http://localhost:3000`.
+7. Refresh your browser at `http://localhost:3000`.
 
 **Expected Result:** Products with expiration date display an orange "EXPIRING SOON" badge in the top-right corner.
 

@@ -18,6 +18,12 @@ services:
     networks:
       - foodstarter
     command: sh -c "pnpm db:migrate && pnpm db:seed && pnpm dev --host 0.0.0.0"
+    develop:
+      watch:
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./pnpm-lock.yaml
 
   postgres:
     image: postgres:17-alpine

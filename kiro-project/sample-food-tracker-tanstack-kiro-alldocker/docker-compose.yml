@@ -16,7 +16,7 @@ services:
         condition: service_healthy
     networks:
       - foodstarter
-    command: sh -c "pnpm db:migrate && pnpm dev --host 0.0.0.0"
+    command: sh -c "pnpm db:migrate && pnpm db:seed && pnpm dev --host 0.0.0.0"
 
   postgres:
     image: postgres:17-alpine

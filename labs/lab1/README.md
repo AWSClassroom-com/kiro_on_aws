@@ -1,266 +1,137 @@
 # Lab 1: Getting Started with Kiro
 
-## Overview
-In this lab, you will set up your development environment with Amazon Kiro, clone a starter application, and experience your first "vibe coding" session. You will add a feature to the application using natural language prompts, demonstrating how Kiro can accelerate rapid prototyping.
+Install Kiro IDE, run the food-tracker starter app in Docker, and try your first "vibe coding" session — adding features through natural language prompts.
+
+**Time:** 50 minutes
+**Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
+
+## Working with Kiro
+
+- Open chat: `Cmd+L` (macOS) / `Ctrl+L` (Windows/Linux). Open command palette: `Cmd+Shift+P` / `Ctrl+Shift+P`.
+- Prefer chat and command palette over clicking buttons — button labels change between versions.
+- Agent output varies between runs. Expected results describe outcomes, not exact text. If something looks wrong, tell Kiro in chat.
+- Always read diffs before accepting.
+
+---
 
 ## Prerequisites
-- A computer running Windows, macOS, or Linux
-- Internet connection
-- Git installed (download from https://git-scm.com if needed)
-- Node.js v18 or higher (download from https://nodejs.org if needed)
-- pnpm
-- Docker Desktop
-- An AWS Builder ID (free, no AWS account required)
 
-## Time Estimate
-50 minutes
+- [Git](https://git-scm.com)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running before Step 5)
+- An [AWS Builder ID](https://profile.aws.amazon.com/) (free, no AWS account required)
 
-## Learning Objectives
-By the end of this lab, you will be able to:
-- Install and configure Kiro IDE
-- Authenticate using AWS Builder ID
-- Clone and run a starter application
-- Navigate the Kiro interface and understand key panels
-- Use vibe coding to add features through natural language prompts
-
-**Course Repository:** **https://github.com/AWSClassroom-com/kiro_on_aws**
+The app and its Postgres database both run in Docker — you do **not** need Node.js, pnpm, or Postgres installed locally.
 
 ---
 
-## Part A: Installing Kiro IDE
+## Part A: Install Kiro
 
-### Step 1: Download Kiro
+### Step 1: Download and install
 
-1. Open your web browser and navigate to **https://kiro.dev**.
-2. Click the **Download** button on the homepage.
-3. Select the installer for your operating system:
-   - **Windows:** Download the `.exe` installer
-   - **macOS:** Download the `.dmg` file
-   - **Linux:** Choose `.deb` (Debian/Ubuntu) or `.rpm` (Fedora/RHEL)
+Download from https://kiro.dev for your OS:
 
-**Expected Result:** The installer file (approximately 200 MB) downloads to your computer.
+- **Windows:** run the `.exe` installer with default settings.
+- **macOS:** open the `.dmg`, drag Kiro to Applications. If macOS blocks it, go to **System Preferences → Security & Privacy** and click **Open Anyway**.
+- **Linux (Debian/Ubuntu):** `sudo dpkg -i kiro_*.deb`
+- **Linux (Fedora/RHEL):** `sudo rpm -i kiro_*.rpm`
 
-### Step 2: Install Kiro
+### Step 2: Sign in with Builder ID
 
-**Windows:**
-1. Double-click the downloaded `.exe` file.
-2. Accept the license agreement.
-3. Keep the default installation location.
-4. Click **Install**.
-5. When installation completes, click **Launch Kiro**.
+Launch Kiro. On the welcome screen, choose **Sign in with Builder ID**.
 
-**macOS:**
-1. Double-click the downloaded `.dmg` file.
-2. Drag the Kiro icon into the **Applications** folder.
-3. Open **Applications** and double-click **Kiro**.
-4. If macOS blocks the application:
-   - Go to **System Preferences** > **Security & Privacy**.
-   - Click **Open Anyway** next to the Kiro message.
-   - Click **Open** in the confirmation dialog.
+- Existing Builder ID: enter email and password; complete MFA if enabled.
+- New: choose **Create one** and follow the email-verification flow.
 
-**Linux (Debian/Ubuntu):**
+Your Builder ID email appears in the bottom-left corner when signed in.
+
+> Builder ID is free and separate from an AWS account — no credit card required.
+
+---
+
+## Part B: Set Up the Starter App
+
+### Step 3: Clone the course repo
+
+Open the integrated terminal: `` Ctrl+` `` (backtick), or **View → Terminal**.
+
 ```bash
-sudo dpkg -i kiro_*.deb
+mkdir -p ~/class-projects && cd ~/class-projects
+git clone https://github.com/AWSClassroom-com/kiro_on_aws
+cd kiro_on_aws/kiro-project/sample-food-tracker-tanstack-kiro-alldocker
 ```
 
-**Linux (Fedora/RHEL):**
+### Step 4: Open the project in Kiro
+
+`Cmd+Shift+P` / `Ctrl+Shift+P` → `File: Open Folder` → select `sample-food-tracker-tanstack-kiro-alldocker`. When prompted, trust the authors.
+
+The status bar will show an indexing indicator while Kiro analyzes the codebase.
+
+### Step 5: Run the app
+
+Make sure Docker Desktop is running, then in the terminal:
+
 ```bash
-sudo rpm -i kiro_*.rpm
+docker compose up --watch
 ```
 
-**Expected Result:** Kiro launches and displays the welcome screen.
+This builds the app image, starts Postgres, runs migrations, seeds sample data, and starts the dev server with hot reload. First-run takes a few minutes; subsequent runs are fast.
 
-### Step 3: Authenticate with Builder ID
+Open `http://localhost:3000` in your browser. You should see the food-tracker app with sample entries.
 
-1. In the Kiro welcome screen, click **Sign in with Builder ID**.
-2. If you already have an AWS Builder ID:
-   - Enter your email and password.
-   - Complete any MFA verification if enabled.
-3. If you do not have a Builder ID:
-   - Click **Create one**.
-   - Enter your email address.
-   - Create a password (minimum 8 characters).
-   - Check your email for a verification code.
-   - Enter the verification code to complete registration.
-
-**Expected Result:** You are signed in and see the main Kiro interface. Your Builder ID email appears in the bottom-left corner of the window.
-
-> **Note:** AWS Builder ID is free and separate from an AWS account. You do not need an AWS account or credit card to use Kiro.
+> Leave this terminal running. Open a second terminal in Kiro (`` Ctrl+` `` again, or split the existing one) for any other commands.
 
 ---
 
-## Part B: Clone and Run the Starter Application
+## Part C: Explore Kiro
 
-### Step 4: Clone the Repository
+### Step 6: Get oriented
 
-1. In Kiro, open the integrated terminal:
-   - **Windows/Linux:** Press `Ctrl + `` (backtick)
-   - **macOS:** Press `Ctrl + `` (backtick)
-   - Or go to **View** > **Terminal**
+Open each panel once so you know where things live:
 
-2. Create and navigate to your projects directory:
-   ```bash
-   mkdir -p ~/class-projects && cd ~/class-projects
-   ```
+- **File Explorer** (folder icon, left sidebar) — expand `src/` to see `routes/`, `components/`, `db/`, plus `Dockerfile` and `docker-compose.yml` at the root.
+- **Kiro Panel** (ghost icon in the activity bar) — Specs, Agent Hooks, Steering, Skills, MCP Servers.
+- **Chat Panel** — `Cmd+L` / `Ctrl+L`, or via command palette `Kiro: Open Chat`.
+- **Extensions** — `Cmd+Shift+X` / `Ctrl+Shift+X`. Search for **ESLint** (publisher: dbaeumer) and click **Install**.
 
-3. Clone the starter repository:
-   ```bash
-   git clone https://github.com/aws-samples/sample-food-tracker-tanstack-kiro
-   ```
+### Step 7: Skim the codebase
 
-4. Change into the project directory:
-   ```bash
-   cd sample-food-tracker-tanstack-kiro
-   ```
-
-**Expected Result:** The repository is cloned and you are in the project directory.
-
-### Step 5: Open the Project in Kiro
-
-1. In Kiro, go to **File** > **Open Folder**.
-2. Navigate to the `sample-food-tracker-tanstack-kiro` folder you just cloned.
-3. Click **Select folder**.
-4. When prompted "Do you trust the authors of the files in this folder?", click **Yes, I trust the authors**.
-
-**Expected Result:** The project opens in Kiro. You will see an indexing indicator in the status bar as Kiro analyzes the codebase.
-
-### Step 6: Install Dependencies and Run the Application
-
-1. In the terminal, install project dependencies:
-   ```bash
-   npm install
-   ```
-   Wait for the installation to complete.
-
-2. Create your environment file.
-   ```bash
-   cp .env.example .env
-   ```
-   Wait for the installation to complete.
-
-3. Generate the Drizzle migrations.
-   ```bash
-   npm run db:generate
-   ```
-   What you should see:
-   ```bash
-   > drizzle-kit generate
-     Reading config file '...drizzle.config.ts'
-     1 tables
-     food_items 14 columns 0 indexes 0 fks 
-   ```
-   
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-5. Open your web browser and navigate to:
-   ```
-   http://localhost:3000
-   ```
-
-**Expected Result:** You see an e-commerce storefront with product listings, categories, and a shopping cart.
+- `.kiro/specs/food-tracker/requirements.md` — read at least one requirement to see the spec format.
+- `src/routes/food-tracker.tsx` — this is where you'll make changes in Part D.
 
 ---
 
-## Part C: Explore the Kiro Interface
+## Part D: Vibe Coding
 
-### Step 7: Navigate the IDE
+For these steps, work in **Supervised mode** (Autopilot off) so you can review each diff before accepting. Edits Kiro makes on disk are picked up automatically by the running container — no rebuild needed.
 
-1. **File Explorer:** In the left sidebar, click the top icon (folder) to open the file explorer. Expand the `src` folder to see:
-   - `.kiro/` - The Kiro configuration
-   - `src/` - The application source code
-   - `src/db/` - Database layer
-   - `src/routes/` - file-based routing
-   - `src/components` - Top navigation, reusable UI
-   - `docker-compose.yml` - Postgres container config
+### Step 8: Add an "EXPIRING SOON" badge
 
-2. **Kiro Panel:** Click the ghost icon in the left sidebar. This opens the Kiro panel. This panel displays:
-   - Specs
-   - Agent Hooks
-   - Agent Steering and Skills
-   - MCP Servers
+Open the chat panel and send:
 
-3. **AI Chat Panel:** Click the Chat icon in the top right of the window to open the chat interface. You can also open it with:
-   - **Windows/Linux:** `Ctrl + Shift + P`, then type "Chat: Open Chat"
-   - **macOS:** `Cmd + Shift + P`, then type "Chat: Open Chat"
+```
+On the food tracker page (src/routes/food-tracker.tsx), add an "EXPIRING SOON" badge to each food entry card. The badge should appear only when the entry's expirationDate is within the next 3 days (today through 3 days from now). The badge should be orange with white text, positioned in the top-right corner of the card. Handle the case where expirationDate is null gracefully (do not show the badge). Do not change any other behavior.
+```
 
-4. **Extensions:** Click the Extensions icon and search for **ESLint**. Click **Install** to add it.
+Review the diff. If the date logic, styling, or null-handling looks off, push back in chat ("the badge is showing for entries 5 days out — please fix"). Accept when correct, then refresh `http://localhost:3000`.
 
-**Expected Result:** You are familiar with the location of key panels in Kiro.
+### Step 9: Iterate on the badge
 
-### Step 8: Explore the Codebase
+In the same chat, send:
 
-1. Open `.kiro/specs/food-tracker/requirements.md` - Read at least one requirement.
-2. Open `src/routes/food-tracker.tsx` - This is where we'll make changes.
+```
+Add a subtle pulse animation to the "EXPIRING SOON" badge to draw attention.
+```
 
-**Expected Result:** You understand the basic structure of the starter application.
+Review and accept. If the animation feels too aggressive, follow up:
 
----
+```
+Make the pulse animation slower and less pronounced.
+```
 
-## Part D: Your First Vibe Coding Session
+### Step 10: Add a sort and filter bar
 
-### Step 9: Add a Feature with Natural Language
+Start a new chat session for a clean context, then send:
 
-**Scenario:** Your product manager wants a "EXPIRING SOON" badge on any food entry that's within 3 days of its expiration date.
-
-1. Open the AI Chat panel (Chat icon in the top right).
-
-2. Toggle "Autopilot" off.
-
-3. Type the following prompt and press Enter:
-   ```
-    On the food tracker page (src/routes/food-tracker.tsx), add an "EXPIRING SOON" badge to each food entry card. The
-    badge should appear only when the entry's expirationDate is within the next 3 days (today through 3 days from now).
-    The badge should be orange with white text, positioned in the top-right corner of the card. Handle the case where
-    expirationDate is null gracefully (do not show the badge). Do not change any other behavior.
-   ```
-
-4. Wait for Kiro to analyze the codebase and generate code.
-
-5. Review the diff view showing proposed changes:
-   - Verify the date calculation logic is correct.
-   - Check that styling is appropriate.
-   - Confirm edge cases are handled (e.g., missing createdAt).
-
-  If any of this is incorrect chat back and forth to Kiro until it looks right.
-
-6. Click **Accept** to add the code to your file. (If Kiro produces more steps you may need to also click **Accept All**)
-
-7. Refresh your browser at `http://localhost:3000`.
-
-**Expected Result:** Products with expiration date display an orange "EXPIRING SOON" badge in the top-right corner.
-
-### Step 10: Iterate on the Feature
-
-1. In the AI Chat, type:
-   ```
-   Add a subtle pulse animation to the "EXPIRING SOON" badge to draw attention
-   ```
-
-2. Review and apply the generated code.
-
-3. Refresh your browser to see the pulse animation.
-
-4. If the animation is too aggressive, refine it:
-   ```
-   Make the pulse animation slower and less pronounced
-   ```
-
-5. Review and apply the code.
-
-**Expected Result:** The EXPIRING SOON badge now has a subtle pulse animation.
-
----
-
-## Part E: Vibe Coding Simple Functionality
-
-**Scenario**:
-
-1. Open a new chat session by clicking the **+** button at the top of teh AI Chat Panel
-
-2. Type the following prompt and press ENTER:
 ```
 On the food tracker page (food-tracker.tsx), add a sort and filter bar above the food entry cards inside FoodEntriesList.
 - A text input that filters entries by name (case-insensitive)
@@ -268,62 +139,48 @@ On the food tracker page (food-tracker.tsx), add a sort and filter bar above the
 The filtering and sorting should be done in-memory using React state — do not change any server functions or database logic. Entries with a null expiration date should appear last when sorting by expiration date. The bar should match the existing dark slate styling of the page.
 ```
 
-3. Review and Accept the generated code.
+Review and accept. Refresh the browser.
 
-4. You may need to refresh your browser to see the change.
+### Step 11: Restyle the homepage palette
 
-**Expected Result**: There is now a filter bar and dropdown below the "Your Food Entries" title.
+Navigate to `http://localhost:3000` (the homepage) so you can see the change live. Start a new chat session, then send:
 
-## Validation Checklist
+```
+On the homepage only (src/routes/index.tsx), change the color theme from emerald/cyan to a warm sunset palette using amber, orange, and rose. Replace every emerald and cyan Tailwind class on this page (gradients, button backgrounds, hover states, accent colors, glow shadows, the pulsing dot in the badge, etc.) with appropriate amber/orange/rose equivalents. Keep the dark slate base and the overall structure exactly as-is — only the accent colors change. Do not modify any other route or component.
+```
 
-Verify your lab completion by confirming:
+Review and accept. Refresh the homepage and confirm the hero gradient, the "Start Tracking Food" button, the feature card hover state, and the bottom CTA button all show the new warm palette. The food-tracker page should look unchanged.
 
-- [ ] Kiro is installed and running
-- [ ] Your Builder ID is displayed in the bottom-left corner of Kiro
-- [ ] The starter application runs at `http://localhost:3000`
-- [ ] Food Entries display correctly
-- [ ] The EXPIRING SOON badge appears on expiring food entries
-- [ ] The badge has a pulse animation
-- [ ] Filter bar and dropdown exist and are working correctly
+### Step 12: Add a footer to the homepage
+
+In the same chat, send:
+
+```
+Add a footer to the homepage (src/routes/index.tsx), placed below the existing CTA section.
+Contents:
+- Left: "© 2026 Food Tracker" plus a small tagline "Built with TanStack Start, Drizzle, and PostgreSQL".
+- Right: three placeholder links — Docs, GitHub, Privacy — using href="#" for now.
+Styling: match the rest of the page — dark slate background, gray-400 text, subtle top border (border-slate-700). Compact vertical padding. Single row on desktop (md and up), stacked on mobile.
+Do not change anything else.
+```
+
+Review and accept. Refresh and resize the browser to confirm the layout switches from row to stacked at the mobile breakpoint.
 
 ---
 
-## Troubleshooting
+## Validation Checklist
 
-### Issue: macOS blocks Kiro from opening
-**Solution:** Go to **System Preferences** > **Security & Privacy** > **General** tab. Click **Open Anyway** next to the message about Kiro being blocked.
-
-### Issue: Builder ID verification email not received
-**Solution:** Check your spam/junk folder. The email comes from an amazon.com address. If behind a corporate firewall, ensure traffic to `builder.id.amazon.com` is allowed.
-
-### Issue: `git` command not found
-**Solution:** Install Git from https://git-scm.com. After installation, restart your terminal for the PATH to update.
-
-### Issue: `npm` command not found
-**Solution:** Install Node.js from https://nodejs.org (version 18 or higher). Restart your terminal after installation.
-
-### Issue: EXPIRING SOON badge does not appear
-**Solution:**
-1. Verify the code changes were applied (check for the modified file indicator in the tab).
-2. Hard refresh your browser with `Ctrl + Shift + R` (Windows/Linux) or `Cmd + Shift + R` (macOS).
-3. Check that sample food entries in the sample data have `expiration dates` set.
-
-### Issue: Application shows errors on localhost:3000
-**Solution:**
-1. Ensure `npm install` completed without errors.
-2. Check that `npm run dev` is still running in the terminal.
-3. Look for error messages in the terminal output.
+- [ ] Kiro installed and running; Builder ID shown in the bottom-left corner
+- [ ] `docker compose up` running; food-tracker app reachable at `http://localhost:3000`
+- [ ] Sample food entries visible
+- [ ] EXPIRING SOON badge appears on food entries within 3 days of expiration
+- [ ] Badge has a subtle pulse animation
+- [ ] Filter bar and sort dropdown above the food entries list, both functional
+- [ ] Homepage hero, feature cards, and CTAs use the warm amber/orange/rose palette (food-tracker page unchanged)
+- [ ] Homepage has a footer with copyright, tagline, and three links — responsive at mobile breakpoint
 
 ---
 
 ## Summary
 
-In this lab, you accomplished the following:
-
-1. **Installed Kiro IDE** - Downloaded and configured Amazon's AI-native IDE built on Code-OSS
-2. **Authenticated with Builder ID** - Set up your free developer identity for Kiro
-3. **Set up the starter application** - Cloned the repository, installed dependencies, and ran the development server
-4. **Explored the Kiro interface** - Located the file explorer, Specs panel, Hooks panel, AI Chat, and Extensions
-5. **Experienced vibe coding** - Added a feature using natural language prompts and iterated through conversation
-
-You now have a working development environment and have seen how Kiro enables rapid prototyping through natural language. In Lab 2, you will learn spec-driven development to build production-ready features with proper documentation and structure.
+You installed Kiro, signed in with Builder ID, ran the food-tracker starter app entirely in Docker, and used vibe coding — natural language prompts with diff-by-diff review — to add features. In Lab 2 you'll move from vibe coding to spec-driven development: building features with formal requirements, design documents, and sequenced tasks.

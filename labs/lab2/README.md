@@ -50,7 +50,7 @@ docker compose exec app aws bedrock list-foundation-models \
 Paste as your initial prompt:
 
 ```
-Build an AI-powered weekly nutrition summary feature for the food-tracker page.
+Create a new spec for a new feature that is a AI-powered weekly nutrition summary feature for the food-tracker page.
 
 Requirements:
 - On the food tracker page, add a "Generate Weekly Summary" button.

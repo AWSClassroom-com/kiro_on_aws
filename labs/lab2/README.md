@@ -1,428 +1,231 @@
 # Lab 2: Build a Weekly Nutrition Summary with Specs and Bedrock
 
-## Overview
-In this lab, you will build an AI-powered review summarization feature using Kiro's spec-driven development workflow. You will transform a natural language description into formal requirements, technical designs, and sequenced implementation tasks. The feature will integrate with Amazon Bedrock to generate summarize the user's last 7 days of food entries.
+Build an AI-powered nutrition summary feature using Kiro's spec-driven workflow: generate requirements, design, and tasks from a natural language description, then implement the feature with Amazon Bedrock.
+
+**Time:** 60 minutes
+**Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
+
+## Working with Kiro
+
+- Open chat: `Cmd+L` (macOS) / `Ctrl+L` (Windows/Linux). Open command palette: `Cmd+Shift+P` / `Ctrl+Shift+P`.
+- Prefer chat and command palette over clicking buttons — button labels change between versions.
+- Agent output varies between runs. Expected results describe outcomes, not exact text. If something looks wrong, tell Kiro in chat.
+- Always read diffs before accepting.
+
+---
 
 ## Prerequisites
-- Completed Lab 1 (Kiro installed, starter application running)
-- AWS credentials configured (SSO or access keys)
-- Amazon Bedrock access enabled with Claude model access
-- Food-tracker application running at `http://localhost:3000`
 
-## Time Estimate
-60 minutes
+### 1. Lab 1 complete
+Kiro installed and signed in. Food-tracker app running at `http://localhost:3000`.
 
-## Learning Objectives
-By the end of this lab, you will be able to:
-- Generate formal requirements from a natural language feature description
-- Create technical design specifications with interface definitions
-- Break work into sequenced implementation tasks
-- Integrate Amazon Bedrock for AI-powered features
-- Implement a complete feature using spec-driven development
+### 2. AWS credentials in the container
 
-**Course Repository:** **https://github.com/AWSClassroom-com/kiro_on_aws**
+```bash
+docker compose exec app aws login --remote
+```
+
+Complete the SSO flow in your browser. Credentials land in `~/.aws` inside the container; the SDK picks them up automatically.
+
+### 3. Verify access
+
+```bash
+docker compose exec app aws sts get-caller-identity --no-cli-pager
+docker compose exec app aws bedrock list-foundation-models \
+  --query "modelSummaries[?contains(modelId, 'claude')]" \
+  --output table --no-cli-pager
+```
 
 ---
 
 ## Part A: Generate Requirements
 
-### Step 1: Open the Specs Panel
+### Step 1: Create a new spec
 
-1. In Kiro, click the **Kiro** icon in the activity bar (the ghost icon).
-2. In the Kiro pane, find the **Specs** section. You should see one existing spec — `food-tracker` — that ships with
-   the project. We're going to add a second one for our new feature.
-3. Click the **+** button under the **Specs** section header.
-   - Alternatively: in the chat pane, choose **Spec** from the chat options.  
-   - **Windows/Linux:** `Ctrl + Shift + P`, type "Kiro: New Spec"
-   - **macOS:** `Cmd + Shift + P`, type "Kiro: New Spec"
+`Cmd+Shift+P` / `Ctrl+Shift+P` → `Kiro: New Spec` → choose **Feature** → **Requirements-First**.
 
-**Expected Result:** A dialog appears asking for a feature description.
+### Step 2: Describe the feature
 
-### Step 2: Describe the Feature
-
-1. Copy and paste the following feature description into the dialog:
+Paste as your initial prompt:
 
 ```
 Build an AI-powered weekly nutrition summary feature for the food-tracker page.
 
 Requirements:
-- On the food tracker page, add a "Generate Weekly Summary" button
-- When clicked, the app fetches all food entries from the last 7 days from PostgreSQL
+- On the food tracker page, add a "Generate Weekly Summary" button.
+- When clicked, the app fetches all food entries from the last 7 days from PostgreSQL.
 - The entries are sent to Amazon Bedrock (Claude Sonnet 4.5) which returns:
- - totalCalories (sum across all entries)
- - averageDailyCalories (totalCalories divided by 7)
- - macroBreakdown: proteinPercent, carbsPercent, fatPercent (must sum to 100)
- - narrative: a 2-3 sentence summary of the user's eating patterns
- - suggestions: 2-3 actionable suggestions for next week
-- Show a loading state while Bedrock is generating the summary (typically 2-4 seconds)
-- Display the result in a card below the button
-- Handle the edge case where the user has fewer than 3 entries in the last 7 days: show a friendly message
-instead of calling Bedrock
-- The Bedrock model ID is anthropic.claude-sonnet-4-5-20250929-v1:0
-- The Bedrock API uses anthropic_version "bedrock-2023-05-31"
-- The result must NOT be persisted to PostgreSQL; it is a transient view-only summary
+  - totalCalories (sum across all entries)
+  - averageDailyCalories (totalCalories divided by 7)
+  - macroBreakdown: proteinPercent, carbsPercent, fatPercent (must sum to 100)
+  - narrative: a 2-3 sentence summary of the user's eating patterns
+  - suggestions: 2-3 actionable suggestions for next week
+- Show a loading state while Bedrock is generating the summary (typically 2-4 seconds).
+- Display the result in a card below the button.
+- Handle the edge case where the user has fewer than 3 entries in the last 7 days: show a friendly message instead of calling Bedrock.
+- The Bedrock model ID is anthropic.claude-sonnet-4-5-20250929-v1:0.
+- The Bedrock API uses anthropic_version "bedrock-2023-05-31".
+- The result must NOT be persisted to PostgreSQL; it is a transient view-only summary.
 ```
 
-2. Click **Generate Requirements**.
+Answer Kiro's follow-up questions as they come.
 
-3. Wait for Kiro to process (this may take 30-60 seconds).
+### Step 3: Review and approve requirements
 
-**Expected Result:** Kiro generates a requirements document with user stories, acceptance criteria, non-functional requirements, and edge cases.
+Open `requirements.md`. Confirm it covers user stories, acceptance criteria for the happy path and the `<3 entries` edge case, and a note that results aren't persisted.
 
-### Step 3: Review the Generated Requirements
-
-1. Open the generated `requirements.md` file in the Specs panel.
-
-2. Locate and review each section:
-
-   **User Stories:** Look for stories like:
-   - "As a customer browsing products, I want to see a summary of reviews so that I can make informed purchasing decisions without reading every review."
-
-   **Acceptance Criteria:** Look for testable conditions:
-   - WHEN the user clicks "Generate Weekly Summary" THE system SHALL fetch entries from the last 7 days
-   - WHEN there are fewer than 3 entries THE system SHALL display a "not enough data" message
-   - WHEN Bedrock responds THE system SHALL display totalCalories, averageDailyCalories, macroBreakdown
-     
-**Expected Result:** You have a comprehensive requirements document covering functional and non-functional aspects.
-
-### Step 4: Refine and Approve Requirements
-
-1. Review the requirements for completeness.
-
-2. If you need to add a requirement, either:
-   - Edit the document directly, OR
-   - Ask Kiro in the chat: "Add a requirement for caching summaries to avoid repeated Bedrock calls"
-
-3. When satisfied, click **Approve Requirements**.
-
-**Expected Result:** Requirements are locked and you can proceed to design.
+Edit `requirements.md` directly or ask in chat to adjust (e.g., "Add an acceptance criterion that the loading state appears within 200ms of the click"). Approve through the spec workflow when satisfied.
 
 ---
 
-## Part B: Generate Design Specification
+## Part B: Generate Design
 
-### Step 5: Generate Technical Design
+### Step 4: Generate the design
 
-1. In the Specs panel, click **Generate Design**.
+In chat:
 
-2. Wait for Kiro to generate the technical design (this may take 1-2 minutes).
+```
+The requirements for the weekly-nutrition-summary spec are approved. Please generate design.md now. The design must cover:
 
-**Expected Result:** Kiro generates a design document with architecture, interfaces, and error handling strategies.
+1. Architecture flow — from the button click in src/routes/food-tracker.tsx through every module the request passes through, ending at the rendered summary card.
+2. TypeScript interfaces — a shape for the summary returned to the UI (totals, macro breakdown, narrative, suggestions) and a response shape that signals success, error, or insufficient-data outcomes.
+3. Server function — name it, specify it lives in src/routes/food-tracker.tsx alongside the existing CRUD server functions, and follow the same pattern they use.
+4. Error handling — explicitly map each of these failure modes to a response: (a) Bedrock call failure, (b) fewer than 3 entries (do not call Bedrock; return an insufficient-data indicator), (c) malformed JSON from Bedrock.
 
-### Step 6: Review Design Components
+Hard constraint on credentials: AWS credentials are already configured at ~/.aws inside the container. Design the Bedrock client to use the AWS SDK's default credential chain. Do NOT design anything that reads AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_PROFILE, or any AWS credential environment variables.
+```
 
-1. Open the generated `design.md` file.
+### Step 5: Review and approve
 
-2. Review each section:
+Open `design.md` and confirm all four sections are present. A reasonable summary shape looks something like:
 
-   **Architecture flow** — should describe roughly:
-   - User clicks button on `src/routes/food-tracker.tsx`
-   - Frontend invokes a TanStack server function (`generateWeeklySummary`)
-   - Server function queries Postgres for entries where `createdAt >= now() - 7 days`
-   - Entries passed to `summarizeWeek` in `src/services/nutrition-summary.ts`
-   - `summarizeWeek` builds a prompt and calls `invokeModel` in `src/services/bedrock.ts`
-   - Parsed JSON returned up the stack and rendered in a card
+```typescript
+interface NutritionSummary {
+  totalCalories: number;
+  averageDailyCalories: number;
+  macroBreakdown: { proteinPercent: number; carbsPercent: number; fatPercent: number };
+  narrative: string;
+  suggestions: string[];
+  entryCount: number;
+  generatedAt: string;
+}
+```
 
-   **Interface definitions** — verify TypeScript shapes like:
-   ```typescript
-   interface NutritionSummary {
-    totalCalories: number;
-    averageDailyCalories: number;
-    macroBreakdown: {
-      proteinPercent: number;
-      carbsPercent: number;
-      fatPercent: number;
-    };
-    narrative: string;
-    suggestions: string[];
-    entryCount: number;
-    generatedAt: string;
-   }
-
-   interface WeeklySummaryResponse {
-    success: boolean;
-    data?: NutritionSummary;
-    error?: string;
-    insufficientData?: boolean;
-   }
-   ```
-
-   **Server function design**
-   Should specify the function name (`generateWeeklySummary`), HTTP method (POST), and
-   that it lives alongside the existing CRUD server functions in `src/routes/food-tracker.tsx` (matching the existing
-   pattern in this file).
-
-  **Error handling** 
-  Should map failure modes to responses:
-  - Bedrock timeout → friendly error to user, log on server
-  - Insufficient entries (< 3) → don't call Bedrock; return `insufficientData: true`
-  - Malformed Bedrock JSON → throw with descriptive message; UI shows generic error
-
-**Expected Result:** You understand how the feature will be architected.
-
-### Step 7: Approve the Design
-
-1. Review the design for technical feasibility.
-
-2. Verify interfaces align with existing codebase patterns.
-
-3. Confirm error handling covers all edge cases from requirements.
-
-4. Click **Approve Design**.
-
-**Expected Result:** Design is locked and you can proceed to task generation.
+Field names will vary — that's fine. Approve the design when satisfied.
 
 ---
 
-## Part C: Generate Implementation Tasks
+## Part C: Generate Tasks
 
-### Step 8: Generate Tasks
+### Step 6: Generate tasks
 
-1. Open the Kiro chat panel (ghost icon in the activity bar).
-   
-2. Paste the following prompt:
+In chat:
 
 ```
-Generate tasks for the weekly-nutrition-summary spec based on the approved design.
+The design for the weekly-nutrition-summary spec is approved. Please generate tasks.md now, with the following structure:
+- Tasks must be ordered by dependency — later tasks may rely on earlier ones being complete.
+- Each task must be small enough to review in a single diff (one file, or a tightly related set of changes).
+- Each task must explicitly list the files it creates or modifies, and reference the design section it implements.
+- The first applicable task should install any new dependencies (such as the AWS SDK packages) — do not assume they are already installed.
 ```
 
-3. Wait for Kiro to break down the work (30-60 seconds).
+### Step 7: Trim the task list
 
-**Expected Result:** Kiro generates a list of discrete implementation tasks with dependencies.
-
-### Step 9: Review Task Sequence
-
-1. Open the generated `.kiro/specs/weekly-nutrition-summary/tasks.md` file.
-
-2. The exact list will vary depending on what Kiro inferred from your design — that's normal. Review the tasks and confirm the shape of the plan looks roughly like this:   
-
-  - An early task or two for shared types and dependencies (e.g., installing the AWS SDK, defining schemas)
-  - A task for the Bedrock client / model invocation (reusable wrapper around InvokeModelCommand)
-  - A task for the server function that queries the last 7 days of entries and calls Bedrock
-  - One or more tasks for UI — a button, loading state, and result card
-
-3. Since this is a lab, we will ask Kiro to remove all non-essential tasks using the following prompt:
+Send this prompt, then verify Kiro's recap before approving. If the recap is wrong, push back until it matches.
 
 ```
-Please remove all non essential tasks as this is a lab environment and we want to keep the time to build low.  
+This is a time-boxed lab. Please simplify the task list, requirements, and design to the smallest scope that delivers the feature.
 
-Also, Simplify the tasks: remove Zod schema file (inline JSON.parse in Bedrock client), remove macro normalization (accept model output as-is), remove all caching (always call Bedrock fresh). Use npm install instead of pnpm. Keep: Bedrock client with retry at src/lib/bedrock.ts, summarization module at src/lib/nutrition-summary.ts, server function, and UI. Update requirements and design to match.
+DESIRED FINAL STATE — the implementation should produce ONLY these files (and no others):
+1. src/lib/bedrock.ts — a thin Bedrock client with basic retry. Parses JSON inline.
+2. src/lib/nutrition-summary.ts — builds the prompt, calls the Bedrock client, returns the parsed summary.
+3. Edits to src/routes/food-tracker.tsx — adds one new server function and the UI changes (button, loading state, result card).
+
+REMOVALS — for each item below, remove it if it is currently in the plan; if it is not present, just skip it (no need to flag):
+- Separate Zod or other schema files (validation should happen inline in the Bedrock client or summarization module)
+- Caching, persistence, or rate-limiting of Bedrock results
+- Macro normalization or any post-processing of the model's output (accept it as-is)
+- Separate test files or new documentation files
+- Environment variable setup, .env files, or config-loading modules
+
+HARD CONSTRAINT — credentials:
+AWS credentials are already configured at ~/.aws inside the container. The Bedrock client must use the AWS SDK's default credential chain. Do NOT add or keep any tasks that read AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_PROFILE, AWS_REGION, or any AWS credential environment variables.
+
+ADD A VERIFICATION TASK — append a final task to the task list with these exact steps:
+1. Create scripts/test-bedrock.ts that:
+   - Imports the Bedrock client from src/lib/bedrock.ts
+   - Calls it with the prompt: "Say hello in one short sentence."
+   - Prints the raw response to stdout
+   - On any error, prints the full error including stack trace and exits with a non-zero status
+2. Run the script inside the container: docker compose exec app npx tsx scripts/test-bedrock.ts
+3. If the run fails, do NOT modify the script to swallow, suppress, or reformat the error. Stop, surface the full output, and diagnose the underlying issue (typical causes: credentials, region, model ID, or inference profile ID).
+4. If and only if the run succeeds, delete scripts/test-bedrock.ts. The task is complete.
+
+ALSO UPDATE — requirements.md and design.md should be updated to match the simplified scope.
+
+WHEN DONE — please reply in chat with a short recap covering:
+(a) Which tasks you removed (by title), if any
+(b) The final ordered list of tasks that remain
+(c) Which sections of requirements.md and design.md you updated
+Do not start implementing yet — wait for me to review the recap.
 ```
-
-**Expected Result:** Tasks are sequenced by dependency, ready for implementation.
 
 ---
 
 ## Part D: Implement the Feature
 
-### Step 10a: Set Up AWS Credentials and Enable Bedrock
+Kiro installs dependencies as part of its tasks — don't run `npm install` yourself.
 
-**Configure AWS Credentials:**
+### Step 8: Implement tasks one at a time
 
-**Option A - AWS SSO (Recommended):**
-```bash
-aws configure sso
-```
-Follow the prompts to configure your SSO session.
-
-**Option B - Access Keys:**
-```bash
-aws configure
-```
-Enter your Access Key ID and Secret Access Key when prompted.
-
-**Enable Bedrock Model Access:**
-
-1. Serverless models are now available by default and no other configuration is required. 
-
-**Verify Setup:**
-```bash
-aws bedrock list-foundation-models --query "modelSummaries[?contains(modelId, 'claude')]" --output table
-```
-
-**Expected Result:** You see Claude models listed in the output.
-
-### Step 10b: Install AWS SDK Packages
-
-1. Install the AWS Bedrock SDK
-
-```bash
-npm install @aws-sdk/client-bedrock-runtime @aws-sdk/credential-providers
-```
-
-**Expected Result:** You successfully install the @aws-sdk/client-bedrock-runtime and @aws-sdk/credential-providers.
-
-### Step 11a: Implement Task 1 - Bedrock Service Client
-
-Next we will create the Bedrock Service Client with Kiro.
-
-1. In the Kiro chat panel, provide the following prompt:
+For the **first** task, send:
 
 ```
-Implement Task 1 from the weekly-nutrition-summary spec.
+Show me the unchecked tasks remaining in the weekly-nutrition-summary spec, then prepare to implement the next one in order.
+
+Before making any code changes, reply in chat with:
+- The task number and title you are starting
+- The files you will create or modify
+- Any shell commands you need to run (such as npm install)
+
+Implement only that one task. Do not bundle multiple tasks together. Do not add files or features the task does not explicitly require. Wait for my approval of the diff before moving on.
 ```
 
-2. Kiro will read tasks.md, run npm install @aws-sdk/client-bedrock-runtime, and propose creating
-  src/lib/bedrock.ts. You will see:
-    
-    - The terminal output from the npm install (or a confirmation it's already installed)    
-    - A diff for the new bedrock.ts file
-  
-3. Review the diff before clicking Apply. Confirm Kiro's output has all of these — if anything is missing, click
-  Reject and ask Kiro to fix it.
+For each subsequent task, send: `Implement the next unchecked task using the same protocol.`
 
-4. In the Specs panel, verify **Task 1 as complete**
+For each task:
 
-**Expected Result:** Bedrock client with retry logic is ready to use.
+1. Verify the recap matches the task in `tasks.md`.
+2. Approve any commands Kiro wants to run.
+3. Review and accept the diff (or reject and push back).
+4. Confirm the task is marked complete, then move on.
 
-### Step 11b: Implement Task 1 - Smoke-test the Bedrock Client
+The **final** task is the Bedrock smoke test added in Step 7. On success it deletes `scripts/test-bedrock.ts` automatically. On failure, paste the error into chat — most failures are credentials, region, model ID, or inference profile.
 
-1. In the Kiro chat panel, provide the following prompt:
+### Step 9: End-to-end test
 
-```
-Create a one-off test script at `scripts/test-bedrock.ts` that imports invokeBedrock from `src/lib/bedrock.ts`,
-calls it with the prompt "Say hello in one short sentence." and prints the response. Then run it with `npx tsx
-scripts/test-bedrock.ts`.
-```
+1. Restart the dev server if needed.
+2. Open `http://localhost:3000/food-tracker`.
+3. Click **Generate Weekly Summary** and confirm a card renders with totals, macros, narrative, and suggestions.
+4. (Optional) With fewer than 3 recent entries, confirm a friendly "not enough data" message appears instead of an error.
 
-2. Kiro will create the script and execute it. Expected output (in the terminal) — something like:
-Hello! I'm here to help if you need anything.
+Paste any error into Kiro's chat to diagnose.
 
-2. During this test, you may run into issues if you are using a --profile on your AWS CLI. Kiro can/will fix this for use with the SDK.
-
-3. You may also encounter errors related to cross-region interference profile IDs. Kiro will also fix this automatically. 
-
-4. Once it works, you can ask Kiro to clean up:
-
-```
-Delete scripts/test-bedrock.ts — the smoke test passed.
-```
-
-### Step 12: Implement Task 2 - Summarization Prompt
-
-1. In the Kiro chat panel, provide the following prompt:
-
-```
-Implement Task 2 from the weekly-nutrition-summary spec.
-```
-
-2. Kiro will propose creating src/lib/nutrition-summary.ts with the prompt builder, the summarization function, and
-  the inline TypeScript types. You'll see a diff.
-  
-3. Review the diff before clicking Apply.
-
-4. In the Specs panel, verify **Task 2 as complete**
-
-**Expected Result:** Summarization service is ready to process reviews.
-
-### Step 13: Implement Task 3 - Generate Weekly Summary server function
-
-1. In the Kiro chat panel, provide the following prompt:
-
-```
-Implement Task 3 from the weekly-nutrition-summary spec.
-```
-
-2. Kiro will edit src/routes/food-tracker.tsx and propose a diff that adds a new server function alongside the
-  existing createFoodEntry / getFoodEntries / deleteFoodEntry ones.
-
-3. Review the diff before clicking Apply. 
-
-**Expected Result:** API endpoint handles requests with validation, caching, and error handling.
-
-### Step 14: Implement Task 4 - Frontend UI: button, loading state, result card
-
-1. In the Kiro chat panel, provide the following prompt:
-
-```
-Implement Task 4 from the weekly-nutrition-summary spec.
-```
-
-2. Kiro will edit src/routes/food-tracker.tsx and propose a diff that adds React component(s) for the summary
-  feature plus wires them into the existing FoodTracker component. You'll see a sizeable diff.
-
-3. Review the diff before clicking Apply.
-
-**Expected Result:** All tasks are complete. The feature is fully implemented.
-
-### Step 15: End-to-end test
-
-1. Restart your web server if it's not running.
-
-2. Open your browser at http://localhost:3000/food-tracker.
-
-3. Confirm you have at least 3 food entries with createdAt in the last 7 days. If your entries are older or fewer
-  than 3, add new ones via the form first.
-
-5. Click Generate Weekly Summary.
-
-6. If you get an error such as: "Failed to prase Bedrock Response as JSON", simply paste the error into Kiro and it will fix it. 
 ---
 
 ## Validation Checklist
 
-Verify your lab completion by confirming:
-
-- [ ] Specs panel shows approved requirements document
-- [ ] Specs panel shows approved design document
-- [ ] Specs panel shows all tasks marked complete
-- [ ] Food entries with EXPIRING SOON badge
-- [ ] Summary shows 2-3 sentence overview
-- [ ] Summary shows total of nutritional values
-- [ ] Summary provides suggestions
-
----
-
-## Troubleshooting
-
-### Issue: "Access Denied" when calling Bedrock
-**Solution:**
-1. Run `aws configure` to verify credentials are set.
-2. In the AWS Console, go to **Bedrock** > **Model access** and ensure Claude models are enabled.
-3. Verify your IAM role/user has `bedrock:InvokeModel` permission.
-
-### Issue: Requirements document seems incomplete
-**Solution:** You can edit the document directly or ask Kiro to add specific requirements. The document is editable until approved.
-
-### Issue: Bedrock returns malformed JSON
-**Solution:** The prompt may need adjustment. Ensure the prompt clearly specifies JSON output format. Check that the response is not being truncated (increase `max_tokens` if needed).
-
-### Issue: Summary takes longer than 3 seconds
-**Solution:**
-1. Verify caching is working (second load should be fast).
-2. Check network latency to Bedrock in your region.
-3. Consider reducing the number of reviews sent to Bedrock.
-
-### Issue: "Insufficient reviews" error for products with reviews
-**Solution:** Verify the reviews are being fetched correctly from DynamoDB. Check that the table name matches your environment configuration.
-
-### Issue: Component shows loading spinner indefinitely
-**Solution:**
-1. Check browser console for errors.
-2. Verify the API endpoint is deployed and accessible.
-3. Check Lambda function logs in CloudWatch.
+- [ ] Approved `requirements.md`
+- [ ] Approved `design.md`
+- [ ] All `tasks.md` tasks complete
+- [ ] "Generate Weekly Summary" button visible on the food-tracker page
+- [ ] Loading state appears, then card renders
+- [ ] Card shows total calories, average daily calories, and macros summing to 100%
+- [ ] Card shows a 2–3 sentence narrative and 2–3 suggestions
+- [ ] Fewer than 3 recent entries shows friendly message instead of calling Bedrock
 
 ---
 
 ## Summary
 
-In this lab, you accomplished the following:
-
-1. **Generated Requirements** - Transformed a natural language feature description into formal requirements with user stories, acceptance criteria, and edge cases using Kiro's spec workflow
-
-2. **Created Technical Design** - Generated architecture documentation, TypeScript interfaces, and error handling strategies that serve as a blueprint for implementation
-
-3. **Sequenced Implementation Tasks** - Let Kiro break down the work into discrete, dependency-ordered tasks for systematic implementation
-
-4. **Integrated Amazon Bedrock** - Built a reusable Bedrock client with retry logic and proper error handling
-
-5. **Implemented Complete Feature** - Created summarization service, API endpoint with caching, and frontend component following the spec-driven approach
-
-You now have:
-- A working AI-powered feature integrated with Amazon Bedrock
-- Requirements documentation explaining WHAT was built and WHY
-- Design documentation explaining HOW it is built
-- Task history showing the implementation sequence
-- Code that handles edge cases and errors gracefully
-
-This spec-driven approach ensures your features are documented, testable, and maintainable-ready for production deployment and team collaboration.
+You used Kiro's spec workflow to generate requirements, design, and tasks, then implemented an AI-powered weekly nutrition summary backed by Amazon Bedrock. The spec-driven approach gives you traceable documentation alongside working code — `requirements.md`, `design.md`, and `tasks.md` capture *what*, *why*, and *how* the feature was built.

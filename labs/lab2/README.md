@@ -43,7 +43,7 @@ docker compose exec app aws bedrock list-foundation-models \
 
 ### Step 1: Create a new spec
 
-`Cmd+Shift+P` / `Ctrl+Shift+P` → `Kiro: New Spec` → choose **Feature** → **Requirements-First**.
+`Cmd+Shift+P` / `Ctrl+Shift+P` → `Kiro: create a new spec`.
 
 ### Step 2: Describe the feature
 

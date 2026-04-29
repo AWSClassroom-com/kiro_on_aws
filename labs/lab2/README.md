@@ -23,6 +23,7 @@ Kiro installed and signed in. Food-tracker app running at `http://localhost:3000
 In Kiro open the integrated terminal: `` Ctrl+` `` (backtick), or **View → Terminal**.
 
 ```bash
+cd ~/class-projects/kiro_on_aws/kiro-project/sample-food-tracker-tanstack-kiro-alldocker
 docker compose exec app aws login --remote
 ```
 

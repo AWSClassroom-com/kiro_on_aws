@@ -254,6 +254,26 @@ sudo rpm -i kiro_*.rpm
 
 ---
 
+## Part E: Vibe Coding Simple Functionality
+
+**Scenario**:
+
+1. Open a new chat session by clicking the **+** button at the top of teh AI Chat Panel
+
+2. Type the following prompt and press ENTER:
+```
+On the food tracker page (food-tracker.tsx), add a sort and filter bar above the food entry cards inside FoodEntriesList.
+- A text input that filters entries by name (case-insensitive)
+- A dropdown to sort by: Default (newest first), Name (A–Z), Calories (high to low), Expiration Date (soonest first)
+The filtering and sorting should be done in-memory using React state — do not change any server functions or database logic. Entries with a null expiration date should appear last when sorting by expiration date. The bar should match the existing dark slate styling of the page.
+```
+
+3. Review and Accept the generated code.
+
+4. You may need to refresh your browser to see the change.
+
+**Expected Result**: There is now a filter bar and dropdown below the "Your Food Entries" title.
+
 ## Validation Checklist
 
 Verify your lab completion by confirming:
@@ -264,6 +284,7 @@ Verify your lab completion by confirming:
 - [ ] Food Entries display correctly
 - [ ] The EXPIRING SOON badge appears on expiring food entries
 - [ ] The badge has a pulse animation
+- [ ] Filter bar and dropdown exist and are working correctly
 
 ---
 

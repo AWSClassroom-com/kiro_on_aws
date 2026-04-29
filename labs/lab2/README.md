@@ -20,12 +20,13 @@ Build an AI-powered nutrition summary feature using Kiro's spec-driven workflow:
 Kiro installed and signed in. Food-tracker app running at `http://localhost:3000`.
 
 ### 2. AWS credentials in the container
+In Kiro open the integrated terminal: `` Ctrl+` `` (backtick), or **View → Terminal**.
 
 ```bash
 docker compose exec app aws login --remote
 ```
 
-Complete the SSO flow in your browser. Credentials land in `~/.aws` inside the container; the SDK picks them up automatically.
+Complete the login flow in your browser. Credentials land in `~/.aws` inside the container; the SDK picks them up automatically.
 
 ### 3. Verify access
 

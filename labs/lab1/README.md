@@ -224,6 +224,8 @@ sudo rpm -i kiro_*.rpm
    - Check that styling is appropriate.
    - Confirm edge cases are handled (e.g., missing createdAt).
 
+  If any of this is incorrect chat back and forth to Kiro until it looks right.
+
 6. Click **Accept** to add the code to your file. (If Kiro produces more steps you may need to also click **Accept All**)
 
 7. Refresh your browser at `http://localhost:3000`.

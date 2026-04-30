@@ -181,7 +181,11 @@ Before making any code changes, reply in chat with:
 Implement only that one task. Do not bundle multiple tasks together. Do not add files or features the task does not explicitly require. Wait for my approval of the diff before moving on.
 ```
 
-For each subsequent task, send: `Implement the next unchecked task using the same protocol.`
+For each subsequent task, send: 
+
+```
+Implement the next unchecked task using the same protocol.
+```
 
 For each task:
 

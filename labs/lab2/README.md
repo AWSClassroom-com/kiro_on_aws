@@ -69,7 +69,6 @@ Requirements:
 - Show a loading state while Bedrock is generating the summary (typically 2-4 seconds).
 - Display the result in a card below the button.
 - Handle the edge case where the user has fewer than 3 entries in the last 7 days: show a friendly message instead of calling Bedrock.
-- The Bedrock model ID is anthropic.claude-sonnet-4-5-20250929-v1:0.
 - The Bedrock API uses anthropic_version "bedrock-2023-05-31".
 - The result must NOT be persisted (no DynamoDB writes); it is a transient view-only summary.
 ```

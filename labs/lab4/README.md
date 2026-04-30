@@ -1,8 +1,8 @@
 # Lab 4: Chat Panel and Production Deployment
 
-Use Kiro's spec-driven workflow to build a chat panel into the food-tracker that calls `InvokeAgent` against the `MealRecommendationAgent` from Lab 3. Then deploy the app to AWS Amplify Hosting with a manual zip upload — no GitHub account required. An optional final part covers the GitHub Actions + OIDC pipeline.
+Use Kiro's spec-driven workflow to build a chat panel into the food-tracker that calls `InvokeAgent` against the `MealRecommendationAgent` from Lab 3. Then deploy the app to AWS Amplify Hosting by connecting your GitHub repo, following the [AWS Amplify Next.js getting-started guide](https://docs.aws.amazon.com/amplify/latest/userguide/getting-started-next.html). Every push to `trunk` redeploys both the backend and frontend automatically.
 
-**Time:** ~90 minutes (Part G adds ~30 more)
+**Time:** ~90 minutes
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
 
 ## Working with Kiro
@@ -30,7 +30,11 @@ aws sts get-caller-identity --no-cli-pager
 
 If expired: `aws login --region <your-region>`.
 
-### 4. Create a Bedrock Agent alias and capture IDs
+### 4. GitHub account
+
+You'll need a GitHub account to host the repo Amplify deploys from. If you don't already have one, sign up at https://github.com/signup.
+
+### 5. Create a Bedrock Agent alias and capture IDs
 
 The test alias from Lab 3 (`TSTALIASID`) only works in the Console test panel. Create a real alias.
 
@@ -199,15 +203,17 @@ If anything fails, the sandbox terminal has the Lambda logs streaming. Paste any
 
 ---
 
-## Part E: Promote the Backend with `ampx pipeline-deploy`
+## Part E: Deploy via GitHub-Connected Amplify Hosting
 
-The sandbox is tied to your developer machine. Move the backend onto a durable Amplify app + branch combo before deploying the frontend publicly.
+The sandbox is tied to your developer machine. Push your work to GitHub and connect the repo to AWS Amplify Hosting — every push to `trunk` will redeploy both backend and frontend automatically. This follows the [AWS Amplify Next.js getting-started guide](https://docs.aws.amazon.com/amplify/latest/userguide/getting-started-next.html).
 
 ### Step 9: Stop the sandbox watcher
 
 Terminal 1 → `Ctrl+C`. Resources persist until you run `ampx sandbox delete`.
 
 ### Step 10: Verify CDK is bootstrapped
+
+Amplify Gen 2 builds use CDK under the hood, so the toolkit must be bootstrapped in your account/region.
 
 ```bash
 aws cloudformation describe-stacks \
@@ -222,170 +228,77 @@ Expect `CREATE_COMPLETE` or `UPDATE_COMPLETE`. If not:
 npx cdk bootstrap aws://$(aws sts get-caller-identity --query Account --output text --no-cli-pager)/$(aws configure get region)
 ```
 
-### Step 11: Create the Amplify app and branch
+### Step 11: Push your code to GitHub
+
+Fork `https://github.com/AWSClassroom-com/kiro_on_aws` to your account. Then from your local food-tracker directory:
 
 ```bash
-APP_ID=$(aws amplify create-app \
-  --name food-tracker-$(whoami) \
-  --platform WEB \
-  --query "app.appId" --output text --no-cli-pager)
-echo "App ID: $APP_ID"
-
-aws amplify create-branch \
-  --app-id $APP_ID --branch-name trunk --no-cli-pager
+cd ~/class-projects/kiro_on_aws/kiro-project/food-tracker
+git remote add fork https://github.com/<your-username>/kiro_on_aws.git
+git checkout -b trunk
+git add .
+git commit -m "lab 4 work"
+git push fork trunk
 ```
 
-Save the App ID.
+> If your local isn't a Git repo yet: run `git init` first, then the commands above. Use `--force` if needed.
 
-### Step 12: Deploy the backend
+Confirm on GitHub that the `trunk` branch on your fork has your food-tracker code (including the `amplify/` folder).
 
-```bash
-npx ampx pipeline-deploy --branch trunk --app-id $APP_ID
+### Step 12: Bootstrap and Connect the repo to Amplify Hosting
+
+In the AWS Console, top-right region selector → US West (Oregon) us-west-2                                                                                                                    
+Top-right toolbar → click the >_ CloudShell icon (next to the bell/notifications)                                                                                                             
+Wait ~10 seconds for the shell to launch, then paste:
+
+```
+cdk bootstrap aws://$(aws sts get-caller-identity --query Account --output text)/$AWS_REGION
 ```
 
-5–10 minutes. Writes a fresh `amplify_outputs.json` pointing at the new stack.
+Next navigate in the Mangagement Console to: **AWS Amplify** and click **Deploy an app** (or **Create new app** if you've used Amplify in this region before) → choose **GitHub** → **Next**.
 
-### Step 13: Re-point the agent's action group at the new Lambda
+Authorize the **AWS Amplify GitHub App** on your fork when prompted. Amplify uses deploy keys scoped to that one repository — your GitHub token isn't stored on AWS servers.
 
-`pipeline-deploy` created a new `meal-recommendations` Lambda with a new ARN. The agent's action group still points at the sandbox one.
+On **Add repository branch**:
+- **Repository:** `<your-username>/kiro_on_aws`
+- **Branch:** `trunk`
+- **My app is a monorepo**: Tick the box
+  - **Monorepo root directory**: kiro-project/food-tracker
+- Click **Next**.
+
+On **App settings**:
+- **App name:** `food-tracker-<your-username>`
+- **Frontend build command** and **Build output directory:** Amplify auto-detects these from `package.json` and the `amplify/` folder. It will add `npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID` to the build phase for the Gen 2 backend. Leave the detected settings as-is.
+- **Service role:** choose **Create and use a new service role**. Amplify attaches the `AmplifyBackendDeployFullAccess` managed policy automatically so the build can deploy your backend.
+- Click **Next**.
+
+On **Review**: confirm everything, then click **Save and deploy**.
+
+### Step 13: Wait for the first deploy and capture the App ID
+
+The first build provisions the backend (Cognito, AppSync, DynamoDB, the `meal-recommendations` Lambda, the `invoke-meal-agent` Lambda) and then deploys the frontend. Watch the build logs on the `trunk` branch page. Total: 5–10 minutes.
+
+When **Provision**, **Build**, **Deploy**, and **Verify** all show green, capture the **App ID** from the top of the app overview page. You'll see it in the URL too: `https://<region>.console.aws.amazon.com/amplify/apps/<APP_ID>/...`.
+
+### Step 14: Re-point the agent's action group at the new Lambda
+
+The deploy created a new `mealrecommendations` Lambda with a new name. The agent's action group still points at the sandbox one from Lab 3.
 
 ```bash
 aws lambda list-functions \
-  --query "Functions[?contains(FunctionName,'mealrecommendations')&&contains(FunctionName,'trunk')].FunctionArn" \
-  --output text --no-cli-pager
+  --query "Functions[?starts_with(FunctionName,'amplify-foodstarter')&&contains(FunctionName,'mealrecommendations')].FunctionName" \
+  --output text
 ```
 
-Bedrock Console → **Agents** → **MealRecommendationAgent** → **Edit in Agent Builder** → **FoodEntryTools** action group → change Lambda ARN to the new one → **Save** → back on agent overview → **Prepare**.
+Copy the name. Then in Bedrock Console → **Agents** → **MealRecommendationAgent** → **Edit in Agent Builder** → **FoodEntryTools** action group → change Lambda name to the new one → **Save** → back on the agent overview → **Prepare**.
 
 Then **Aliases** → click `v1` → **Edit** → **Associate a new version** → **Create a new version and associate it** → **Save**.
 
----
+### Step 15: Test the public URL
 
-## Part F: Deploy the Frontend with "Deploy without Git"
+The branch page shows a URL like `https://trunk.d1a2b3c4d5e6f7.amplifyapp.com`. Open it. Add a few food items. Test the chat panel — it should now hit the agent's `v1` alias backed by your production Lambda.
 
-### Step 14: Build
-
-```bash
-npm run build
-```
-
-### Step 15: Zip the build output
-
-Zip the *contents* of `dist/`, not the folder.
-
-```bash
-cd dist
-zip -r ../food-tracker.zip .
-cd ..
-```
-
-Windows PowerShell: `Compress-Archive -Path dist\* -DestinationPath food-tracker.zip`.
-
-### Step 16: Upload via the Amplify Console
-
-Console → **AWS Amplify** → click your app (`food-tracker-<your-username>`) → click into the **trunk** branch → use the manual deploy / drop zone for that branch → upload `food-tracker.zip`.
-
-If the Console UI for re-uploading to an existing branch isn't surfacing, fall back to the CLI:
-
-```bash
-aws s3 cp food-tracker.zip s3://<your-bucket>/food-tracker.zip
-aws amplify start-deployment \
-  --app-id $APP_ID --branch-name trunk \
-  --source-url s3://<your-bucket>/food-tracker.zip --no-cli-pager
-```
-
-Wait 1–2 minutes.
-
-### Step 17: Test the public URL
-
-App overview shows a URL like `https://trunk.d1a2b3c4d5e6f7.amplifyapp.com`. Open it. Sign up (Cognito state doesn't carry from sandbox). Add a few food items. Test the chat panel.
-
----
-
-## Part G (Optional): Deploy via GitHub Actions with OIDC
-
-Skip if you don't have a GitHub account. Adds 30–45 minutes.
-
-### Step 18: Fork the course repo and push your work
-
-Fork `https://github.com/AWSClassroom-com/kiro_on_aws` to your account. Then:
-
-```bash
-cd path/to/your/local/food-tracker
-git remote add fork https://github.com/<your-username>/kiro_on_aws.git
-git push fork trunk
-```
-
-> If your local isn't a Git repo: `git init && git checkout -b trunk && git add . && git commit -m "lab work"`, then push. Use `--force` if needed.
-
-### Step 19: Create the OIDC identity provider
-
-IAM Console → **Identity providers** → **Add provider**:
-- Type: **OpenID Connect**
-- URL: `https://token.actions.githubusercontent.com`
-- Audience: `sts.amazonaws.com`
-
-### Step 20: Create the deploy role
-
-IAM → **Roles** → **Create role** → **Web identity**:
-- Provider: the GitHub provider above
-- Audience: `sts.amazonaws.com`
-- GitHub org: your username
-- Repository: `kiro_on_aws`
-- Branch: `trunk`
-
-Attach `AdministratorAccess` (lab simplicity — production would scope down). Name it `food-tracker-github-deploy`. Copy the role ARN.
-
-### Step 21: Generate the workflow file
-
-In Kiro chat:
-
-```
-Create .github/workflows/deploy.yml. Trigger on push to trunk and PRs targeting trunk. Four jobs: lint, test, security, deploy.
-
-- lint: npx biome ci src/ amplify/
-- test: npm test
-- security: npm audit --audit-level=high; plus a grep-based check for AKIA/ASIA prefixes in src/, amplify/, scripts/.
-- deploy: needs [lint, test, security] AND if: github.ref == 'refs/heads/trunk'.
-  - permissions: id-token: write, contents: read.
-  - Steps: actions/checkout@v4, actions/setup-node@v4 (Node 20), aws-actions/configure-aws-credentials@v4 (role from secrets.AWS_DEPLOY_ROLE_ARN, region from secrets.AWS_REGION).
-  - npm ci.
-  - npx ampx pipeline-deploy --branch trunk --app-id ${{ secrets.AWS_AMPLIFY_APP_ID }}.
-  - npm run build.
-  - curl POST to ${{ secrets.AMPLIFY_FRONTEND_WEBHOOK_URL }} to trigger the Amplify hosted frontend build.
-
-Pin all third-party actions to a major version (@v4). No @main / @master.
-```
-
-Confirm the generated file has both `id-token: write` AND `contents: read` (the second is silently required for `actions/checkout` once any explicit permission is set), and that the `if:` line is `'refs/heads/trunk'`, not `'refs/heads/main'`.
-
-### Step 22: Configure the Amplify webhook and GitHub secrets
-
-Amplify Console → your app → **App settings** → **Build settings** → **Incoming webhooks** → **Create webhook** → name `trunk-deploy`, branch `trunk` → copy the curl URL.
-
-GitHub fork → **Settings** → **Secrets and variables** → **Actions** → add:
-- `AWS_DEPLOY_ROLE_ARN` (from Step 20)
-- `AWS_REGION`
-- `AWS_AMPLIFY_APP_ID` (from Step 11)
-- `AMPLIFY_FRONTEND_WEBHOOK_URL` (the URL portion of the curl command above)
-
-### Step 23: Push and watch it run
-
-```bash
-git add .github/workflows/deploy.yml
-git commit -m "ci: add deployment workflow"
-git push fork trunk
-```
-
-GitHub fork → **Actions** tab. Lint, test, and security run in parallel. Deploy waits on all three. Total runtime 5–10 minutes.
-
-### Step 24: Validate the safety net
-
-Introduce a deliberate test failure. Push. Confirm:
-- The failing job: red.
-- The deploy job: marked **Skipped**, not Failed.
-
-Revert the failure. Push. Deploy resumes.
+From here, every `git push fork trunk` triggers an automatic redeploy of both backend and frontend. No keys, no zip uploads, no manual `pipeline-deploy` calls.
 
 ---
 
@@ -396,20 +309,20 @@ Revert the failure. Push. Deploy resumes.
 - [ ] Sandbox redeployed cleanly with the new function
 - [ ] Chat panel opens, accepts messages, returns responses naming real items from FoodItem
 - [ ] sessionId threads turns within a conversation; "New conversation" resets it
-- [ ] `ampx pipeline-deploy --branch trunk --app-id $APP_ID` completed
+- [ ] Code pushed to GitHub fork on the `trunk` branch
+- [ ] GitHub repo connected to Amplify Hosting; first build (Provision, Build, Deploy, Verify) all green
 - [ ] Agent's `v1` alias re-pointed at a new version targeting the production `meal-recommendations` Lambda
-- [ ] `food-tracker.zip` deployed to Amplify (Console or CLI fallback)
 - [ ] Public Amplify URL loads, signup works, chat panel works against production backend
-- [ ] (Optional, Part G) Workflow in `.github/workflows/deploy.yml`, secrets configured, deploy completes from a Git push, deploy is Skipped when an earlier job fails
+- [ ] A second `git push fork trunk` triggers an automatic redeploy
 
 ---
 
 ## Summary
 
-You used Kiro's spec workflow to add a chat panel feature to the food-tracker — a Lambda + AppSync custom query + React panel — calling the Bedrock Agent from Lab 3. Then you promoted the backend off the developer-tied sandbox onto a durable Amplify app and branch with `ampx pipeline-deploy`, and shipped the frontend with a manual zip upload. Optional Part G replaced the manual flow with GitHub Actions + OIDC, so every push to `trunk` runs lint, test, security, and deploy automatically with no AWS keys stored in GitHub.
+You used Kiro's spec workflow to add a chat panel feature to the food-tracker — a Lambda + AppSync custom query + React panel — calling the Bedrock Agent from Lab 3. Then you promoted the backend off the developer-tied sandbox by pushing your code to GitHub and connecting the repo to AWS Amplify Hosting. Amplify now redeploys both backend and frontend automatically on every push to `trunk`.
 
 Take-homes from this lab:
 
 - Spec-driven works the same for an integration feature (calling another AWS service via Lambda) as for a UI feature.
 - A versioned alias on a Bedrock Agent gives you the rollback boundary you'll want the first time something goes wrong in production.
-- Manual zip deploy and GitHub Actions + OIDC are the same `ampx pipeline-deploy` underneath — different operational ceremony around it.
+- Connecting Amplify Hosting to a Git repo gives you a CI/CD pipeline for free — Amplify auto-detects Gen 2 build settings, runs `ampx pipeline-deploy` for you, and stores no AWS credentials anywhere outside its managed service role.

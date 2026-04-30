@@ -172,7 +172,7 @@ In the Kiro pane → **Agent Hooks** → **+** → **Ask Kiro to create a hook**
 ```
 Create a hook named "format-on-save" that fires when a TypeScript or TypeScript-React file is saved. Trigger type: fileEdited. File patterns: **/*.ts, **/*.tsx. Exclude node_modules, dist, and amplify_outputs.json.
 
-Action type: runCommand. Command: npx biome format --write {file}
+Action type: runCommand. Command: npx biome format --write src/ amplify/ scripts/
 
 The {file} placeholder is replaced with the path of the file that triggered the hook.
 
@@ -190,8 +190,6 @@ const   foo  =      'bar'   ;
 ```
 
 Save. The Run Command hook fires Biome silently. Reopen the file (or watch the editor refresh) — the line is reformatted to clean spacing and proper quotes.
-
-> Why two action types side-by-side? You'll feel the difference. The security hook takes 3-5 seconds and produces a chat message. The format hook is instant and produces no output unless something fails. The slide called these "complementary"; this is what that means in practice. Reach for Run Command when the answer is unambiguous; reach for Ask Kiro when context matters.
 
 Both hook files now live under `.kiro/hooks/` and travel with the repo. A teammate who clones the project gets both hooks running automatically — no setup.
 

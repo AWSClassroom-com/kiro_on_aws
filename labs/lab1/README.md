@@ -110,7 +110,7 @@ cd kiro_on_aws/kiro-project/food-tracker
 
 ### Step 6: Open the project in Kiro
 
-`Cmd+Shift+P` / `Ctrl+Shift+P` → `File: Open Folder` → select `food-tracker`. When prompted, trust the authors.
+`Cmd+Shift+P` / `Ctrl+Shift+P` → `File: Open Folder` → select `class-projects/kiro_on_aws/kiro-project/food-tracker`. When prompted, trust the authors.
 
 The status bar will show an indexing indicator while Kiro analyzes the codebase.
 

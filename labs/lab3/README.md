@@ -1,763 +1,406 @@
-# Lab 3: Hooks and Product Recommendations
+# Lab 3: Hooks, Steering, and a Meal Recommendation Agent
 
-## Overview
+Use Kiro for two distinct kinds of automation. First, refine your steering files and create two hooks — one **Ask Kiro** (security scan) and one **Run Command** (format on save) — so you've used both action types and the hook-plus-steering pairing the module covered. Then build an **Amazon Bedrock Agent** that recommends meals from the user's food entries: have Kiro generate the agent instructions, the action-group OpenAPI schema, and the Lambda tool code, then configure the agent in the AWS Console and smoke-test it with the trace panel open.
 
-In this lab, you will implement two practical features that address real-world development needs. First, you will create Kiro hooks to automate security scanning and code quality enforcement. Second, you will build a personalized product recommendation engine using Amazon Bedrock Agents.
+**Time:** 70 minutes
+**Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
 
-By the end of this lab, your application will automatically prevent credential leaks and provide users with AI-powered product recommendations based on their purchase and browsing history.
+## Working with Kiro
+
+- Open chat: `Cmd+L` (macOS) / `Ctrl+L` (Windows/Linux). Open command palette: `Cmd+Shift+P` / `Ctrl+Shift+P`.
+- Prefer chat and command palette over clicking buttons — button labels change between versions.
+- Agent output varies between runs. Expected results describe outcomes, not exact text. If something looks wrong, tell Kiro in chat.
+- Always read diffs before accepting.
+
+---
 
 ## Prerequisites
 
-- Lab 2 completed (review summarization feature implemented)
-- Kiro IDE installed and configured
-- AWS Console access with permissions for Amazon Bedrock
-- acme-webshop project open in Kiro
-- AWS region set to `us-east-1`
+### 1. Lab 2 complete
+The weekly nutrition summary feature is working end-to-end. Foundational steering files (`product.md`, `tech.md`, `structure.md`) exist in `.kiro/steering/` from Lab 1.
 
-## Time Estimate
+### 2. Sandbox + dev server running
+From `kiro-project/food-tracker`, both terminals are still up: `npm run amplify:sandbox` (terminal 1) and `npm run dev` (terminal 2). The food-tracker app is reachable at `http://localhost:3000`.
 
-65 minutes
+### 3. AWS CLI session valid
 
-## Learning Objectives
+```bash
+aws sts get-caller-identity --no-cli-pager
+```
 
-By the end of this lab, you will be able to:
-- Create Kiro hooks using natural language descriptions
-- Configure security scanning hooks that block commits containing credentials
-- Set up code quality hooks that provide warnings without blocking
-- Create and configure Amazon Bedrock Agents with action groups
-- Implement Lambda functions for agent tools
-- Integrate personalized recommendations into a React application
+If it fails with an expired-token error, re-run `aws login --region <your-region>` from Lab 1.
 
-**Course Repository:** **https://github.com/AWSClassroom-com/kiro_on_aws**
+### 4. Bedrock Claude Sonnet 4.5 access
+
+Confirm the agent's foundation model is available in your region:
+
+```bash
+aws bedrock list-foundation-models \
+  --query "modelSummaries[?modelId=='anthropic.claude-sonnet-4-5-20250929-v1:0']" \
+  --output table --no-cli-pager
+```
+
+If the result is empty, model access hasn't been enabled in this account/region — your instructor will help.
 
 ---
 
-## Part A: Creating the Security Scanning Hook
+## Part A: Refine Steering with a Security File
 
-In this section, you will create a pre-commit hook that automatically scans for accidentally committed secrets such as AWS keys, API keys, and database credentials.
+Lab 1 created the three foundational steering files. Now you'll add a fourth — `security.md` — that captures rules the security hook in Part B will reference, including an allowlist of strings that *look* like credentials but aren't.
 
-### Step 1: Open the Hooks Panel
+### Step 1: Open the Steering panel
 
-1. In Kiro, locate the **Hooks** icon in the activity bar on the left side (lightning bolt symbol).
-2. Click the Hooks icon to open the panel.
-3. Review any existing hooks from previous labs.
+Click the **Kiro** icon (ghost) in the activity bar. Find the **Steering** section. You should see your three foundational files. Click each once and skim them to refresh your memory.
 
-**Expected Result:** The Hooks panel opens, displaying a list of existing hooks (if any) and a button to create new hooks.
+### Step 2: Add a security steering file
 
-### Step 2: Create a New Security Hook
+In the Steering section, click **+** to add a new file. Name it `security.md`. Replace the default contents with:
 
-1. Click **Create New Hook**.
-2. In the description field, enter the following:
+```markdown
+---
+inclusion: always
+---
 
-```
-Create a pre-commit hook that scans TypeScript and JavaScript files for accidentally committed secrets. Look for:
-- AWS access keys (AKIA followed by 16 characters)
-- AWS secret keys (40 character strings near "secret" keywords)
-- API keys assigned to variables
-- Private keys (BEGIN PRIVATE KEY)
-- Database connection strings with passwords
+# Security Rules
 
-If any secrets are found, block the commit and show exactly where the secret is located. Ignore environment variable references like process.env.SECRET and common placeholder values like "YOUR_KEY_HERE".
-```
+## What counts as a credential in this codebase
 
-3. Click **Generate Hook**.
+Treat any of the following as a hardcoded credential and flag it:
 
-**Expected Result:** Kiro generates a YAML configuration for the hook. Wait for the generation to complete (5-10 seconds).
+- AWS access key IDs — strings matching `AKIA[A-Z0-9]{16}` (long-term IAM user keys) or `ASIA[A-Z0-9]{16}` (temporary STS keys). Both prefixes are equally important; ASIA keys are now the majority in modern AWS deployments.
+- Private keys — anything containing `-----BEGIN ... PRIVATE KEY-----` (RSA, EC, OpenSSH, PGP variants).
+- Database connection strings with embedded credentials — `postgres://user:password@…`, `mongodb://…`, `mysql://…`.
+- GitHub tokens — strings beginning with `ghp_`, `gho_`, `ghu_`, `ghs_`, or `ghr_`.
+- Plain password assignments where the value is a real secret — `password = "…"`, `passwd: …`, `pwd: …`.
 
-### Step 3: Review the Generated Configuration
+## Where credentials must NOT live
 
-Examine the generated hook configuration. It should look similar to:
+Source files (`.ts`, `.tsx`, `.js`, `.jsx`, `.json`, `.yaml`, `.yml`, `.env*`). Anything under `amplify/`, `src/`, or `scripts/`.
 
-```yaml
-name: Security Credential Scanner
-description: Scans for accidentally committed secrets
-trigger:
-  event: pre-commit
-  files:
-    include:
-      - "**/*.ts"
-      - "**/*.tsx"
-      - "**/*.js"
-      - "**/*.jsx"
-      - "**/*.json"
-    exclude:
-      - "node_modules/**"
-      - "**/*.test.ts"
-      - "**/*.spec.ts"
-      - "dist/**"
-action: block
-system_prompt: |
-  You are a security scanner. Analyze the provided code for secrets.
+## Where credentials SHOULD live
 
-  DETECT these patterns:
-  1. AWS Access Keys: AKIA[0-9A-Z]{16}
-  2. AWS Secret Keys: 40-character strings near "secret", "key", "aws"
-  3. API Keys: strings assigned to variables like apiKey, api_key
-  4. Private Keys: -----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----
-  5. Connection strings: mongodb://, postgres://, mysql:// with passwords
+- For service-to-service calls inside AWS: IAM roles. The default credential chain picks them up — no static keys in code.
+- For configuration: AWS Systems Manager Parameter Store.
+- For credentials that need rotation: AWS Secrets Manager.
 
-  IGNORE:
-  - process.env.* references
-  - Placeholder values: YOUR_KEY_HERE, xxx, placeholder, example
-  - AWS example keys from documentation
+## Allowlist — known-safe strings that may match credential patterns
 
-  OUTPUT JSON:
-  {"blocked": boolean, "findings": [{"type": string, "line": number, "match": string, "recommendation": string}]}
+These are documentation/test values and must NOT be flagged as real credentials:
+
+- `AKIAIOSFODNN7EXAMPLE` — AWS's reserved example access key ID. Cannot be activated; safe to commit anywhere.
+- `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` — AWS's reserved example secret access key.
+- Any string ending in the literal word `EXAMPLE` (case-sensitive).
+- Strings inside files under `__tests__/` or matching `*.test.ts` / `*.spec.ts` — test fixtures intentionally use placeholder credentials.
 ```
 
-1. Verify the trigger is set to `event: pre-commit`.
-2. Confirm the action is set to `block`.
-3. Check that `node_modules/**` and `dist/**` are excluded.
+Save the file. The frontmatter `inclusion: always` means Kiro will load this file into context on every interaction (including when the security hook in Part B fires). This is the concrete form of the allowlist-via-steering pattern from the module: the hook says "scan now"; this file tells it what counts and what doesn't.
 
-### Step 4: Save the Security Hook
-
-1. Make any necessary adjustments to the patterns or exclusions.
-2. Click **Save Hook**.
-
-**Expected Result:** The hook appears in your Hooks panel with an enabled status.
-
-### Step 5: Test the Security Hook
-
-1. Create a new test file by opening the terminal in Kiro and running:
-   ```bash
-   touch src/test-secrets.ts
-   ```
-
-2. Open `src/test-secrets.ts` and add the following content:
-   ```typescript
-   // This file is for testing the security hook
-   const awsAccessKey = "AKIAIOSFODNN7EXAMPLE";
-   const awsSecretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
-   const apiKey = "sk-1234567890abcdef";
-   ```
-
-3. Save the file.
-4. In the terminal, attempt to commit:
-   ```bash
-   git add src/test-secrets.ts
-   git commit -m "Test commit"
-   ```
-
-**Expected Result:** The commit should be **blocked**. You should see output similar to:
-
-```
-Security Hook: Commit blocked. Found 3 potential secrets:
-- Line 2: AWS Access Key pattern detected
-- Line 3: AWS Secret Key pattern detected
-- Line 4: API Key pattern detected
-```
-
-### Step 6: Clean Up the Test File
-
-1. Delete the test file:
-   ```bash
-   rm src/test-secrets.ts
-   git restore src/test-secrets.ts 2>/dev/null || true
-   ```
-
-**Expected Result:** The test file is removed and no longer staged for commit.
+> Why Always inclusion? Security rules apply to every file Kiro touches. Conditional inclusion would miss code paths; Manual would require remembering to invoke it. Always is correct here even though it costs context tokens on every turn — security is the right thing to spend that budget on.
 
 ---
 
-## Part B: Creating the Code Quality Hook
+## Part B: A File-Save Security Hook (Ask Kiro action)
 
-In this section, you will create a non-blocking hook that warns about code quality issues when files are saved.
+The module covered two hook action types. **Ask Kiro** sends a natural-language prompt to the agent — slow, costs tokens, but the agent reads context and uses judgment. **Run Command** runs a shell command — fast, free, deterministic. Use Ask Kiro when the question requires judgment ("is this a real secret or a test fixture?"). Use Run Command when there's a single right answer ("does this file pass the linter?").
 
-### Step 7: Create the Code Quality Hook
+This part builds an Ask Kiro hook. Part C builds a Run Command hook so you've used both.
 
-1. In the Hooks panel, click **Create New Hook**.
-2. Enter the following description:
+### Step 3: Open the Hooks panel
 
-```
-Create a hook that runs on file save for TypeScript files. Check for:
-- Console.log statements (should be removed before commit)
-- Unused variables
-- Missing return types on exported functions
-- TODO comments without associated issue numbers
+In the Kiro pane (ghost icon in the activity bar), find **Agent Hooks**. Click **+** → **Ask Kiro to create a hook**.
 
-Don't block, just show warnings. Also suggest fixes where possible.
-```
+### Step 4: Describe the hook
 
-3. Click **Generate Hook**
-
-**Expected Result:** Kiro generates a YAML configuration with `event: file_save` and `action: alert`.
-
-### Step 8: Review and Save the Quality Hook
-
-1. Verify the configuration includes:
-   - `trigger.event: file_save`
-   - `action: alert` (not `block`)
-   - File patterns for `.ts` and `.tsx` files
-
-2. Click **Save Hook**.
-
-**Expected Result:** The code quality hook appears in the Hooks panel.
-
-### Step 9: Test the Code Quality Hook
-
-1. Open any TypeScript file in your project (e.g., `src/App.tsx`).
-2. Add a console.log statement anywhere in the file:
-   ```typescript
-   console.log("debug output");
-   ```
-3. Save the file.
-
-**Expected Result:** A warning notification appears indicating the console.log statement. The save completes successfully (not blocked).
-
-4. Remove the console.log statement and save again.
-
-**Expected Result:** The warning disappears.
-
----
-
-## Part C: Setting Up Amazon Bedrock Agents
-
-In this section, you will create a Bedrock Agent that provides personalized product recommendations.
-
-### Step 10: Navigate to Bedrock Agents
-
-1. Open the AWS Console at https://console.aws.amazon.com
-2. Ensure you are in the `us-east-1` region.
-3. Search for **Bedrock** in the services search bar.
-4. Click **Amazon Bedrock**.
-5. In the left navigation, click **Agents**.
-
-**Expected Result:** The Bedrock Agents page displays with options to create and manage agents.
-
-### Step 11: Create the Recommendation Agent
-
-1. Click **Create Agent**.
-2. Configure the agent with these settings:
-   - **Name:** `ProductRecommendationAgent`
-   - **Description:** `Provides personalized product recommendations based on user history and preferences`
-   - **Foundation Model:** Select **Claude 3.5 Sonnet** (or the latest available Sonnet model)
-
-### Step 12: Configure Agent Instructions
-
-1. In the **Agent instructions** field, enter:
+When prompted, paste:
 
 ```
-You are a helpful shopping assistant for an e-commerce application.
-Your job is to recommend products based on the user's:
-- Purchase history
-- Browsing history
-- Stated preferences
-- Current context
+Create a hook named "security-scan" that fires when a TypeScript, JavaScript, JSON, YAML, or .env file is saved. Trigger type: fileEdited. File patterns: **/*.ts, **/*.tsx, **/*.js, **/*.jsx, **/*.json, **/*.yaml, **/*.yml, **/.env, **/.env.*. Exclude node_modules, dist, build, and amplify_outputs.json.
 
-When making recommendations:
-1. First understand what the user is looking for
-2. Use the available tools to gather relevant data
-3. Analyze patterns in their history
-4. Recommend 3-5 products with explanations
-5. Explain WHY each product is a good fit
+Action type: askAgent (Ask Kiro). The prompt to the agent should:
+- Ask it to read the saved file and identify any hardcoded credentials, applying the rules in the security.md steering file.
+- Tell it to use file path and surrounding context to distinguish real credentials from test fixtures, documentation examples, and the allowlisted strings in security.md.
+- For each finding, report: file path, line number, what kind of credential, and the recommended fix (IAM role, Parameter Store, or Secrets Manager — per security.md).
+- If nothing is found, say so briefly so the developer knows the scan ran.
 
-Be conversational and helpful. If you don't have enough data,
-ask clarifying questions.
+Save the hook to .kiro/hooks/security-scan.kiro.hook.
 ```
 
-2. Click **Save**.
+Kiro will generate a JSON hook file. Review it before saving:
 
-**Expected Result:** The agent configuration is saved. Note the Agent ID displayed on the page.
+- The `when` block uses `type: fileEdited` and the patterns listed above.
+- The `then` block uses `type: askAgent` (not `runCommand`).
+- The prompt references the steering file and asks for context-based judgment.
 
-### Step 13: Create the Action Group
+If anything's off, ask Kiro to fix it in chat ("the include patterns are missing `.env` files — please add them"). Save when correct.
 
-1. In the agent configuration, click **Add action group**.
-2. Configure the action group:
-   - **Action group name:** `UserDataTools`
-   - **Description:** `Tools for retrieving user data`
+### Step 5: Test the hook with two strings — one safe, one not
 
-### Step 14: Define the Agent Tools
+Create a test file in the terminal:
 
-Add the following four actions to the action group:
+```bash
+touch src/scratch-credentials.ts
+```
 
-**Action 1 - Get Purchase History:**
-- Name: `getPurchaseHistory`
-- Description: `Retrieves the user's past purchases`
-- Parameters:
-  - `userId` (string, required)
-  - `limit` (number, optional, default: 10)
-
-**Action 2 - Get Browsing History:**
-- Name: `getBrowsingHistory`
-- Description: `Gets products the user recently viewed`
-- Parameters:
-  - `userId` (string, required)
-  - `days` (number, optional, default: 7)
-
-**Action 3 - Find Similar Products:**
-- Name: `findSimilarProducts`
-- Description: `Finds products similar to a given product`
-- Parameters:
-  - `productId` (string, required)
-  - `limit` (number, optional)
-
-**Action 4 - Get Product Details:**
-- Name: `getProductDetails`
-- Description: `Gets full details for a product including reviews`
-- Parameters:
-  - `productId` (string, required)
-
-Click **Create action group**
-
-**Expected Result:** The action group appears in the agent configuration with all four tools defined.
-
-### Step 15: Create the Lambda Function for Tools
-
-1. In Kiro, create a new file `api/functions/agent-tools.ts`.
-2. Add the following code:
+Open `src/scratch-credentials.ts` and paste:
 
 ```typescript
-import { DynamoDBClient, QueryCommand, GetCommand } from "@aws-sdk/client-dynamodb";
-import { unmarshall } from "@aws-sdk/util-dynamodb";
-
-const dynamodb = new DynamoDBClient({ region: "us-east-1" });
-
-interface AgentEvent {
-  actionGroup: string;
-  function: string;
-  parameters: Record<string, string>;
-}
-
-export const handler = async (event: AgentEvent) => {
-  const { function: functionName, parameters } = event;
-
-  switch (functionName) {
-    case "getPurchaseHistory":
-      return await getPurchaseHistory(
-        parameters.userId,
-        parseInt(parameters.limit || "10")
-      );
-
-    case "getBrowsingHistory":
-      return await getBrowsingHistory(
-        parameters.userId,
-        parseInt(parameters.days || "7")
-      );
-
-    case "findSimilarProducts":
-      return await findSimilarProducts(
-        parameters.productId,
-        parseInt(parameters.limit || "5")
-      );
-
-    case "getProductDetails":
-      return await getProductDetails(parameters.productId);
-
-    default:
-      throw new Error(`Unknown function: ${functionName}`);
-  }
-};
-
-async function getPurchaseHistory(userId: string, limit: number) {
-  const result = await dynamodb.send(
-    new QueryCommand({
-      TableName: "Purchases",
-      KeyConditionExpression: "userId = :userId",
-      ExpressionAttributeValues: {
-        ":userId": { S: userId },
-      },
-      Limit: limit,
-      ScanIndexForward: false, // Most recent first
-    })
-  );
-
-  return {
-    purchases: result.Items?.map((item) => unmarshall(item)) || [],
-  };
-}
-
-async function getBrowsingHistory(userId: string, days: number) {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-
-  const result = await dynamodb.send(
-    new QueryCommand({
-      TableName: "BrowsingHistory",
-      KeyConditionExpression: "userId = :userId AND viewedAt > :cutoff",
-      ExpressionAttributeValues: {
-        ":userId": { S: userId },
-        ":cutoff": { S: cutoffDate.toISOString() },
-      },
-    })
-  );
-
-  return {
-    viewedProducts: result.Items?.map((item) => unmarshall(item)) || [],
-  };
-}
-
-async function findSimilarProducts(productId: string, limit: number) {
-  const product = await getProductDetails(productId);
-
-  const result = await dynamodb.send(
-    new QueryCommand({
-      TableName: "Products",
-      IndexName: "category-index",
-      KeyConditionExpression: "category = :category",
-      ExpressionAttributeValues: {
-        ":category": { S: product.product.category },
-      },
-      Limit: limit + 1,
-    })
-  );
-
-  return {
-    similarProducts:
-      result.Items?.map((item) => unmarshall(item)).filter(
-        (p) => p.productId !== productId
-      ) || [],
-  };
-}
-
-async function getProductDetails(productId: string) {
-  const result = await dynamodb.send(
-    new GetCommand({
-      TableName: "Products",
-      Key: { productId: { S: productId } },
-    })
-  );
-
-  return {
-    product: result.Item ? unmarshall(result.Item) : null,
-  };
-}
+// Two strings that match the AWS access key pattern.
+// One is the documented EXAMPLE value (allowlisted in security.md).
+// The other is fabricated but pattern-real.
+const exampleKey = "AKIAIOSFODNN7EXAMPLE";
+const fabricatedKey = "AKIA2QHFZ6PXVMK3WYJN";
 ```
 
-3. Save the file
+Save the file. The hook fires. Watch the chat panel.
 
-**Expected Result:** The Lambda function file is created with all four tool implementations.
+**Expected behavior:** the agent flags `AKIA2QHFZ6PXVMK3WYJN` as a real-looking AWS access key ID, and explicitly identifies `AKIAIOSFODNN7EXAMPLE` as the documented test value from the allowlist (and does *not* flag it). It suggests IAM roles or Secrets Manager as the right home for real credentials.
 
-### Step 16: Connect Lambda to the Action Group
+That's the hook-plus-steering pairing in action — the same hook prompt would have produced two false positives without `security.md` loading into context. With Always-mode steering, the agent has the rules and the allowlist on every fire.
 
-1. Return to the AWS Console (Bedrock Agents page).
-2. In your agent's action group configuration, set the Lambda function to the deployed `agent-tools` function.
-3. Save the action group.
+### Step 6: Clean up
 
-**Note:** You will deploy this Lambda function in Lab 4. For now, ensure the code is ready.
+```bash
+rm src/scratch-credentials.ts
+```
 
 ---
 
-## Part D: Integrating Recommendations into the Application
+## Part C: A File-Save Format Hook (Run Command action)
 
-In this section, you will create the API endpoint and frontend component for the recommendation feature.
+Now create the deterministic counterpart: a hook that runs Biome's formatter on save. No model call, no tokens, just a shell command.
 
-### Step 17: Create the Recommendations API
+### Step 7: Create the format hook
 
-1. Create a new file `api/functions/recommendations.ts`.
-2. Add the following code:
+In the Kiro pane → **Agent Hooks** → **+** → **Ask Kiro to create a hook**:
+
+```
+Create a hook named "format-on-save" that fires when a TypeScript or TypeScript-React file is saved. Trigger type: fileEdited. File patterns: **/*.ts, **/*.tsx. Exclude node_modules, dist, and amplify_outputs.json.
+
+Action type: runCommand. Command: npx biome format --write {file}
+
+The {file} placeholder is replaced with the path of the file that triggered the hook.
+
+Save to .kiro/hooks/format-on-save.kiro.hook.
+```
+
+Verify the generated file uses `type: runCommand` (not `askAgent`) and that the command references `{file}`. Save.
+
+### Step 8: Test it
+
+Open any `.ts` file under `src/` and add a deliberately ugly line:
 
 ```typescript
-import {
-  BedrockAgentRuntimeClient,
-  InvokeAgentCommand,
-} from "@aws-sdk/client-bedrock-agent-runtime";
-import { APIGatewayProxyHandler, APIGatewayProxyResult } from "aws-lambda";
-
-const client = new BedrockAgentRuntimeClient({ region: "us-east-1" });
-
-const AGENT_ID = process.env.RECOMMENDATION_AGENT_ID!;
-const AGENT_ALIAS_ID = process.env.RECOMMENDATION_AGENT_ALIAS_ID!;
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type,Authorization",
-  "Content-Type": "application/json",
-};
-
-function response(statusCode: number, body: object): APIGatewayProxyResult {
-  return {
-    statusCode,
-    headers: corsHeaders,
-    body: JSON.stringify(body),
-  };
-}
-
-// Input validation to prevent prompt injection attacks
-const MAX_PROMPT_LENGTH = 500;
-const BLOCKED_PATTERNS = [
-  /ignore.*previous.*instructions/i,
-  /disregard.*above/i,
-  /system.*prompt/i,
-  /you.*are.*now/i,
-  /<\/?script>/i,
-];
-
-function sanitizePrompt(input: string): { valid: boolean; sanitized: string; error?: string } {
-  if (!input || typeof input !== "string") {
-    return { valid: true, sanitized: "" };
-  }
-
-  if (input.length > MAX_PROMPT_LENGTH) {
-    return { valid: false, sanitized: "", error: `Prompt too long (max ${MAX_PROMPT_LENGTH} chars)` };
-  }
-
-  for (const pattern of BLOCKED_PATTERNS) {
-    if (pattern.test(input)) {
-      return { valid: false, sanitized: "", error: "Invalid prompt content" };
-    }
-  }
-
-  const sanitized = input.replace(/<[^>]*>/g, "").trim();
-  return { valid: true, sanitized };
-}
-
-export const handler: APIGatewayProxyHandler = async (event) => {
-  const userId = event.requestContext.authorizer?.userId;
-  const body = JSON.parse(event.body || "{}");
-
-  if (!userId) {
-    return response(401, { error: "Unauthorized" });
-  }
-
-  const promptValidation = sanitizePrompt(body.prompt);
-  if (!promptValidation.valid) {
-    return response(400, { error: promptValidation.error });
-  }
-
-  const sessionId = `${userId}-${Date.now()}`;
-  const prompt = promptValidation.sanitized ||
-    "Based on my purchase and browsing history, what products would you recommend for me?";
-
-  try {
-    const agentResponse = await client.send(
-      new InvokeAgentCommand({
-        agentId: AGENT_ID,
-        agentAliasId: AGENT_ALIAS_ID,
-        sessionId,
-        inputText: `User ID: ${userId}\n\nUser request: ${prompt}`,
-      })
-    );
-
-    let fullResponse = "";
-    if (agentResponse.completion) {
-      for await (const agentEvent of agentResponse.completion) {
-        if (agentEvent.chunk?.bytes) {
-          fullResponse += new TextDecoder().decode(agentEvent.chunk.bytes);
-        }
-      }
-    }
-
-    return response(200, {
-      success: true,
-      recommendations: fullResponse,
-      sessionId,
-    });
-  } catch (error) {
-    console.error("Recommendation error:", error);
-    return response(500, {
-      success: false,
-      error: "Failed to generate recommendations",
-    });
-  }
-};
+const   foo  =      'bar'   ;
 ```
 
-3. Save the file
+Save. The Run Command hook fires Biome silently. Reopen the file (or watch the editor refresh) — the line is reformatted to clean spacing and proper quotes.
 
-**Expected Result:** The recommendations API handler is created with prompt injection protection.
+> Why two action types side-by-side? You'll feel the difference. The security hook takes 3-5 seconds and produces a chat message. The format hook is instant and produces no output unless something fails. The slide called these "complementary"; this is what that means in practice. Reach for Run Command when the answer is unambiguous; reach for Ask Kiro when context matters.
 
-### Step 18: Create the Frontend Component
+Both hook files now live under `.kiro/hooks/` and travel with the repo. A teammate who clones the project gets both hooks running automatically — no setup.
 
-1. Create a new file `src/components/RecommendationChat.tsx`.
-2. Add the following code:
+---
 
-```tsx
-import React, { useState } from "react";
-import { getRecommendations } from "../services/api";
+## Part D: Build and Deploy the Agent's Tool Lambda
 
-export const RecommendationChat: React.FC = () => {
-  const [messages, setMessages] = useState<
-    Array<{ role: "user" | "assistant"; content: string }>
-  >([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+Switch contexts to the second half of the module: Bedrock Agents. You'll have Kiro generate four artifacts in one chat turn — agent instructions, OpenAPI schema, a `defineFunction` resource, and the Lambda handler — plus the `amplify/backend.ts` edits that wire the function to the FoodItem DynamoDB table and let Bedrock invoke it. Then the Amplify sandbox in terminal 1 redeploys the function automatically.
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
+### Step 9: Have Kiro generate and wire up the function
 
-    const userMessage = input;
-    setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-    setLoading(true);
+Start a new chat session for clean context. Send:
 
-    try {
-      const response = await getRecommendations(userMessage);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: response.recommendations },
-      ]);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Sorry, I couldn't generate recommendations. Please try again.",
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
+```
+I'm building a Bedrock Agent named MealRecommendationAgent that recommends meals from the user's food entries. The data lives in the FoodItem DynamoDB table managed by Amplify Gen 2 (defined in amplify/data/resource.ts). Each item has: name, category, quantity, unit, calories, protein, carbs, fat, expirationDate (ISO datetime, nullable), and addedAt (ISO datetime).
 
-  return (
-    <div className="recommendation-chat">
-      <h3>Personal Shopping Assistant</h3>
+I want this agent fully working in this lab. Generate the following:
 
-      <div className="messages">
-        {messages.length === 0 && (
-          <div className="welcome">
-            <p>Hi! I can help you find products based on your preferences.</p>
-            <p>Try asking:</p>
-            <ul>
-              <li>"What should I buy based on my history?"</li>
-              <li>"Find me something similar to my last purchase"</li>
-              <li>"I'm looking for a gift under $50"</li>
-            </ul>
-          </div>
-        )}
+1. AGENT INSTRUCTIONS — a 5-8 sentence paragraph that names the agent, describes its role, lists the two tools by name (getRecentEntries and findExpiringSoon), and tells it: always call a tool to ground answers in real data; never invent food items; if no entries are found, say so plainly. Output inline in chat.
 
-        {messages.map((msg, i) => (
-          <div key={i} className={`message ${msg.role}`}>
-            <strong>{msg.role === "user" ? "You" : "Assistant"}:</strong>
-            <p>{msg.content}</p>
-          </div>
-        ))}
+2. OPENAPI 3.0 SCHEMA — for an action group named FoodEntryTools with exactly two operations:
+   - getRecentEntries(days?: number = 7) — food entries added in the last N days
+   - findExpiringSoon(days?: number = 3) — food entries with expirationDate within the next N days
+   Each operation needs a clear, distinctive `description` — the agent reads these to pick which tool to call. Save to amplify/functions/meal-recommendations/openapi.json.
 
-        {loading && (
-          <div className="message assistant loading">
-            <span className="typing-indicator">Thinking...</span>
-          </div>
-        )}
-      </div>
+3. FUNCTION RESOURCE — amplify/functions/meal-recommendations/resource.ts with a defineFunction declaration: name "meal-recommendations", entry "./handler.ts", timeoutSeconds 30.
 
-      <div className="input-area">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Ask for recommendations..."
-          disabled={loading}
-        />
-        <button onClick={sendMessage} disabled={loading || !input.trim()}>
-          Send
-        </button>
-      </div>
-    </div>
-  );
-};
+4. LAMBDA HANDLER — amplify/functions/meal-recommendations/handler.ts.
+   - Use @aws-sdk/lib-dynamodb (DynamoDBDocumentClient + ScanCommand with FilterExpression).
+   - Read the table name from process.env.FOOD_ITEM_TABLE_NAME.
+   - Handle the Bedrock Agent event format (event.apiPath, event.parameters as array of {name, value, type}, event.httpMethod).
+   - Return responses in the Bedrock Agent format with messageVersion, response, and sessionAttributes.
+   - On any error, return a Bedrock Agent error response — do not throw.
+
+5. BACKEND WIRING — edits to amplify/backend.ts:
+   - Import the new function and add it to defineBackend.
+   - After defineBackend, look up the FoodItem table via backend.data.resources.tables['FoodItem'].
+   - Set the env var: backend.mealRecommendations.addEnvironment('FOOD_ITEM_TABLE_NAME', foodItemTable.tableName).
+   - Grant read access: foodItemTable.grantReadData(backend.mealRecommendations.resources.lambda).
+   - Add a Lambda resource-based policy permitting the Bedrock service to invoke the function:
+     backend.mealRecommendations.resources.lambda.addPermission('AllowBedrockInvoke', { principal: new iam.ServicePrincipal('bedrock.amazonaws.com'), action: 'lambda:InvokeFunction' });
+     (Import iam from 'aws-cdk-lib/aws-iam'.)
+
+If @aws-sdk/client-dynamodb and @aws-sdk/lib-dynamodb aren't already in package.json, install them as the first task.
+
+When done, reply with a recap listing every file created or edited and paste the agent instructions inline.
 ```
 
-3. Save the file.
+### Step 10: Review the artifacts and wait for the sandbox to redeploy
 
-**Expected Result:** The React component for the recommendation chat interface is created.
+Open each generated file and confirm:
 
-### Step 19: Add the Component to Your Application
+- `amplify/functions/meal-recommendations/openapi.json` — both operations are present, each with a non-trivial `description`. Vague or near-identical descriptions are the #1 cause of bad tool selection later.
+- `amplify/functions/meal-recommendations/resource.ts` — exports a `defineFunction` named `mealRecommendations` (or similar — Kiro names it).
+- `amplify/functions/meal-recommendations/handler.ts` — uses `@aws-sdk/lib-dynamodb`, reads `process.env.FOOD_ITEM_TABLE_NAME`, returns properly wrapped Bedrock Agent responses.
+- `amplify/backend.ts` — function imported and registered, env var set, `grantReadData` called, and the Bedrock `addPermission` block present.
 
-1. Open your main page component (e.g., `src/App.tsx` or a product page).
-2. Import the RecommendationChat component:
-   ```typescript
-   import { RecommendationChat } from "./components/RecommendationChat";
-   ```
-3. Add the component where you want the chat to appear:
-   ```tsx
-   <RecommendationChat />
-   ```
-4. Save the file.
+If anything's wrong, push back in chat ("the handler doesn't include the messageVersion field — please fix").
 
-**Expected Result:** The recommendation chat component is integrated into your application.
+Now watch terminal 1 (the `amplify/sandbox` watcher). It detects the `amplify/` changes and starts a redeploy. The first time it deploys this function it'll take a minute or two — bundling, IAM policy creation, Lambda upload. Wait for the "Deployment completed" line before continuing.
+
+### Step 11: Capture the deployed Lambda's ARN
+
+You'll need the ARN to wire the action group to the deployed function. From a third terminal (or split your existing one):
+
+```bash
+aws lambda list-functions \
+  --query "Functions[?contains(FunctionName, 'meal-recommendations')].FunctionArn" \
+  --output text --no-cli-pager
+```
+
+Copy the ARN — you'll paste it into the Bedrock Console in Step 13. It'll look like `arn:aws:lambda:<region>:<account>:function:amplify-foodtracker-<you>-sandbox-<hash>-mealrecommendationsLambda…`.
+
+> Why this works: the sandbox is a real cloud deployment scoped to your account. The Lambda is fully provisioned with an IAM role, DynamoDB read access, and an env var pointing at the FoodItem table. Bedrock can invoke it because of the resource-based policy you added in `backend.ts`. Nothing about this is mocked or stubbed.
+
+Copy the agent instructions Kiro printed in chat — you'll paste them into the AWS Console next.
+
+---
+
+## Part E: Configure the Agent in the Bedrock Console
+
+### Step 12: Create the agent
+
+Open the AWS Console → **Amazon Bedrock** → confirm the region matches your `aws login` region. Left navigation → **Agents** → **Create Agent**.
+
+- **Name:** `MealRecommendationAgent`
+- **Foundation model:** `anthropic.claude-sonnet-4-5-20250929-v1:0` (Claude Sonnet 4.5)
+- **Instructions for the Agent:** paste the instructions Kiro generated in Step 9.
+
+Click **Save**.
+
+### Step 13: Add the action group pointing at your deployed Lambda
+
+On the agent overview page, scroll to **Action groups** → **Add**.
+
+- **Name:** `FoodEntryTools`
+- **Action group type:** Define with API schemas
+- **Lambda function:** **Use an existing Lambda function**, then paste the ARN you captured in Step 11.
+- **API schema:** **Define with in-line schema editor**. Paste the contents of `amplify/functions/meal-recommendations/openapi.json`.
+
+Click **Create**.
+
+### Step 14: Prepare the agent
+
+Back on the agent overview, click **Prepare** (top right). This compiles the agent's instructions and action group into a runnable form. You must Prepare again after every configuration change — the easiest step in the lab to forget.
+
+> One sanity check before testing: open your deployed Lambda in the Lambda Console (search for `meal-recommendations`) and confirm the **Configuration → Permissions → Resource-based policy statements** tab shows an entry granting `bedrock.amazonaws.com` permission to invoke. If it's missing, the `addPermission` block in `backend.ts` didn't make it through; fix that file and let the sandbox redeploy.
+
+---
+
+## Part F: Smoke-Test the Agent with Trace On
+
+The module said: "Build with trace on. Always." This is where you see why.
+
+### Step 15: First prompt and inspect the trace
+
+In the agent overview, find the **Test agent** panel on the right. Make sure **Trace** is toggled on (it usually is by default in the console). Send:
+
+```
+What should I make for dinner tonight based on what I have in the food tracker?
+```
+
+Watch the trace panel as the agent responds. You should see, in order:
+
+1. The agent's reasoning step ("the user is asking about meal ideas; I should check what's currently tracked").
+2. A tool call — typically `getRecentEntries` for this prompt.
+3. The tool response — your deployed Lambda returns real food items from the FoodItem table (the 30 items the Amplify sandbox seeded).
+4. The agent reasoning over those items ("I see chicken, rice, and broccoli all added recently — I can suggest a stir-fry").
+5. The final response — concrete suggestions that name actual items from your inventory.
+
+The two signals that prove the lab worked: the trace shows the **right tool** picked (driven by the OpenAPI `description`), and the response **names real items** from your DynamoDB table (driven by the Lambda actually executing). If you've ever debugged a "the agent gives generic answers" issue in production, those two signals are usually what you're looking for in trace.
+
+### Step 16: Second prompt — different intent, different tool
+
+Send a different prompt designed to push the agent toward the *other* tool:
+
+```
+What's expiring soon that I should use this week?
+```
+
+Watch the trace. The agent should pick `findExpiringSoon` this time, not `getRecentEntries`. The Lambda runs a Scan with a different FilterExpression (against `expirationDate` instead of `addedAt`), and the response calls out specific items by name — "your yogurt expires in 2 days," that kind of thing.
+
+If the agent picks the wrong tool for either prompt, the OpenAPI descriptions are too similar or too vague. Fix `openapi.json`, re-upload the schema in the action group, and re-Prepare the agent.
+
+> What this proves: the agent reaches Bedrock, the OpenAPI descriptions correctly map natural-language intent to the right tool, your deployed Lambda has DynamoDB read access (granted via `grantReadData`) and the right env var (set via `addEnvironment`), and Bedrock can invoke it (allowed by the resource-based policy). End-to-end. No mocks.
 
 ---
 
 ## Validation Checklist
 
-Use this checklist to verify your lab completion:
-
-- [ ] Security scanning hook created and enabled
-- [ ] Security hook blocks commits containing AWS keys
-- [ ] Security hook allows commits without secrets
-- [ ] Code quality hook created and enabled
-- [ ] Code quality hook shows warnings for console.log statements
-- [ ] Bedrock Agent created with name `ProductRecommendationAgent`
-- [ ] Action group `UserDataTools` created with 4 tools
-- [ ] Lambda function `agent-tools.ts` created
-- [ ] Recommendations API `recommendations.ts` created
-- [ ] RecommendationChat component created and integrated
-- [ ] All files saved without TypeScript errors
+- [ ] `.kiro/steering/security.md` exists with `inclusion: always` frontmatter and an allowlist section
+- [ ] `.kiro/hooks/security-scan.kiro.hook` exists; uses `fileEdited` trigger and `askAgent` action
+- [ ] Saving a file with `AKIAIOSFODNN7EXAMPLE` does NOT trigger a finding; saving a fabricated `AKIA…` key DOES
+- [ ] `.kiro/hooks/format-on-save.kiro.hook` exists; uses `fileEdited` trigger and `runCommand` action
+- [ ] Saving a deliberately ugly `.ts` file auto-reformats it via Biome
+- [ ] `amplify/functions/meal-recommendations/{resource.ts, handler.ts, openapi.json}` all exist
+- [ ] `amplify/backend.ts` registers the function, sets `FOOD_ITEM_TABLE_NAME`, calls `grantReadData`, and adds the Bedrock `addPermission` block
+- [ ] Sandbox redeploy succeeded; `aws lambda list-functions` returns a `meal-recommendations` ARN
+- [ ] `MealRecommendationAgent` exists in the Bedrock Console with a `FoodEntryTools` action group pointing at the deployed Lambda's ARN, and the agent has been Prepared
+- [ ] Trace panel shows the agent picking `getRecentEntries` for a meal-ideas prompt and `findExpiringSoon` for an expiration prompt
+- [ ] Final responses name **specific items** from the FoodItem table (not generic suggestions)
 
 ---
 
 ## Troubleshooting
 
-### Issue: Hook does not trigger
+**Hook doesn't fire on save.** Open the Hooks panel and confirm the hook's toggle is on. Confirm the saved file matches the hook's pattern globs (a `.tsx` file won't match a hook scoped to `**/*.ts` only). Check **View → Output → Kiro** for hook execution logs.
 
-**Symptoms:** No response when saving files or attempting commits.
+**Security hook flags the EXAMPLE value as a real credential.** The `security.md` steering file isn't loading. Confirm the frontmatter is exactly `inclusion: always` (not `inclusion: Always`, not missing the dashes). Re-save the steering file and re-trigger the hook by saving a test file again.
 
-**Solution:**
-1. Open the Hooks panel and verify the hook is enabled (toggle should be on).
-2. Check that the file patterns match the files you are editing.
-3. Open the Kiro Output panel (View > Output) and check for error messages.
-4. Try restarting Kiro if hooks were recently created.
+**Bedrock Console says "Action group not configured" on test.** You added or modified the action group but didn't re-Prepare. Click **Prepare** at the top of the agent overview after every change.
 
-### Issue: Agent returns generic responses
+**Trace shows tool call failed with an `AccessDeniedException` from Lambda.** Bedrock can't invoke your function. Open the Lambda Console for `meal-recommendations` → **Configuration → Permissions → Resource-based policy statements**. If `bedrock.amazonaws.com` isn't listed there, the `addPermission` block in `backend.ts` didn't apply. Check the file, re-save it, and let the sandbox redeploy.
 
-**Symptoms:** Recommendations are not personalized to the user.
+**Trace shows tool returned an error mentioning the table name.** The handler's reading `process.env.FOOD_ITEM_TABLE_NAME` but the env var isn't set on the deployed function. Confirm `backend.ts` calls `addEnvironment('FOOD_ITEM_TABLE_NAME', foodItemTable.tableName)` — typos in the env var name on either side are the usual cause.
 
-**Solution:**
-1. Verify the Lambda function is connected to the action group in Bedrock.
-2. Check that the Lambda function has DynamoDB read permissions.
-3. Ensure the test user has purchase and browsing history in the database.
-4. Check CloudWatch logs for Lambda execution errors.
+**Trace shows tool returned successfully but with zero items.** The seeded items might have `addedAt` timestamps outside your default 7-day window. Try the prompt with a longer window ("what have I tracked in the last 30 days?") and confirm items show up.
 
-### Issue: Rate limit exceeded (429 error)
+**Agent picks neither tool, just answers from training data.** The OpenAPI operation descriptions are too vague. Open `openapi.json`, write more concrete descriptions ("Returns food items added by the user in the last N days, including their name, category, and expiration date"), re-upload the schema, re-Prepare.
 
-**Symptoms:** Bedrock returns "ThrottlingException" or 429 status.
-
-**Solution:**
-1. Reduce the frequency of test requests.
-2. Wait 1-2 minutes before retrying.
-3. Implement exponential backoff in your application code.
-4. If this persists, contact AWS Support to request a quota increase.
-
-### Issue: Prompt validation rejects legitimate messages
-
-**Symptoms:** User messages are blocked with "Invalid prompt content" error.
-
-**Solution:**
-1. Review the BLOCKED_PATTERNS in `recommendations.ts`.
-2. Adjust patterns if they are too aggressive for your use case.
-3. For production, consider using Amazon Bedrock Guardrails for more sophisticated filtering.
+**Test panel returns a permissions error.** Your IAM user is missing `bedrock:InvokeAgent`. Your instructor will help.
 
 ---
 
 ## Summary
 
-In this lab, you accomplished the following:
+You did three distinct kinds of work here. First, you turned the foundational steering files into a working security policy by adding `security.md` with rules and an allowlist — the file Kiro now loads on every interaction. Second, you built two hooks side-by-side: an Ask Kiro hook for context-sensitive credential detection (which leans on the steering allowlist to suppress false positives) and a Run Command hook for deterministic Biome formatting. Third, you generated a Bedrock Agent's instructions, OpenAPI schema, function definition, and Lambda handler with Kiro; deployed the Lambda through the Amplify sandbox with proper DynamoDB access and a Bedrock-invocable resource policy; configured the agent in the Console; and watched real, grounded tool calls flow through the trace panel.
 
-1. **Created a Security Scanning Hook** that automatically detects and blocks commits containing credentials, preventing accidental secret exposure
-2. **Created a Code Quality Hook** that provides non-blocking warnings for code quality issues, improving code consistency
-3. **Set Up an Amazon Bedrock Agent** with action groups and tools for personalized recommendations
-4. **Implemented Lambda Functions** to execute agent tools and query DynamoDB for user data
-5. **Built a Recommendation API** with prompt injection protection for security
-6. **Created a React Chat Component** for users to interact with the recommendation agent
+The two takeaways the module was building toward:
 
-The hooks run locally on your machine, providing consistent automated feedback without external dependencies. The Bedrock Agent orchestrates multiple data sources to deliver personalized product recommendations.
+- **Hooks and steering work together.** The security hook only does the right thing because the steering file tells it what counts and what to ignore. Either piece in isolation is weaker than both together. Both are markdown/JSON files that ship with your repo — every teammate gets the same enforcement automatically.
+- **Bedrock Agents pick tools based on what you tell them about those tools.** The `description` fields in your OpenAPI schema are the agent's only signal for tool selection. Treat them as code, not as marketing copy.
 
 ---
 
 ## Next Steps
 
-In **Lab 4: Deploy to AWS with CI/CD**, you will deploy the complete application to production using:
-- AWS Amplify for frontend hosting
-- AWS SAM for Lambda deployment
-- GitHub Actions for CI/CD automation
-- CloudWatch for monitoring and alerting
+In Lab 4 you'll move from "agent works in the Bedrock Console" to "agent works in the actual app": building a chat panel into the food-tracker page that calls `InvokeAgent` against the `MealRecommendationAgent` you just deployed, threading session IDs correctly so conversations stay coherent within a single user's chat, and rendering the structured suggestions in the UI. The trace plumbing you set up in Part F carries forward — same agent, same Lambda, same tools, just driven by your app's UI instead of the Console test panel.
 
 ---
 
 ## Additional Resources
 
-- [Kiro Hooks Documentation](https://kiro.dev/docs/hooks) - *Source: Kiro*
-- [Amazon Bedrock Agents](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html) - *Source: AWS*
-- [DynamoDB Developer Guide](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/) - *Source: AWS*
-- [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html) - *Source: OWASP*
+- [Kiro Hooks documentation](https://kiro.dev/docs/hooks)
+- [Kiro Steering documentation](https://kiro.dev/docs/steering)
+- [Amazon Bedrock Agents](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html)
+- [AWS Secrets Manager vs Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/integration-ps-secretsmanager.html)
+

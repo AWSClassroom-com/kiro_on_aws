@@ -181,6 +181,12 @@ Kiro will explore key files (`README.md`, `package.json`, `amplify/`, `src/`) an
 
 Open each file and skim it. If something is wrong (e.g., it lists a library you don't actually use, or misses something important about the data model), edit the file directly — these are just markdown, and your edits stick.
 
+Lets add another instruction to our steering files via the chat panel, copy and paste this prompt in and then press ENTER:
+
+```
+Add to the steering files an instruction that tells Kiro everytime it updates a file to check the status of the the Amplify jobs via the AWS CLI, and to make sure everything is complete before moving on to the next task. If the jobs ever have a failed status then ask the user to rerun the sandbox to redeploy.
+```
+
 ---
 
 ## Part E: Vibe Coding

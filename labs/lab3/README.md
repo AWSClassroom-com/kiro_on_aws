@@ -50,11 +50,13 @@ Lab 1 created the three foundational steering files. Now you'll add a fourth —
 
 ### Step 1: Open the Steering panel
 
-Click the **Kiro** icon (ghost) in the activity bar. Find the **Steering** section. You should see your three foundational files. Click each once and skim them to refresh your memory.
+Click the **Kiro** icon (ghost) in the activity bar. Find the **Steering** section. You should see your three foundational files.
 
 ### Step 2: Add a security steering file
 
-In the Steering section, click **+** to add a new file. Name it `security.md`. Replace the default contents with:
+In the Steering section, click **+** to add a new file. Then select **food-tracker agent steering**. Name it `security`.
+
+Once the file has been created replace the default contents with:
 
 ```markdown
 ---
@@ -93,9 +95,9 @@ These are documentation/test values and must NOT be flagged as real credentials:
 - Strings inside files under `__tests__/` or matching `*.test.ts` / `*.spec.ts` — test fixtures intentionally use placeholder credentials.
 ```
 
-Save the file. The frontmatter `inclusion: always` means Kiro will load this file into context on every interaction (including when the security hook in Part B fires). This is the concrete form of the allowlist-via-steering pattern from the module: the hook says "scan now"; this file tells it what counts and what doesn't.
+**Save the file**.
 
-> Why Always inclusion? Security rules apply to every file Kiro touches. Conditional inclusion would miss code paths; Manual would require remembering to invoke it. Always is correct here even though it costs context tokens on every turn — security is the right thing to spend that budget on.
+The frontmatter `inclusion: always` means Kiro will load this file into context on every interaction (including when the security hook in Part B fires). This is the concrete form of the allowlist-via-steering pattern from the module: the hook says "scan now"; this file tells it what counts and what doesn't.
 
 ---
 
@@ -111,7 +113,7 @@ In the Kiro pane (ghost icon in the activity bar), find **Agent Hooks**. Click *
 
 ### Step 4: Describe the hook
 
-When prompted, paste:
+In the chat session that just opened, paste the below prompt and press ENTER:
 
 ```
 Create a hook named "security-scan" that fires when a TypeScript, JavaScript, JSON, YAML, or .env file is saved. Trigger type: fileEdited. File patterns: **/*.ts, **/*.tsx, **/*.js, **/*.jsx, **/*.json, **/*.yaml, **/*.yml, **/.env, **/.env.*. Exclude node_modules, dist, build, and amplify_outputs.json.
@@ -135,11 +137,7 @@ If anything's off, ask Kiro to fix it in chat ("the include patterns are missing
 
 ### Step 5: Test the hook with two strings — one safe, one not
 
-Create a test file in the terminal:
-
-```bash
-touch src/scratch-credentials.ts
-```
+Click the **Explorer** icon (files at the top) in the activity bar. Create a test file in the **src/** directory named **scratch-credentials.ts**.
 
 Open `src/scratch-credentials.ts` and paste:
 
@@ -159,9 +157,7 @@ That's the hook-plus-steering pairing in action — the same hook prompt would h
 
 ### Step 6: Clean up
 
-```bash
-rm src/scratch-credentials.ts
-```
+Delete the file **src/scratch-credentials.ts**
 
 ---
 
@@ -176,7 +172,7 @@ In the Kiro pane → **Agent Hooks** → **+** → **Ask Kiro to create a hook**
 ```
 Create a hook named "format-on-save" that fires when a TypeScript or TypeScript-React file is saved. Trigger type: fileEdited. File patterns: **/*.ts, **/*.tsx. Exclude node_modules, dist, and amplify_outputs.json.
 
-Action type: runCommand. Command: npx biome format --write {file}
+Action type: runCommand. Command: npx biome format --write src/ amplify/ scripts/
 
 The {file} placeholder is replaced with the path of the file that triggered the hook.
 
@@ -194,8 +190,6 @@ const   foo  =      'bar'   ;
 ```
 
 Save. The Run Command hook fires Biome silently. Reopen the file (or watch the editor refresh) — the line is reformatted to clean spacing and proper quotes.
-
-> Why two action types side-by-side? You'll feel the difference. The security hook takes 3-5 seconds and produces a chat message. The format hook is instant and produces no output unless something fails. The slide called these "complementary"; this is what that means in practice. Reach for Run Command when the answer is unambiguous; reach for Ask Kiro when context matters.
 
 Both hook files now live under `.kiro/hooks/` and travel with the repo. A teammate who clones the project gets both hooks running automatically — no setup.
 
@@ -222,6 +216,7 @@ I want this agent fully working in this lab. Generate the following:
    Each operation needs a clear, distinctive `description` — the agent reads these to pick which tool to call. Save to amplify/functions/meal-recommendations/openapi.json.
 
 3. FUNCTION RESOURCE — amplify/functions/meal-recommendations/resource.ts with a defineFunction declaration: name "meal-recommendations", entry "./handler.ts", timeoutSeconds 30.
+  - In the defineFunction call, set resourceGroupName: "data" since the function reads from the data stack.
 
 4. LAMBDA HANDLER — amplify/functions/meal-recommendations/handler.ts.
    - Use @aws-sdk/lib-dynamodb (DynamoDBDocumentClient + ScanCommand with FilterExpression).
@@ -259,15 +254,16 @@ Now watch terminal 1 (the `amplify/sandbox` watcher). It detects the `amplify/` 
 
 ### Step 11: Capture the deployed Lambda's ARN
 
-You'll need the ARN to wire the action group to the deployed function. From a third terminal (or split your existing one):
+You'll need the Lambda function name to wire the action group to the deployed function. From a third terminal (or split your existing one):
 
 ```bash
 aws lambda list-functions \
-  --query "Functions[?contains(FunctionName, 'meal-recommendations')].FunctionArn" \
-  --output text --no-cli-pager
+  --query "Functions[?starts_with(FunctionName,'amplify-foodstarter')&&contains(FunctionName,'mealrecommendations')].FunctionName" \
+  --output text
+
 ```
 
-Copy the ARN — you'll paste it into the Bedrock Console in Step 13. It'll look like `arn:aws:lambda:<region>:<account>:function:amplify-foodtracker-<you>-sandbox-<hash>-mealrecommendationsLambda…`.
+Copy the name — you'll paste it into the Bedrock Console in Step 13.
 
 > Why this works: the sandbox is a real cloud deployment scoped to your account. The Lambda is fully provisioned with an IAM role, DynamoDB read access, and an env var pointing at the FoodItem table. Bedrock can invoke it because of the resource-based policy you added in `backend.ts`. Nothing about this is mocked or stubbed.
 
@@ -282,10 +278,15 @@ Copy the agent instructions Kiro printed in chat — you'll paste them into the 
 Open the AWS Console → **Amazon Bedrock** → confirm the region matches your `aws login` region. Left navigation → **Agents** → **Create Agent**.
 
 - **Name:** `MealRecommendationAgent`
-- **Foundation model:** `anthropic.claude-sonnet-4-5-20250929-v1:0` (Claude Sonnet 4.5)
+
+Click **Create**.
+
+Fill out the rest of the form:
+
+- **Select model:** Untick "Bedrock Agents optimized" and select Antropic -> Claude Sonnet 4.5 -> Apply
 - **Instructions for the Agent:** paste the instructions Kiro generated in Step 9.
 
-Click **Save**.
+Click **Save** at the top.
 
 ### Step 13: Add the action group pointing at your deployed Lambda
 
@@ -293,7 +294,7 @@ On the agent overview page, scroll to **Action groups** → **Add**.
 
 - **Name:** `FoodEntryTools`
 - **Action group type:** Define with API schemas
-- **Lambda function:** **Use an existing Lambda function**, then paste the ARN you captured in Step 11.
+- **Lambda function:** **Use an existing Lambda function**, then paste the name you captured in Step 11.
 - **API schema:** **Define with in-line schema editor**. Paste the contents of `amplify/functions/meal-recommendations/openapi.json`.
 
 Click **Create**.
@@ -302,17 +303,18 @@ Click **Create**.
 
 Back on the agent overview, click **Prepare** (top right). This compiles the agent's instructions and action group into a runnable form. You must Prepare again after every configuration change — the easiest step in the lab to forget.
 
-> One sanity check before testing: open your deployed Lambda in the Lambda Console (search for `meal-recommendations`) and confirm the **Configuration → Permissions → Resource-based policy statements** tab shows an entry granting `bedrock.amazonaws.com` permission to invoke. If it's missing, the `addPermission` block in `backend.ts` didn't make it through; fix that file and let the sandbox redeploy.
+> If **Prepare** is greyed out then try clicking **Save** again first.
+
+> One sanity check before testing: open your deployed Lambda in the Lambda Console (search using your Lambda name) and confirm the **Configuration → Permissions → Resource-based policy statements** tab shows an entry granting `bedrock.amazonaws.com` permission to invoke. If it's missing, the `addPermission` block in `backend.ts` didn't make it through; instruct Kiro what the problem is and to fix that file and let the sandbox redeploy.
 
 ---
 
 ## Part F: Smoke-Test the Agent with Trace On
 
-The module said: "Build with trace on. Always." This is where you see why.
 
 ### Step 15: First prompt and inspect the trace
 
-In the agent overview, find the **Test agent** panel on the right. Make sure **Trace** is toggled on (it usually is by default in the console). Send:
+In the agent overview, find the **Test agent** panel on the right. Click the icon to expand the panel so that you can see the Trace. Enter this prompt and press ENTER:
 
 ```
 What should I make for dinner tonight based on what I have in the food tracker?
@@ -360,26 +362,6 @@ If the agent picks the wrong tool for either prompt, the OpenAPI descriptions ar
 
 ---
 
-## Troubleshooting
-
-**Hook doesn't fire on save.** Open the Hooks panel and confirm the hook's toggle is on. Confirm the saved file matches the hook's pattern globs (a `.tsx` file won't match a hook scoped to `**/*.ts` only). Check **View → Output → Kiro** for hook execution logs.
-
-**Security hook flags the EXAMPLE value as a real credential.** The `security.md` steering file isn't loading. Confirm the frontmatter is exactly `inclusion: always` (not `inclusion: Always`, not missing the dashes). Re-save the steering file and re-trigger the hook by saving a test file again.
-
-**Bedrock Console says "Action group not configured" on test.** You added or modified the action group but didn't re-Prepare. Click **Prepare** at the top of the agent overview after every change.
-
-**Trace shows tool call failed with an `AccessDeniedException` from Lambda.** Bedrock can't invoke your function. Open the Lambda Console for `meal-recommendations` → **Configuration → Permissions → Resource-based policy statements**. If `bedrock.amazonaws.com` isn't listed there, the `addPermission` block in `backend.ts` didn't apply. Check the file, re-save it, and let the sandbox redeploy.
-
-**Trace shows tool returned an error mentioning the table name.** The handler's reading `process.env.FOOD_ITEM_TABLE_NAME` but the env var isn't set on the deployed function. Confirm `backend.ts` calls `addEnvironment('FOOD_ITEM_TABLE_NAME', foodItemTable.tableName)` — typos in the env var name on either side are the usual cause.
-
-**Trace shows tool returned successfully but with zero items.** The seeded items might have `addedAt` timestamps outside your default 7-day window. Try the prompt with a longer window ("what have I tracked in the last 30 days?") and confirm items show up.
-
-**Agent picks neither tool, just answers from training data.** The OpenAPI operation descriptions are too vague. Open `openapi.json`, write more concrete descriptions ("Returns food items added by the user in the last N days, including their name, category, and expiration date"), re-upload the schema, re-Prepare.
-
-**Test panel returns a permissions error.** Your IAM user is missing `bedrock:InvokeAgent`. Your instructor will help.
-
----
-
 ## Summary
 
 You did three distinct kinds of work here. First, you turned the foundational steering files into a working security policy by adding `security.md` with rules and an allowlist — the file Kiro now loads on every interaction. Second, you built two hooks side-by-side: an Ask Kiro hook for context-sensitive credential detection (which leans on the steering allowlist to suppress false positives) and a Run Command hook for deterministic Biome formatting. Third, you generated a Bedrock Agent's instructions, OpenAPI schema, function definition, and Lambda handler with Kiro; deployed the Lambda through the Amplify sandbox with proper DynamoDB access and a Bedrock-invocable resource policy; configured the agent in the Console; and watched real, grounded tool calls flow through the trace panel.
@@ -394,12 +376,3 @@ The two takeaways the module was building toward:
 ## Next Steps
 
 In Lab 4 you'll move from "agent works in the Bedrock Console" to "agent works in the actual app": building a chat panel into the food-tracker page that calls `InvokeAgent` against the `MealRecommendationAgent` you just deployed, threading session IDs correctly so conversations stay coherent within a single user's chat, and rendering the structured suggestions in the UI. The trace plumbing you set up in Part F carries forward — same agent, same Lambda, same tools, just driven by your app's UI instead of the Console test panel.
-
----
-
-## Additional Resources
-
-- [Kiro Hooks documentation](https://kiro.dev/docs/hooks)
-- [Kiro Steering documentation](https://kiro.dev/docs/steering)
-- [Amazon Bedrock Agents](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html)
-- [AWS Secrets Manager vs Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/integration-ps-secretsmanager.html)

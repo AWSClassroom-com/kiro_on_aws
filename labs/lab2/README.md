@@ -20,7 +20,7 @@ Build an AI-powered nutrition summary feature using Kiro's spec-driven workflow:
 Kiro installed and signed in with Builder ID. AWS CLI authenticated via `aws login` (Lab 1 Part B). Food-tracker app running at `http://localhost:3000` with the Amplify sandbox up (`npm run amplify:sandbox` in one terminal, `npm run dev` in another).
 
 ### 2. AWS CLI session still valid
-The `aws login` session from Lab 1 lasts 12 hours. If you've come back later or aren't sure, re-run it from `kiro-project/food-tracker`:
+The `aws login` session from Lab 1 lasts 12 hours. If you've come back later or aren't sure, in Kiro, open a new integrated terminal tab: Ctrl+Shift+` (backtick). And run the below command:
 
 ```bash
 aws sts get-caller-identity --no-cli-pager
@@ -55,7 +55,7 @@ You should see a list of Anthropic Claude models. If the command returns an empt
 Paste as your initial prompt:
 
 ```
-Create a new spec for a new feature that is an AI-powered weekly nutrition summary feature for the food-tracker page.
+Create a new spec "weekly-nutrition-summary" for a new feature that is an AI-powered weekly nutrition summary feature for the food-tracker page.
 
 Requirements:
 - On the food tracker page, add a "Generate Weekly Summary" button.
@@ -69,7 +69,6 @@ Requirements:
 - Show a loading state while Bedrock is generating the summary (typically 2-4 seconds).
 - Display the result in a card below the button.
 - Handle the edge case where the user has fewer than 3 entries in the last 7 days: show a friendly message instead of calling Bedrock.
-- The Bedrock model ID is anthropic.claude-sonnet-4-5-20250929-v1:0.
 - The Bedrock API uses anthropic_version "bedrock-2023-05-31".
 - The result must NOT be persisted (no DynamoDB writes); it is a transient view-only summary.
 ```
@@ -182,7 +181,13 @@ Before making any code changes, reply in chat with:
 Implement only that one task. Do not bundle multiple tasks together. Do not add files or features the task does not explicitly require. Wait for my approval of the diff before moving on.
 ```
 
-For each subsequent task, send: `Implement the next unchecked task using the same protocol.`
+One Kiro produces a response it will wait for you to type "Approve" in the chat before beginning the task.
+
+For each subsequent task, send: 
+
+```
+Implement the next unchecked task using the same protocol.
+```
 
 For each task:
 
@@ -191,6 +196,8 @@ For each task:
 3. Review and accept the diff (or reject and push back).
 4. Watch the Amplify sandbox terminal — when `amplify/` files change, the sandbox redeploys automatically. Wait for "Deployment completed" before proceeding to the next task.
 5. Confirm the task is marked complete, then move on.
+
+> If you like you can press the **Run all tasks** button in the top right of the IDE when you are viewing the `tasks.md` file in the spec.
 
 The **final** task is the Bedrock smoke test added in Step 6. On success it deletes `scripts/test-bedrock.ts` automatically. On failure, paste the error into chat — most failures are credentials, region, model access not enabled, model ID, or an inference profile being required.
 

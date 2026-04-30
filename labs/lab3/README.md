@@ -252,7 +252,7 @@ If anything's wrong, push back in chat ("the handler doesn't include the message
 
 Now watch terminal 1 (the `amplify/sandbox` watcher). It detects the `amplify/` changes and starts a redeploy. The first time it deploys this function it'll take a minute or two — bundling, IAM policy creation, Lambda upload. Wait for the "Deployment completed" line before continuing.
 
-### Step 11: Capture the deployed Lambda's ARN
+### Step 11: Capture the deployed Lambda's name
 
 You'll need the Lambda function name to wire the action group to the deployed function. From a third terminal (or split your existing one):
 

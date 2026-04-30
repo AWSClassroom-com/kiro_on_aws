@@ -120,21 +120,25 @@ The food-tracker is an AWS Amplify Gen 2 app: a React + Vite frontend talking to
 
 **Terminal 1 — install dependencies, then start the Amplify sandbox:**
 
+In Kiro, make sure the integrated terminal is open: `` Ctrl+` `` (backtick), or **View → Terminal**.
+
+Then copy and paste the below command and press ENTER:
+
 ```bash
 npm install
 npm run amplify:sandbox
 ```
 
-This provisions a per-developer cloud backend (AppSync + DynamoDB) using the AWS credentials you set up in Part B, writes `amplify_outputs.json` to the project root, and auto-seeds the FoodItem table with 30 sample items on first deploy. Leave this terminal running — it watches `amplify/` for changes and redeploys automatically. The first deploy takes a few minutes; subsequent updates are fast.
+This provisions a per-developer cloud backend (AppSync + DynamoDB) using the AWS credentials you set up in Part B, writes `amplify_outputs.json` to the project root, and auto-seeds the FoodItem table with 30 sample items on first deploy. Leave this terminal running — it watches `amplify/` for changes and redeploys automatically. **The first deploy takes several minutes**; subsequent updates are fast.
 
 > If the command fails with a credentials error, your `aws login` session may have expired or wasn't completed cleanly. Re-run `aws login --region <your-region>` from Part B and try again.
 
 **Terminal 2 — once `amplify_outputs.json` exists, start the Vite dev server:**
 
-Split the terminal or open a new one (`` Ctrl+` `` again), then:
+Split the terminal or open a new one (`` Ctrl+Shift+` ``), then:
 
 ```bash
-npm run dev
+npm run seed && npm run dev
 ```
 
 Open `http://localhost:3000` in your browser. You should see the food-tracker app with sample entries.
@@ -177,8 +181,6 @@ Kiro will explore key files (`README.md`, `package.json`, `amplify/`, `src/`) an
 
 Open each file and skim it. If something is wrong (e.g., it lists a library you don't actually use, or misses something important about the data model), edit the file directly — these are just markdown, and your edits stick.
 
-> The kiro.dev "Learn by playing" guide does this same setup before any vibe coding. It's worth the two-minute investment: with steering in place, the prompts in Part E produce noticeably better results because Kiro already knows what an "entry" is, that styling means Tailwind classes, and that data lives in DynamoDB via AppSync — not in a local Postgres.
-
 ---
 
 ## Part E: Vibe Coding
@@ -187,7 +189,7 @@ For these steps, work in **Supervised mode** (Autopilot off) so you can review e
 
 ### Step 11: Add an "EXPIRING SOON" badge
 
-Open the chat panel and send:
+Open a new session in the chat panel and send:
 
 ```
 On the food tracker page (src/routes/food-tracker.tsx), add an "EXPIRING SOON" badge to each food entry card. The badge should appear only when the entry's expirationDate is within the next 3 days (today through 3 days from now). The badge should be orange with white text, positioned in the top-right corner of the card. Handle the case where expirationDate is null gracefully (do not show the badge). Do not change any other behavior.

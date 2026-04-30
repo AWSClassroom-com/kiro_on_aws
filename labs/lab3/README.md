@@ -305,7 +305,7 @@ Back on the agent overview, click **Prepare** (top right). This compiles the age
 
 > If **Prepare** is greyed out then try clicking **Save** again first.
 
-> One sanity check before testing: open your deployed Lambda in the Lambda Console (search for `meal-recommendations`) and confirm the **Configuration → Permissions → Resource-based policy statements** tab shows an entry granting `bedrock.amazonaws.com` permission to invoke. If it's missing, the `addPermission` block in `backend.ts` didn't make it through; fix that file and let the sandbox redeploy.
+> One sanity check before testing: open your deployed Lambda in the Lambda Console (search using your Lambda name) and confirm the **Configuration → Permissions → Resource-based policy statements** tab shows an entry granting `bedrock.amazonaws.com` permission to invoke. If it's missing, the `addPermission` block in `backend.ts` didn't make it through; instruct Kiro what the problem is and to fix that file and let the sandbox redeploy.
 
 ---
 

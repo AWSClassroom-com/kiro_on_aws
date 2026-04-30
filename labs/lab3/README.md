@@ -113,7 +113,7 @@ In the Kiro pane (ghost icon in the activity bar), find **Agent Hooks**. Click *
 
 ### Step 4: Describe the hook
 
-In the chat session that just opened, paste:
+In the chat session that just opened, paste the below prompt and press ENTER:
 
 ```
 Create a hook named "security-scan" that fires when a TypeScript, JavaScript, JSON, YAML, or .env file is saved. Trigger type: fileEdited. File patterns: **/*.ts, **/*.tsx, **/*.js, **/*.jsx, **/*.json, **/*.yaml, **/*.yml, **/.env, **/.env.*. Exclude node_modules, dist, build, and amplify_outputs.json.

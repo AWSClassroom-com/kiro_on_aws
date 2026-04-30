@@ -269,6 +269,7 @@ On **Add repository branch**:
 On **App settings**:
 - **App name:** `food-tracker-<your-username>`
 - **Frontend build command** and **Build output directory:** Amplify auto-detects these from `package.json` and the `amplify/` folder. It will add `npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID` to the build phase for the Gen 2 backend. Leave the detected settings as-is.
+- **My monorepo uses Amplify Gen2 Backend**: Tick the box
 - **Service role:** choose **Create and use a new service role**. Amplify attaches the `AmplifyBackendDeployFullAccess` managed policy automatically so the build can deploy your backend.
 - Click **Next**.
 

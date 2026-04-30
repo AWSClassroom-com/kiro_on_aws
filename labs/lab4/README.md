@@ -127,6 +127,7 @@ Rules:
 - Tasks ordered by dependency. Each task is one diff.
 - Each task lists the files it touches and the design section it implements.
 - First task installs any new dependencies (@aws-sdk/client-bedrock-agent-runtime).
+- Do not create Property-based tests
 
 The implementation may create or edit ONLY these files:
 1. amplify/functions/invoke-meal-agent/resource.ts

@@ -197,6 +197,8 @@ For each task:
 4. Watch the Amplify sandbox terminal — when `amplify/` files change, the sandbox redeploys automatically. Wait for "Deployment completed" before proceeding to the next task.
 5. Confirm the task is marked complete, then move on.
 
+> If you like you can press the **Run all tasks** button in the top right of the IDE when you are viewing the `tasks.md` file in the spec.
+
 The **final** task is the Bedrock smoke test added in Step 6. On success it deletes `scripts/test-bedrock.ts` automatically. On failure, paste the error into chat — most failures are credentials, region, model access not enabled, model ID, or an inference profile being required.
 
 ### Step 8: End-to-end test

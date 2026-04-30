@@ -4,6 +4,7 @@ Install Kiro IDE, sign in to AWS, run the food-tracker starter app on AWS Amplif
 
 **Time:** 60 minutes
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
+The course repo has been pre-fetched and Node dependencies installed to prevent class day-of network errors blocking lab progress.
 
 ## Working with Kiro
 
@@ -32,22 +33,33 @@ Install Kiro IDE, sign in to AWS, run the food-tracker starter app on AWS Amplif
 
 Download from https://kiro.dev for your OS:
 
-- **Windows:** run the `.exe` installer with default settings.
+- **Windows: (class VM option)** "Download for Windows (x64) and run the downloaded 194mb `.exe` installer with default settings.
 - **macOS:** open the `.dmg`, drag Kiro to Applications. If macOS blocks it, go to **System Preferences → Security & Privacy** and click **Open Anyway**.
 - **Linux (Debian/Ubuntu):** `sudo dpkg -i kiro_*.deb`
 - **Linux (Fedora/RHEL):** `sudo rpm -i kiro_*.rpm`
 
+- Accept the licence agreement.
+- Leave default destination folder settings and choose 'Next'.
+- Keep all defaults and keep pressing 'Next' until Kiro is installed.
+- Make sure 'Launch Kiro' is checked and press 'Finish'.
+
 ### Step 2: Sign in with Builder ID
 
-Launch Kiro. On the welcome screen, choose **Sign in with Builder ID**.
+On the Kiro welcome screen, choose **Sign in** then select the option for ** AWS Builder ID**.
 
 - Existing Builder ID: enter email and password; complete MFA if enabled.
-- New: choose **Create one** and follow the email-verification flow.
+- New Builder ID: choose **Create one** and follow the email-verification flow.
+- Choose **Never** if prompted to Save your password by Google Chrome.
+- On the Allow Kiro IDE to acess your data? screen, press **Allow Access**.
+- After you play withthe Kiro ghost logo and your mouse, close Google Chrome and return to Kiro.
+- Choose **Skip All** for Configuration Imports.
 
-Your Builder ID email appears in the bottom-left corner when signed in.
+You are now logged in to Kiro with your AWS Builder ID. Confirm this by hovering over the profile icon on the **bottom left** of the Kiro interface.
 
 > Builder ID is free and separate from an AWS account — no credit card required. It's only used to authenticate to Kiro itself; the AWS credentials you'll set up in Part B are what give the Amplify sandbox access to AWS services.
 
+- On the default Kiro screen, press **Open a project** and open the class project:
+**c:/class-projects/kiro_on_aws/kiro-project/food-tracker**
 ---
 
 ## Part B: Set Up AWS Credentials
@@ -98,7 +110,7 @@ You should see your account ID and IAM user ARN printed back. If you do, you're 
 
 ## Part C: Set Up the Starter App
 
-### Step 5: Clone the course repo
+### Step 5: Clone the course repo (this step has been completed for you, please move to Step 6)
 
 In Kiro, in the integrated terminal copy and paste the below command and press ENTER:
 

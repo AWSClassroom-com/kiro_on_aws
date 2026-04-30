@@ -55,7 +55,7 @@ You should see a list of Anthropic Claude models. If the command returns an empt
 Paste as your initial prompt:
 
 ```
-Create a new spec for a new feature that is an AI-powered weekly nutrition summary feature for the food-tracker page.
+Create a new spec "weekly-nutrition-summary" for a new feature that is an AI-powered weekly nutrition summary feature for the food-tracker page.
 
 Requirements:
 - On the food tracker page, add a "Generate Weekly Summary" button.

@@ -38,6 +38,8 @@ Download from https://kiro.dev for your OS:
 - **Linux (Debian/Ubuntu):** `sudo dpkg -i kiro_*.deb`
 - **Linux (Fedora/RHEL):** `sudo rpm -i kiro_*.rpm`
 
+### On the install wizard:
+
 - Accept the licence agreement.
 - Leave default destination folder settings and choose 'Next'.
 - Keep all defaults and keep pressing 'Next' until Kiro is installed.
@@ -45,13 +47,16 @@ Download from https://kiro.dev for your OS:
 
 ### Step 2: Sign in with Builder ID
 
-On the Kiro welcome screen, choose **Sign in** then select the option for ** AWS Builder ID**.
+On the Kiro welcome screen, choose **Sign in** then select the option for **AWS Builder ID**.
 
 - Existing Builder ID: enter email and password; complete MFA if enabled.
 - New Builder ID: choose **Create one** and follow the email-verification flow.
+
+### After entering your Builder ID information:
+
 - Choose **Never** if prompted to Save your password by Google Chrome.
 - On the Allow Kiro IDE to acess your data? screen, press **Allow Access**.
-- After you play withthe Kiro ghost logo and your mouse, close Google Chrome and return to Kiro.
+- After you play with the Kiro ghost logo and your mouse, close Google Chrome and return to Kiro.
 - Choose **Skip All** for Configuration Imports.
 
 You are now logged in to Kiro with your AWS Builder ID. Confirm this by hovering over the profile icon on the **bottom left** of the Kiro interface.

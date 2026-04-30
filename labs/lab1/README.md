@@ -120,7 +120,7 @@ You should see your account ID and IAM user ARN printed back. If you do, you're 
 
 ### Step 5: Clone the course repo
 
-## (If you are using the Course VM, this step has been completed for you, please move to Step 6)
+### (If you are using the Course VM, this step has been completed for you, please move to Step 6)
 
 In Kiro, in the integrated terminal copy and paste the below command and press ENTER:
 

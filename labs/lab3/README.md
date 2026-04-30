@@ -403,4 +403,3 @@ In Lab 4 you'll move from "agent works in the Bedrock Console" to "agent works i
 - [Kiro Steering documentation](https://kiro.dev/docs/steering)
 - [Amazon Bedrock Agents](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html)
 - [AWS Secrets Manager vs Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/integration-ps-secretsmanager.html)
-

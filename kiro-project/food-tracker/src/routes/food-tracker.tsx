@@ -3,6 +3,7 @@ import { Plus, Sparkles, Trash2, UtensilsCrossed } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 
+import MealAgentChat from "@/components/MealAgentChat";
 import { client } from "@/lib/amplify-client";
 import type { Schema } from "../../amplify/data/resource";
 
@@ -857,6 +858,7 @@ function FoodTracker() {
 					</div>
 				</div>
 			</section>
+			<MealAgentChat />
 		</div>
 	);
 }

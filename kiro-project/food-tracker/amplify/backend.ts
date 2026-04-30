@@ -1,15 +1,17 @@
 import { defineBackend } from "@aws-amplify/backend";
 import { PolicyStatement, ServicePrincipal } from "aws-cdk-lib/aws-iam";
-import { CfnOutput } from "aws-cdk-lib";
+import { CfnOutput, Stack } from "aws-cdk-lib";
 
 import { data } from "./data/resource";
 import { nutritionSummaryFunction } from "./functions/nutrition-summary/resource";
 import { mealRecommendationsFunction } from "./functions/meal-recommendations/resource";
+import { invokeMealAgentFunction } from "./functions/invoke-meal-agent/resource";
 
 const backend = defineBackend({
 	data,
 	nutritionSummaryFunction,
 	mealRecommendations: mealRecommendationsFunction,
+	invokeMealAgent: invokeMealAgentFunction,
 });
 
 // ---------------------------------------------------------------------------
@@ -60,4 +62,29 @@ new CfnOutput(
 		description: "ARN of the meal-recommendations Lambda function",
 		exportName: `${backend.mealRecommendations.resources.lambda.stack.stackName}-MealRecommendationsArn`,
 	},
+);
+
+// ---------------------------------------------------------------------------
+// invokeMealAgent — Bedrock Agent invocation
+// ---------------------------------------------------------------------------
+
+const agentId = "0PFG4K6M5I";
+const aliasId = "VBFPV7MGRM";
+
+// Set environment variables so the Lambda handler can read them at runtime
+backend.invokeMealAgent.addEnvironment("AGENT_ID", agentId);
+backend.invokeMealAgent.addEnvironment("AGENT_ALIAS_ID", aliasId);
+
+// Construct the agent alias ARN at synth time — no hardcoded account or region
+const { region, account } = Stack.of(
+	backend.invokeMealAgent.resources.lambda,
+);
+const agentAliasArn = `arn:aws:bedrock:${region}:${account}:agent-alias/${agentId}/${aliasId}`;
+
+// Grant the Lambda permission to invoke the Bedrock Agent
+backend.invokeMealAgent.resources.lambda.addToRolePolicy(
+	new PolicyStatement({
+		actions: ["bedrock:InvokeAgent"],
+		resources: [agentAliasArn],
+	}),
 );

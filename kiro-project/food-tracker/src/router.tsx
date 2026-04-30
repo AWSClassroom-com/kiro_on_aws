@@ -12,4 +12,3 @@ export const getRouter = () => {
 	});
 };
 
-const foo = "bar";

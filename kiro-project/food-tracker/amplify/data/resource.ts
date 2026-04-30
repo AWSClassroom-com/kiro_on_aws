@@ -1,7 +1,23 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import { invokeMealAgentFunction } from "../functions/invoke-meal-agent/resource";
 import { nutritionSummaryFunction } from "../functions/nutrition-summary/resource";
 
 const schema = a.schema({
+	AgentResponse: a.customType({
+		sessionId: a.string().required(),
+		completion: a.string().required(),
+	}),
+
+	invokeMealAgent: a
+		.query()
+		.arguments({
+			prompt: a.string().required(),
+			sessionId: a.string().required(),
+		})
+		.returns(a.ref("AgentResponse").required())
+		.handler(a.handler.function(invokeMealAgentFunction))
+		.authorization((allow) => [allow.publicApiKey()]),
+
 	MacroBreakdown: a.customType({
 		proteinPercent: a.float().required(),
 		carbsPercent: a.float().required(),

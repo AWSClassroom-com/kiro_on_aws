@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Trash2, UtensilsCrossed } from "lucide-react";
+import { Plus, Sparkles, Trash2, UtensilsCrossed } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 
@@ -11,6 +11,27 @@ export const Route = createFileRoute("/food-tracker")({
 });
 
 type FoodEntry = Schema["FoodItem"]["type"];
+
+interface MacroBreakdown {
+	proteinPercent: number;
+	carbsPercent: number;
+	fatPercent: number;
+}
+
+interface NutritionSummary {
+	totalCalories: number;
+	averageDailyCalories: number;
+	macroBreakdown: MacroBreakdown;
+	narrative: string;
+	suggestions: string[];
+}
+
+type SummaryState =
+	| { phase: "idle" }
+	| { phase: "loading" }
+	| { phase: "insufficient-data" }
+	| { phase: "success"; summary: NutritionSummary }
+	| { phase: "error"; message: string };
 
 const formSchema = z.object({
 	name: z.string().min(1, "Name is required").max(255, "Name too long"),
@@ -567,9 +588,144 @@ function FoodEntriesList({
 	);
 }
 
+function SummaryLoadingCard() {
+	return (
+		<div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-8 flex items-center justify-center gap-4">
+			<span className="animate-spin w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full" />
+			<p className="text-gray-300 text-lg">Analysing your week…</p>
+		</div>
+	);
+}
+
+function InsufficientDataMessage() {
+	return (
+		<div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-6">
+			<p className="text-amber-300 text-sm">
+				Not enough data — add at least 3 food entries from the last 7 days to generate a summary.
+			</p>
+		</div>
+	);
+}
+
+function SummaryErrorMessage({ message }: { message: string }) {
+	return (
+		<div className="bg-red-500/10 border border-red-500/40 rounded-xl p-6">
+			<p className="text-red-300 text-sm">{message}</p>
+		</div>
+	);
+}
+
+function SummaryCard({ summary }: { summary: NutritionSummary }) {
+	return (
+		<div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-8 space-y-6">
+			<h2 className="text-2xl font-semibold text-white">Weekly Nutrition Summary</h2>
+
+			{/* Calorie stats */}
+			<div className="grid grid-cols-2 gap-4">
+				<div className="bg-slate-700/50 rounded-lg p-4 text-center">
+					<p className="text-gray-400 text-sm mb-1">Total Calories</p>
+					<p className="text-3xl font-bold text-cyan-400">{summary.totalCalories}</p>
+				</div>
+				<div className="bg-slate-700/50 rounded-lg p-4 text-center">
+					<p className="text-gray-400 text-sm mb-1">Daily Average</p>
+					<p className="text-3xl font-bold text-cyan-400">{summary.averageDailyCalories}</p>
+				</div>
+			</div>
+
+			{/* Macro breakdown */}
+			<div>
+				<p className="text-gray-400 text-sm mb-3">Macro Breakdown</p>
+				<div className="flex gap-3 flex-wrap">
+					<span className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-sm font-medium px-3 py-1.5 rounded-full">
+						Protein {summary.macroBreakdown.proteinPercent.toFixed(1)}%
+					</span>
+					<span className="bg-blue-500/20 border border-blue-500/40 text-blue-300 text-sm font-medium px-3 py-1.5 rounded-full">
+						Carbs {summary.macroBreakdown.carbsPercent.toFixed(1)}%
+					</span>
+					<span className="bg-amber-500/20 border border-amber-500/40 text-amber-300 text-sm font-medium px-3 py-1.5 rounded-full">
+						Fat {summary.macroBreakdown.fatPercent.toFixed(1)}%
+					</span>
+				</div>
+			</div>
+
+			{/* Narrative */}
+			<div>
+				<p className="text-gray-400 text-sm mb-2">Analysis</p>
+				<p className="text-gray-300 leading-relaxed">{summary.narrative}</p>
+			</div>
+
+			{/* Suggestions */}
+			<div>
+				<p className="text-gray-400 text-sm mb-3 flex items-center gap-2">
+					<Sparkles className="w-4 h-4 text-cyan-400" />
+					Suggestions
+				</p>
+				<ul className="space-y-2">
+					{summary.suggestions.map((suggestion, i) => (
+						<li key={i} className="flex items-start gap-2 text-gray-300 text-sm">
+							<span className="text-cyan-400 mt-0.5">•</span>
+							{suggestion}
+						</li>
+					))}
+				</ul>
+			</div>
+		</div>
+	);
+}
+
 function FoodTracker() {
 	const [entries, setEntries] = useState<FoodEntry[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [summaryState, setSummaryState] = useState<SummaryState>({ phase: "idle" });
+
+	const handleGenerateSummary = async () => {
+		const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+		const weeklyEntries = entries.filter(
+			(e) => e.addedAt && new Date(e.addedAt).getTime() >= cutoff,
+		);
+
+		if (weeklyEntries.length < 3) {
+			setSummaryState({ phase: "insufficient-data" });
+			return;
+		}
+
+		setSummaryState({ phase: "loading" });
+		try {
+			const { data, errors } = await client.queries.generateWeeklySummary({
+				entries: weeklyEntries.map((e) => ({
+					name: e.name,
+					calories: e.calories ?? null,
+					protein: e.protein ?? null,
+					carbs: e.carbs ?? null,
+					fat: e.fat ?? null,
+				})),
+			});
+
+			if (errors?.length || !data) {
+				setSummaryState({
+					phase: "error",
+					message: "Failed to generate summary. Please check your connection and try again.",
+				});
+				return;
+			}
+
+			if (data.status === "success" && data.summary) {
+				setSummaryState({ phase: "success", summary: data.summary as NutritionSummary });
+			} else if (data.status === "insufficient-data") {
+				setSummaryState({ phase: "insufficient-data" });
+			} else {
+				setSummaryState({
+					phase: "error",
+					message: data.message ?? "Failed to generate summary. Please check your connection and try again.",
+				});
+			}
+		} catch {
+			setSummaryState({
+				phase: "error",
+				message: "Failed to generate summary. Please check your connection and try again.",
+			});
+		}
+	};
 
 	const loadEntries = useCallback(async () => {
 		try {
@@ -643,6 +799,29 @@ function FoodTracker() {
 								onDelete={handleEntryDeleted}
 							/>
 						)}
+
+						{/* Weekly Summary Button */}
+						<button
+							type="button"
+							onClick={handleGenerateSummary}
+							disabled={summaryState.phase === "loading"}
+							className="w-full py-4 bg-linear-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-emerald-500/25 disabled:shadow-none flex items-center justify-center gap-2"
+						>
+							{summaryState.phase === "loading" ? (
+								<>
+									<span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+									Generating summary…
+								</>
+							) : (
+								"Generate Weekly Summary"
+							)}
+						</button>
+
+						{/* Result area */}
+						{summaryState.phase === "loading" && <SummaryLoadingCard />}
+						{summaryState.phase === "insufficient-data" && <InsufficientDataMessage />}
+						{summaryState.phase === "error" && <SummaryErrorMessage message={summaryState.message} />}
+						{summaryState.phase === "success" && <SummaryCard summary={summaryState.summary} />}
 					</div>
 				</div>
 			</section>

@@ -1,6 +1,44 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import { nutritionSummaryFunction } from "../functions/nutrition-summary/resource";
 
 const schema = a.schema({
+	MacroBreakdown: a.customType({
+		proteinPercent: a.float().required(),
+		carbsPercent: a.float().required(),
+		fatPercent: a.float().required(),
+	}),
+
+	NutritionSummary: a.customType({
+		totalCalories: a.integer().required(),
+		averageDailyCalories: a.integer().required(),
+		macroBreakdown: a.ref("MacroBreakdown").required(),
+		narrative: a.string().required(),
+		suggestions: a.string().array().required(),
+	}),
+
+	GenerateSummaryResult: a.customType({
+		status: a.string().required(),
+		summary: a.ref("NutritionSummary"),
+		message: a.string(),
+	}),
+
+	FoodEntryInput: a.customType({
+		name: a.string().required(),
+		calories: a.integer(),
+		protein: a.float(),
+		carbs: a.float(),
+		fat: a.float(),
+	}),
+
+	generateWeeklySummary: a
+		.query()
+		.arguments({
+			entries: a.ref("FoodEntryInput").array().required(),
+		})
+		.returns(a.ref("GenerateSummaryResult").required())
+		.handler(a.handler.function(nutritionSummaryFunction))
+		.authorization((allow) => [allow.publicApiKey()]),
+
 	FoodItem: a
 		.model({
 			name: a.string().required(),

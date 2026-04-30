@@ -137,11 +137,7 @@ If anything's off, ask Kiro to fix it in chat ("the include patterns are missing
 
 ### Step 5: Test the hook with two strings — one safe, one not
 
-Create a test file in the terminal:
-
-```bash
-touch src/scratch-credentials.ts
-```
+Click the **Explorer** icon (files at the top) in the activity bar. Create a test file in the **src/** directory named **scratch-credentials.ts**.
 
 Open `src/scratch-credentials.ts` and paste:
 
@@ -161,9 +157,7 @@ That's the hook-plus-steering pairing in action — the same hook prompt would h
 
 ### Step 6: Clean up
 
-```bash
-rm src/scratch-credentials.ts
-```
+Delete the file **src/scratch-credentials.ts**
 
 ---
 

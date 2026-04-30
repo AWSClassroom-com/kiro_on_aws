@@ -20,7 +20,7 @@ Build an AI-powered nutrition summary feature using Kiro's spec-driven workflow:
 Kiro installed and signed in with Builder ID. AWS CLI authenticated via `aws login` (Lab 1 Part B). Food-tracker app running at `http://localhost:3000` with the Amplify sandbox up (`npm run amplify:sandbox` in one terminal, `npm run dev` in another).
 
 ### 2. AWS CLI session still valid
-The `aws login` session from Lab 1 lasts 12 hours. If you've come back later or aren't sure, re-run it from `kiro-project/food-tracker`:
+The `aws login` session from Lab 1 lasts 12 hours. If you've come back later or aren't sure, in Kiro, open a new integrated terminal tab: Ctrl+Shift+` (backtick). And run the below command:
 
 ```bash
 aws sts get-caller-identity --no-cli-pager

@@ -64,7 +64,9 @@ Once you're in, take note of the **region selector** in the top-right corner —
 
 ### Step 4: Authenticate the AWS CLI with `aws login`
 
-First, verify your AWS CLI version is at least **2.32.0** — earlier versions don't have the `aws login` command:
+First, verify your AWS CLI version is at least **2.32.0** — earlier versions don't have the `aws login` command. In Kiro, open the integrated terminal: `` Ctrl+` `` (backtick), or **View → Terminal**.
+
+Then copy and paste the below command and press ENTER:
 
 ```bash
 aws --version
@@ -98,7 +100,7 @@ You should see your account ID and IAM user ARN printed back. If you do, you're 
 
 ### Step 5: Clone the course repo
 
-In Kiro, open the integrated terminal: `` Ctrl+` `` (backtick), or **View → Terminal**.
+In Kiro, in the integrated terminal copy and paste the below command and press ENTER:
 
 ```bash
 mkdir -p ~/class-projects && cd ~/class-projects

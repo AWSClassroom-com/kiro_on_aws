@@ -50,11 +50,13 @@ Lab 1 created the three foundational steering files. Now you'll add a fourth —
 
 ### Step 1: Open the Steering panel
 
-Click the **Kiro** icon (ghost) in the activity bar. Find the **Steering** section. You should see your three foundational files. Click each once and skim them to refresh your memory.
+Click the **Kiro** icon (ghost) in the activity bar. Find the **Steering** section. You should see your three foundational files.
 
 ### Step 2: Add a security steering file
 
-In the Steering section, click **+** to add a new file. Name it `security.md`. Replace the default contents with:
+In the Steering section, click **+** to add a new file. Then select **food-tracker agent steering**. Name it `security`.
+
+Once the file has been created replace the default contents with:
 
 ```markdown
 ---
@@ -93,9 +95,9 @@ These are documentation/test values and must NOT be flagged as real credentials:
 - Strings inside files under `__tests__/` or matching `*.test.ts` / `*.spec.ts` — test fixtures intentionally use placeholder credentials.
 ```
 
-Save the file. The frontmatter `inclusion: always` means Kiro will load this file into context on every interaction (including when the security hook in Part B fires). This is the concrete form of the allowlist-via-steering pattern from the module: the hook says "scan now"; this file tells it what counts and what doesn't.
+**Save the file**.
 
-> Why Always inclusion? Security rules apply to every file Kiro touches. Conditional inclusion would miss code paths; Manual would require remembering to invoke it. Always is correct here even though it costs context tokens on every turn — security is the right thing to spend that budget on.
+The frontmatter `inclusion: always` means Kiro will load this file into context on every interaction (including when the security hook in Part B fires). This is the concrete form of the allowlist-via-steering pattern from the module: the hook says "scan now"; this file tells it what counts and what doesn't.
 
 ---
 

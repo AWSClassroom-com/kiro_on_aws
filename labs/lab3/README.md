@@ -311,11 +311,10 @@ Back on the agent overview, click **Prepare** (top right). This compiles the age
 
 ## Part F: Smoke-Test the Agent with Trace On
 
-The module said: "Build with trace on. Always." This is where you see why.
 
 ### Step 15: First prompt and inspect the trace
 
-In the agent overview, find the **Test agent** panel on the right. Make sure **Trace** is toggled on (it usually is by default in the console). Send:
+In the agent overview, find the **Test agent** panel on the right. Click the icon to expand the panel so that you can see the Trace. Enter this prompt and press ENTER:
 
 ```
 What should I make for dinner tonight based on what I have in the food tracker?
@@ -363,26 +362,6 @@ If the agent picks the wrong tool for either prompt, the OpenAPI descriptions ar
 
 ---
 
-## Troubleshooting
-
-**Hook doesn't fire on save.** Open the Hooks panel and confirm the hook's toggle is on. Confirm the saved file matches the hook's pattern globs (a `.tsx` file won't match a hook scoped to `**/*.ts` only). Check **View → Output → Kiro** for hook execution logs.
-
-**Security hook flags the EXAMPLE value as a real credential.** The `security.md` steering file isn't loading. Confirm the frontmatter is exactly `inclusion: always` (not `inclusion: Always`, not missing the dashes). Re-save the steering file and re-trigger the hook by saving a test file again.
-
-**Bedrock Console says "Action group not configured" on test.** You added or modified the action group but didn't re-Prepare. Click **Prepare** at the top of the agent overview after every change.
-
-**Trace shows tool call failed with an `AccessDeniedException` from Lambda.** Bedrock can't invoke your function. Open the Lambda Console for `meal-recommendations` → **Configuration → Permissions → Resource-based policy statements**. If `bedrock.amazonaws.com` isn't listed there, the `addPermission` block in `backend.ts` didn't apply. Check the file, re-save it, and let the sandbox redeploy.
-
-**Trace shows tool returned an error mentioning the table name.** The handler's reading `process.env.FOOD_ITEM_TABLE_NAME` but the env var isn't set on the deployed function. Confirm `backend.ts` calls `addEnvironment('FOOD_ITEM_TABLE_NAME', foodItemTable.tableName)` — typos in the env var name on either side are the usual cause.
-
-**Trace shows tool returned successfully but with zero items.** The seeded items might have `addedAt` timestamps outside your default 7-day window. Try the prompt with a longer window ("what have I tracked in the last 30 days?") and confirm items show up.
-
-**Agent picks neither tool, just answers from training data.** The OpenAPI operation descriptions are too vague. Open `openapi.json`, write more concrete descriptions ("Returns food items added by the user in the last N days, including their name, category, and expiration date"), re-upload the schema, re-Prepare.
-
-**Test panel returns a permissions error.** Your IAM user is missing `bedrock:InvokeAgent`. Your instructor will help.
-
----
-
 ## Summary
 
 You did three distinct kinds of work here. First, you turned the foundational steering files into a working security policy by adding `security.md` with rules and an allowlist — the file Kiro now loads on every interaction. Second, you built two hooks side-by-side: an Ask Kiro hook for context-sensitive credential detection (which leans on the steering allowlist to suppress false positives) and a Run Command hook for deterministic Biome formatting. Third, you generated a Bedrock Agent's instructions, OpenAPI schema, function definition, and Lambda handler with Kiro; deployed the Lambda through the Amplify sandbox with proper DynamoDB access and a Bedrock-invocable resource policy; configured the agent in the Console; and watched real, grounded tool calls flow through the trace panel.
@@ -397,12 +376,3 @@ The two takeaways the module was building toward:
 ## Next Steps
 
 In Lab 4 you'll move from "agent works in the Bedrock Console" to "agent works in the actual app": building a chat panel into the food-tracker page that calls `InvokeAgent` against the `MealRecommendationAgent` you just deployed, threading session IDs correctly so conversations stay coherent within a single user's chat, and rendering the structured suggestions in the UI. The trace plumbing you set up in Part F carries forward — same agent, same Lambda, same tools, just driven by your app's UI instead of the Console test panel.
-
----
-
-## Additional Resources
-
-- [Kiro Hooks documentation](https://kiro.dev/docs/hooks)
-- [Kiro Steering documentation](https://kiro.dev/docs/steering)
-- [Amazon Bedrock Agents](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html)
-- [AWS Secrets Manager vs Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/integration-ps-secretsmanager.html)

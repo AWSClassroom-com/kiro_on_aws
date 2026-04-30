@@ -1,8 +1,8 @@
 # Lab 1: Getting Started with Kiro
 
-Install Kiro IDE, run the food-tracker starter app in Docker, and try your first "vibe coding" session — adding features through natural language prompts.
+Install Kiro IDE, sign in to AWS, run the food-tracker starter app on AWS Amplify, set up steering files so Kiro understands the project, and try your first "vibe coding" session — adding features through natural language prompts.
 
-**Time:** 50 minutes
+**Time:** 60 minutes
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
 
 ## Working with Kiro
@@ -17,10 +17,12 @@ Install Kiro IDE, run the food-tracker starter app in Docker, and try your first
 ## Prerequisites
 
 - [Git](https://git-scm.com)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running before Step 5)
-- An [AWS Builder ID](https://profile.aws.amazon.com/) (free, no AWS account required)
+- [Node.js 20+](https://nodejs.org) (npm comes bundled)
+- [AWS CLI v2.32.0 or later](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) (the `aws login` command requires this version)
+- AWS Management Console credentials provided by your instructor — you'll use these in Part B.
+- An [AWS Builder ID](https://profile.aws.amazon.com/) (free, separate from your AWS account — used to sign in to Kiro)
 
-The app and its Postgres database both run in Docker — you do **not** need Node.js, pnpm, or Postgres installed locally.
+> The Amplify sandbox you'll start in Part C provisions a small DynamoDB table and an AppSync API in the AWS account your instructor provided. Costs during this lab are typically a few cents at most, and you'll tear the sandbox down at the end.
 
 ---
 
@@ -44,67 +46,144 @@ Launch Kiro. On the welcome screen, choose **Sign in with Builder ID**.
 
 Your Builder ID email appears in the bottom-left corner when signed in.
 
-> Builder ID is free and separate from an AWS account — no credit card required.
+> Builder ID is free and separate from an AWS account — no credit card required. It's only used to authenticate to Kiro itself; the AWS credentials you'll set up in Part B are what give the Amplify sandbox access to AWS services.
 
 ---
 
-## Part B: Set Up the Starter App
+## Part B: Set Up AWS Credentials
 
-### Step 3: Clone the course repo
+The Amplify sandbox needs to call AWS services on your behalf. You'll authenticate the AWS CLI by signing in to the Management Console first, then running `aws login` from your terminal — a browser-based flow that hands the CLI a temporary 12-hour session. Full reference: [Sign in through the AWS CLI](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html).
 
-Open the integrated terminal: `` Ctrl+` `` (backtick), or **View → Terminal**.
+### Step 3: Sign in to the AWS Management Console
+
+In your browser, go to https://console.aws.amazon.com and sign in using the credentials your instructor provided (account ID or alias, IAM username, and password). Complete MFA if prompted.
+
+Once you're in, take note of the **region selector** in the top-right corner — make sure it's set to the region your instructor specified for this class. You'll use the same region in the next step.
+
+> Keep this browser tab open. The `aws login` command in Step 4 reuses this signed-in session to authenticate the CLI without asking for your password again.
+
+### Step 4: Authenticate the AWS CLI with `aws login`
+
+First, verify your AWS CLI version is at least **2.32.0** — earlier versions don't have the `aws login` command:
+
+```bash
+aws --version
+```
+
+If the version is too old (or the CLI isn't installed), follow the [AWS CLI install/upgrade guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), then re-check.
+
+Now run:
+
+```bash
+aws login --region <your-region>
+```
+
+Replace `<your-region>` with the region from Step 3 (for example, `us-east-1` or `ap-southeast-2`).
+
+Your default browser will open to a confirmation page. Because you're already signed in to the Management Console (Step 3), it should recognize your session — review what's being authorized and click **Allow** (or **Confirm**). When the page tells you authentication succeeded, return to your terminal.
+
+Verify it worked:
+
+```bash
+aws sts get-caller-identity
+```
+
+You should see your account ID and IAM user ARN printed back. If you do, you're set — your CLI session is valid for the next 12 hours, which is plenty for this lab.
+
+> If `aws login` fails with a permissions error, your IAM user is probably missing the [`SignInLocalDevelopmentAccess`](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SignInLocalDevelopmentAccess.html) managed policy. Let your instructor know.
+
+---
+
+## Part C: Set Up the Starter App
+
+### Step 5: Clone the course repo
+
+In Kiro, open the integrated terminal: `` Ctrl+` `` (backtick), or **View → Terminal**.
 
 ```bash
 mkdir -p ~/class-projects && cd ~/class-projects
 git clone https://github.com/AWSClassroom-com/kiro_on_aws
-cd kiro_on_aws/kiro-project/sample-food-tracker-tanstack-kiro-alldocker
+cd kiro_on_aws/kiro-project/food-tracker
 ```
 
-### Step 4: Open the project in Kiro
+### Step 6: Open the project in Kiro
 
-`Cmd+Shift+P` / `Ctrl+Shift+P` → `File: Open Folder` → select `sample-food-tracker-tanstack-kiro-alldocker`. When prompted, trust the authors.
+`Cmd+Shift+P` / `Ctrl+Shift+P` → `File: Open Folder` → select `food-tracker`. When prompted, trust the authors.
 
 The status bar will show an indexing indicator while Kiro analyzes the codebase.
 
-### Step 5: Run the app
+### Step 7: Run the app
 
-Make sure Docker Desktop is running, then in the terminal:
+The food-tracker is an AWS Amplify Gen 2 app: a React + Vite frontend talking to an AppSync GraphQL API backed by DynamoDB. Getting it running is two terminals.
+
+**Terminal 1 — install dependencies, then start the Amplify sandbox:**
 
 ```bash
-docker compose up --watch
+npm install
+npm run amplify:sandbox
 ```
 
-This builds the app image, starts Postgres, runs migrations, seeds sample data, and starts the dev server with hot reload. First-run takes a few minutes; subsequent runs are fast.
+This provisions a per-developer cloud backend (AppSync + DynamoDB) using the AWS credentials you set up in Part B, writes `amplify_outputs.json` to the project root, and auto-seeds the FoodItem table with 30 sample items on first deploy. Leave this terminal running — it watches `amplify/` for changes and redeploys automatically. The first deploy takes a few minutes; subsequent updates are fast.
+
+> If the command fails with a credentials error, your `aws login` session may have expired or wasn't completed cleanly. Re-run `aws login --region <your-region>` from Part B and try again.
+
+**Terminal 2 — once `amplify_outputs.json` exists, start the Vite dev server:**
+
+Split the terminal or open a new one (`` Ctrl+` `` again), then:
+
+```bash
+npm run dev
+```
 
 Open `http://localhost:3000` in your browser. You should see the food-tracker app with sample entries.
 
-> Leave this terminal running. Open a second terminal in Kiro (`` Ctrl+` `` again, or split the existing one) for any other commands.
+> Leave both terminals running for the rest of the lab. Vite hot-reloads any changes Kiro makes under `src/` — no manual restart needed.
 
 ---
 
-## Part C: Explore Kiro
+## Part D: Explore Kiro
 
-### Step 6: Get oriented
+### Step 8: Get oriented
 
 Open each panel once so you know where things live:
 
-- **File Explorer** (folder icon, left sidebar) — expand `src/` to see `routes/`, `components/`, `db/`, plus `Dockerfile` and `docker-compose.yml` at the root.
+- **File Explorer** (folder icon, left sidebar) — expand `src/` to see `routes/` and `components/`, and `amplify/` to see `backend.ts` and `data/resource.ts`.
 - **Kiro Panel** (ghost icon in the activity bar) — Specs, Agent Hooks, Steering, Skills, MCP Servers.
 - **Chat Panel** — `Cmd+L` / `Ctrl+L`, or via command palette `Kiro: Open Chat`.
 - **Extensions** — `Cmd+Shift+X` / `Ctrl+Shift+X`. Search for **ESLint** (publisher: dbaeumer) and click **Install**.
 
-### Step 7: Skim the codebase
+### Step 9: Skim the codebase
 
-- `.kiro/specs/food-tracker/requirements.md` — read at least one requirement to see the spec format.
-- `src/routes/food-tracker.tsx` — this is where you'll make changes in Part D.
+Get a quick feel for the project before letting Kiro change things:
+
+- `README.md` — tech stack overview and the npm scripts you just ran.
+- `amplify/data/resource.ts` — the `FoodItem` schema. Note the `expirationDate` and `addedAt` fields — you'll use `expirationDate` in Part E.
+- `src/routes/index.tsx` — the homepage. You'll restyle it in Part E.
+- `src/routes/food-tracker.tsx` — the food-tracker page where most edits happen.
+
+### Step 10: Generate steering files
+
+Before any vibe coding, set Kiro up with steering files. Steering files are project-level markdown that Kiro loads on every interaction so it knows what your project is, what tech stack to stick to, and how the code is organized — without you having to explain it each time.
+
+`Cmd+Shift+P` / `Ctrl+Shift+P`, search for **Steering**, and select **Kiro: Generate project steering documents**.
+
+Kiro will explore key files (`README.md`, `package.json`, `amplify/`, `src/`) and create a `.kiro/steering/` folder with three files:
+
+- `product.md` — what the project is, in plain language. Helps Kiro understand the big picture when you ask for changes.
+- `tech.md` — the tech the project uses (React 19, TanStack Router, AWS Amplify Gen 2, Tailwind v4, Biome, etc.). Keeps Kiro from suggesting divergent tools.
+- `structure.md` — key folders and files. Helps Kiro find the right place to make a change without flailing.
+
+Open each file and skim it. If something is wrong (e.g., it lists a library you don't actually use, or misses something important about the data model), edit the file directly — these are just markdown, and your edits stick.
+
+> The kiro.dev "Learn by playing" guide does this same setup before any vibe coding. It's worth the two-minute investment: with steering in place, the prompts in Part E produce noticeably better results because Kiro already knows what an "entry" is, that styling means Tailwind classes, and that data lives in DynamoDB via AppSync — not in a local Postgres.
 
 ---
 
-## Part D: Vibe Coding
+## Part E: Vibe Coding
 
-For these steps, work in **Supervised mode** (Autopilot off) so you can review each diff before accepting. Edits Kiro makes on disk are picked up automatically by the running container — no rebuild needed.
+For these steps, work in **Supervised mode** (Autopilot off) so you can review each diff before accepting. Vite picks up edits Kiro makes under `src/` automatically — no rebuild needed.
 
-### Step 8: Add an "EXPIRING SOON" badge
+### Step 11: Add an "EXPIRING SOON" badge
 
 Open the chat panel and send:
 
@@ -114,7 +193,7 @@ On the food tracker page (src/routes/food-tracker.tsx), add an "EXPIRING SOON" b
 
 Review the diff. If the date logic, styling, or null-handling looks off, push back in chat ("the badge is showing for entries 5 days out — please fix"). Accept when correct, then refresh `http://localhost:3000`.
 
-### Step 9: Iterate on the badge
+### Step 12: Iterate on the badge
 
 In the same chat, send:
 
@@ -128,7 +207,7 @@ Review and accept. If the animation feels too aggressive, follow up:
 Make the pulse animation slower and less pronounced.
 ```
 
-### Step 10: Add a sort and filter bar
+### Step 13: Add a sort and filter bar
 
 Start a new chat session for a clean context, then send:
 
@@ -136,12 +215,12 @@ Start a new chat session for a clean context, then send:
 On the food tracker page (food-tracker.tsx), add a sort and filter bar above the food entry cards inside FoodEntriesList.
 - A text input that filters entries by name (case-insensitive)
 - A dropdown to sort by: Default (newest first), Name (A–Z), Calories (high to low), Expiration Date (soonest first)
-The filtering and sorting should be done in-memory using React state — do not change any server functions or database logic. Entries with a null expiration date should appear last when sorting by expiration date. The bar should match the existing dark slate styling of the page.
+The filtering and sorting should be done in-memory using React state — do not change the Amplify data client calls or the schema in amplify/data/resource.ts. Entries with a null expiration date should appear last when sorting by expiration date. The bar should match the existing dark slate styling of the page.
 ```
 
 Review and accept. Refresh the browser.
 
-### Step 11: Restyle the homepage palette
+### Step 14: Restyle the homepage palette
 
 Navigate to `http://localhost:3000` (the homepage) so you can see the change live. Start a new chat session, then send:
 
@@ -151,14 +230,14 @@ On the homepage only (src/routes/index.tsx), change the color theme from emerald
 
 Review and accept. Refresh the homepage and confirm the hero gradient, the "Start Tracking Food" button, the feature card hover state, and the bottom CTA button all show the new warm palette. The food-tracker page should look unchanged.
 
-### Step 12: Add a footer to the homepage
+### Step 15: Add a footer to the homepage
 
 In the same chat, send:
 
 ```
 Add a footer to the homepage (src/routes/index.tsx), placed below the existing CTA section.
 Contents:
-- Left: "© 2026 Food Tracker" plus a small tagline "Built with TanStack Start, Drizzle, and PostgreSQL".
+- Left: "© 2026 Food Tracker" plus a small tagline "Built with React, TanStack Router, and AWS Amplify".
 - Right: three placeholder links — Docs, GitHub, Privacy — using href="#" for now.
 Styling: match the rest of the page — dark slate background, gray-400 text, subtle top border (border-slate-700). Compact vertical padding. Single row on desktop (md and up), stacked on mobile.
 Do not change anything else.
@@ -171,8 +250,10 @@ Review and accept. Refresh and resize the browser to confirm the layout switches
 ## Validation Checklist
 
 - [ ] Kiro installed and running; Builder ID shown in the bottom-left corner
-- [ ] `docker compose up` running; food-tracker app reachable at `http://localhost:3000`
+- [ ] Signed in to AWS Management Console; `aws sts get-caller-identity` returns the expected account
+- [ ] `npm run amplify:sandbox` running and `amplify_outputs.json` present; `npm run dev` running; food-tracker app reachable at `http://localhost:3000`
 - [ ] Sample food entries visible
+- [ ] `.kiro/steering/` folder contains `product.md`, `tech.md`, and `structure.md`
 - [ ] EXPIRING SOON badge appears on food entries within 3 days of expiration
 - [ ] Badge has a subtle pulse animation
 - [ ] Filter bar and sort dropdown above the food entries list, both functional
@@ -181,6 +262,19 @@ Review and accept. Refresh and resize the browser to confirm the layout switches
 
 ---
 
+## Cleanup
+
+When you're done with the lab (or at the end of class), tear down the cloud sandbox so it stops costing anything, then end your CLI session:
+
+```bash
+npm run amplify:sandbox:delete
+aws logout
+```
+
+The first command removes the AppSync API, DynamoDB table, and IAM resources Amplify provisioned for you. The second invalidates your `aws login` session.
+
+---
+
 ## Summary
 
-You installed Kiro, signed in with Builder ID, ran the food-tracker starter app entirely in Docker, and used vibe coding — natural language prompts with diff-by-diff review — to add features. In Lab 2 you'll move from vibe coding to spec-driven development: building features with formal requirements, design documents, and sequenced tasks.
+You installed Kiro, signed in with Builder ID, authenticated the AWS CLI with `aws login`, ran the food-tracker starter app on a personal AWS Amplify sandbox, generated steering files so Kiro understands the project on every future prompt, and used vibe coding — natural language prompts with diff-by-diff review — to add features. In Lab 2 you'll move from vibe coding to spec-driven development: building features with formal requirements, design documents, and sequenced tasks.

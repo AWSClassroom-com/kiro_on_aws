@@ -1,0 +1,192 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FoodEntryTools",
+    "version": "1.0.0",
+    "description": "Tools for retrieving food entries from the user's food tracker to ground meal recommendations in real inventory data."
+  },
+  "paths": {
+    "/getRecentEntries": {
+      "get": {
+        "operationId": "getRecentEntries",
+        "summary": "Get food entries added in the last N days",
+        "description": "Retrieves all food items the user has logged within the past N days (default 7). Use this tool when the user asks what food they have, wants meal ideas based on current inventory, or asks about recently added items. Returns each item's name, category, quantity, unit, calories, protein, carbs, fat, expirationDate, and addedAt timestamp.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Number of past days to look back for food entries. Defaults to 7 if not provided.",
+            "schema": {
+              "type": "integer",
+              "default": 7,
+              "minimum": 1,
+              "maximum": 90
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of food entries added within the specified number of days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FoodEntry"
+                      }
+                    },
+                    "count": {
+                      "type": "integer",
+                      "description": "Total number of entries returned."
+                    },
+                    "daysSearched": {
+                      "type": "integer",
+                      "description": "The number of days that were searched."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/findExpiringSoon": {
+      "get": {
+        "operationId": "findExpiringSoon",
+        "summary": "Find food entries whose expiration date falls within the next N days",
+        "description": "Retrieves food items that are expiring within the next N days (default 3). Use this tool when the user asks what food is about to expire, wants to avoid waste, or needs to know what to use up first. Only returns items that have an expirationDate set and that date is between now and N days from now.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Number of upcoming days to check for expiring food. Defaults to 3 if not provided.",
+            "schema": {
+              "type": "integer",
+              "default": 3,
+              "minimum": 1,
+              "maximum": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of food entries expiring within the specified number of days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FoodEntry"
+                      }
+                    },
+                    "count": {
+                      "type": "integer",
+                      "description": "Total number of expiring entries returned."
+                    },
+                    "daysAhead": {
+                      "type": "integer",
+                      "description": "The number of days ahead that were checked."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FoodEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the food item."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the food item."
+          },
+          "category": {
+            "type": "string",
+            "description": "Category of the food item (e.g., Protein, Vegetable, Grain)."
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Quantity of the food item."
+          },
+          "unit": {
+            "type": "string",
+            "description": "Unit of measurement (e.g., grams, oz, cups)."
+          },
+          "calories": {
+            "type": "integer",
+            "description": "Calorie count per serving."
+          },
+          "protein": {
+            "type": "number",
+            "description": "Protein content in grams."
+          },
+          "carbs": {
+            "type": "number",
+            "description": "Carbohydrate content in grams."
+          },
+          "fat": {
+            "type": "number",
+            "description": "Fat content in grams."
+          },
+          "expirationDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 datetime when the item expires. May be null."
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 datetime when the item was added to the tracker."
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message describing what went wrong."
+          }
+        }
+      }
+    }
+  }
+}

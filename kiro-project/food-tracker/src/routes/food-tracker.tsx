@@ -37,11 +37,7 @@ const formSchema = z.object({
 	name: z.string().min(1, "Name is required").max(255, "Name too long"),
 	description: z.string().optional(),
 	category: z.string().max(100, "Category too long").optional(),
-	quantity: z
-		.number()
-		.int()
-		.positive("Quantity must be positive")
-		.optional(),
+	quantity: z.number().int().positive("Quantity must be positive").optional(),
 	unit: z.string().max(50, "Unit too long").optional(),
 	calories: z
 		.number()
@@ -84,8 +80,8 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 		try {
 			const validated = formSchema.parse(formData);
 
-			const { data, errors: createErrors } = await client.models.FoodItem.create(
-				{
+			const { data, errors: createErrors } =
+				await client.models.FoodItem.create({
 					name: validated.name,
 					description: validated.description,
 					category: validated.category,
@@ -97,8 +93,7 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 					fat: validated.fat,
 					expirationDate: validated.expirationDate?.toISOString(),
 					addedAt: new Date().toISOString(),
-				},
-			);
+				});
 
 			if (createErrors?.length || !data) {
 				throw new Error(
@@ -354,7 +349,11 @@ function isExpiringSoon(expirationDate: string | null | undefined): boolean {
 	const now = new Date();
 	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 	const expiry = new Date(expirationDate);
-	const expiryDay = new Date(expiry.getFullYear(), expiry.getMonth(), expiry.getDate());
+	const expiryDay = new Date(
+		expiry.getFullYear(),
+		expiry.getMonth(),
+		expiry.getDate(),
+	);
 	const diffMs = expiryDay.getTime() - today.getTime();
 	const diffDays = diffMs / (1000 * 60 * 60 * 24);
 	return diffDays >= 0 && diffDays <= 3;
@@ -369,7 +368,9 @@ function FoodEntriesList({
 }) {
 	const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 	const [filterName, setFilterName] = useState("");
-	const [sortKey, setSortKey] = useState<"default" | "name" | "calories" | "expiration">("default");
+	const [sortKey, setSortKey] = useState<
+		"default" | "name" | "calories" | "expiration"
+	>("default");
 
 	const handleDelete = async (id: string) => {
 		try {
@@ -382,9 +383,10 @@ function FoodEntriesList({
 	};
 
 	const visibleEntries = entries
-		.filter((e) =>
-			filterName.trim() === "" ||
-			e.name.toLowerCase().includes(filterName.trim().toLowerCase()),
+		.filter(
+			(e) =>
+				filterName.trim() === "" ||
+				e.name.toLowerCase().includes(filterName.trim().toLowerCase()),
 		)
 		.sort((a, b) => {
 			if (sortKey === "name") {
@@ -397,7 +399,10 @@ function FoodEntriesList({
 				if (!a.expirationDate && !b.expirationDate) return 0;
 				if (!a.expirationDate) return 1;
 				if (!b.expirationDate) return -1;
-				return new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime();
+				return (
+					new Date(a.expirationDate).getTime() -
+					new Date(b.expirationDate).getTime()
+				);
 			}
 			// default: newest first (original order preserved from parent)
 			return 0;
@@ -443,7 +448,9 @@ function FoodEntriesList({
 					<option value="default">Sort: Default (newest first)</option>
 					<option value="name">Sort: Name (A–Z)</option>
 					<option value="calories">Sort: Calories (high to low)</option>
-					<option value="expiration">Sort: Expiration Date (soonest first)</option>
+					<option value="expiration">
+						Sort: Expiration Date (soonest first)
+					</option>
 				</select>
 			</div>
 
@@ -454,135 +461,135 @@ function FoodEntriesList({
 			) : (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{visibleEntries.map((entry) => (
-					<div
-						key={entry.id}
-						className="relative bg-slate-700/50 border border-slate-600 rounded-lg p-6 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10"
-					>
-						{isExpiringSoon(entry.expirationDate) && (
-							<span className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded animate-pulse-subtle">
-								EXPIRING SOON
-							</span>
-						)}
-						<div className="flex justify-between items-start mb-4">
-							<h3 className="text-lg font-semibold text-white truncate">
-								{entry.name}
-							</h3>
-							<button
-								type="button"
-								onClick={() => setDeleteConfirm(entry.id)}
-								className="text-gray-400 hover:text-red-400 transition-colors p-1"
-								title="Delete entry"
-							>
-								<Trash2 className="w-4 h-4" />
-							</button>
-						</div>
-
-						{entry.description && (
-							<p className="text-gray-400 text-sm mb-3 line-clamp-2">
-								{entry.description}
-							</p>
-						)}
-
-						<div className="space-y-2 text-sm">
-							<div className="flex justify-between">
-								<span className="text-gray-400">Quantity:</span>
-								<span className="text-white">
-									{entry.quantity} {entry.unit}
+						<div
+							key={entry.id}
+							className="relative bg-slate-700/50 border border-slate-600 rounded-lg p-6 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10"
+						>
+							{isExpiringSoon(entry.expirationDate) && (
+								<span className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded animate-pulse-subtle">
+									EXPIRING SOON
 								</span>
+							)}
+							<div className="flex justify-between items-start mb-4">
+								<h3 className="text-lg font-semibold text-white truncate">
+									{entry.name}
+								</h3>
+								<button
+									type="button"
+									onClick={() => setDeleteConfirm(entry.id)}
+									className="text-gray-400 hover:text-red-400 transition-colors p-1"
+									title="Delete entry"
+								>
+									<Trash2 className="w-4 h-4" />
+								</button>
 							</div>
 
-							{entry.category && (
-								<div className="flex justify-between">
-									<span className="text-gray-400">Category:</span>
-									<span className="text-cyan-400">{entry.category}</span>
-								</div>
+							{entry.description && (
+								<p className="text-gray-400 text-sm mb-3 line-clamp-2">
+									{entry.description}
+								</p>
 							)}
 
-							{entry.calories != null && (
+							<div className="space-y-2 text-sm">
 								<div className="flex justify-between">
-									<span className="text-gray-400">Calories:</span>
-									<span className="text-white">{entry.calories}</span>
+									<span className="text-gray-400">Quantity:</span>
+									<span className="text-white">
+										{entry.quantity} {entry.unit}
+									</span>
 								</div>
-							)}
 
-							{(entry.protein != null ||
-								entry.carbs != null ||
-								entry.fat != null) && (
-								<div className="pt-2 border-t border-slate-600">
-									<div className="grid grid-cols-3 gap-2 text-xs">
-										{entry.protein != null && (
-											<div className="text-center">
-												<div className="text-gray-400">Protein</div>
-												<div className="text-white">{entry.protein}g</div>
-											</div>
-										)}
-										{entry.carbs != null && (
-											<div className="text-center">
-												<div className="text-gray-400">Carbs</div>
-												<div className="text-white">{entry.carbs}g</div>
-											</div>
-										)}
-										{entry.fat != null && (
-											<div className="text-center">
-												<div className="text-gray-400">Fat</div>
-												<div className="text-white">{entry.fat}g</div>
-											</div>
-										)}
+								{entry.category && (
+									<div className="flex justify-between">
+										<span className="text-gray-400">Category:</span>
+										<span className="text-cyan-400">{entry.category}</span>
 									</div>
-								</div>
-							)}
+								)}
 
-							{entry.expirationDate && (
-								<div className="flex justify-between pt-2 border-t border-slate-600">
-									<span className="text-gray-400">Expires:</span>
-									<span className="text-yellow-400">
-										{new Date(entry.expirationDate).toLocaleDateString()}
-									</span>
-								</div>
-							)}
+								{entry.calories != null && (
+									<div className="flex justify-between">
+										<span className="text-gray-400">Calories:</span>
+										<span className="text-white">{entry.calories}</span>
+									</div>
+								)}
 
-							{entry.addedAt && (
-								<div className="flex justify-between pt-2 border-t border-slate-600">
-									<span className="text-gray-400">Added:</span>
-									<span className="text-gray-300">
-										{new Date(entry.addedAt).toLocaleDateString()}
-									</span>
+								{(entry.protein != null ||
+									entry.carbs != null ||
+									entry.fat != null) && (
+									<div className="pt-2 border-t border-slate-600">
+										<div className="grid grid-cols-3 gap-2 text-xs">
+											{entry.protein != null && (
+												<div className="text-center">
+													<div className="text-gray-400">Protein</div>
+													<div className="text-white">{entry.protein}g</div>
+												</div>
+											)}
+											{entry.carbs != null && (
+												<div className="text-center">
+													<div className="text-gray-400">Carbs</div>
+													<div className="text-white">{entry.carbs}g</div>
+												</div>
+											)}
+											{entry.fat != null && (
+												<div className="text-center">
+													<div className="text-gray-400">Fat</div>
+													<div className="text-white">{entry.fat}g</div>
+												</div>
+											)}
+										</div>
+									</div>
+								)}
+
+								{entry.expirationDate && (
+									<div className="flex justify-between pt-2 border-t border-slate-600">
+										<span className="text-gray-400">Expires:</span>
+										<span className="text-yellow-400">
+											{new Date(entry.expirationDate).toLocaleDateString()}
+										</span>
+									</div>
+								)}
+
+								{entry.addedAt && (
+									<div className="flex justify-between pt-2 border-t border-slate-600">
+										<span className="text-gray-400">Added:</span>
+										<span className="text-gray-300">
+											{new Date(entry.addedAt).toLocaleDateString()}
+										</span>
+									</div>
+								)}
+							</div>
+
+							{deleteConfirm === entry.id && (
+								<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+									<div className="bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-sm mx-4">
+										<h3 className="text-lg font-semibold text-white mb-4">
+											Delete Food Entry
+										</h3>
+										<p className="text-gray-400 mb-6">
+											Are you sure you want to delete "{entry.name}"? This
+											action cannot be undone.
+										</p>
+										<div className="flex gap-3">
+											<button
+												type="button"
+												onClick={() => setDeleteConfirm(null)}
+												className="flex-1 py-2 px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+											>
+												Cancel
+											</button>
+											<button
+												type="button"
+												onClick={() => handleDelete(entry.id)}
+												className="flex-1 py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+											>
+												Delete
+											</button>
+										</div>
+									</div>
 								</div>
 							)}
 						</div>
-
-						{deleteConfirm === entry.id && (
-							<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-								<div className="bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-sm mx-4">
-									<h3 className="text-lg font-semibold text-white mb-4">
-										Delete Food Entry
-									</h3>
-									<p className="text-gray-400 mb-6">
-										Are you sure you want to delete "{entry.name}"? This action
-										cannot be undone.
-									</p>
-									<div className="flex gap-3">
-										<button
-											type="button"
-											onClick={() => setDeleteConfirm(null)}
-											className="flex-1 py-2 px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
-										>
-											Cancel
-										</button>
-										<button
-											type="button"
-											onClick={() => handleDelete(entry.id)}
-											className="flex-1 py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-										>
-											Delete
-										</button>
-									</div>
-								</div>
-							</div>
-						)}
-					</div>
-				))}
-			</div>
+					))}
+				</div>
 			)}
 		</div>
 	);
@@ -601,7 +608,8 @@ function InsufficientDataMessage() {
 	return (
 		<div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-6">
 			<p className="text-amber-300 text-sm">
-				Not enough data — add at least 3 food entries from the last 7 days to generate a summary.
+				Not enough data — add at least 3 food entries from the last 7 days to
+				generate a summary.
 			</p>
 		</div>
 	);
@@ -618,17 +626,23 @@ function SummaryErrorMessage({ message }: { message: string }) {
 function SummaryCard({ summary }: { summary: NutritionSummary }) {
 	return (
 		<div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-8 space-y-6">
-			<h2 className="text-2xl font-semibold text-white">Weekly Nutrition Summary</h2>
+			<h2 className="text-2xl font-semibold text-white">
+				Weekly Nutrition Summary
+			</h2>
 
 			{/* Calorie stats */}
 			<div className="grid grid-cols-2 gap-4">
 				<div className="bg-slate-700/50 rounded-lg p-4 text-center">
 					<p className="text-gray-400 text-sm mb-1">Total Calories</p>
-					<p className="text-3xl font-bold text-cyan-400">{summary.totalCalories}</p>
+					<p className="text-3xl font-bold text-cyan-400">
+						{summary.totalCalories}
+					</p>
 				</div>
 				<div className="bg-slate-700/50 rounded-lg p-4 text-center">
 					<p className="text-gray-400 text-sm mb-1">Daily Average</p>
-					<p className="text-3xl font-bold text-cyan-400">{summary.averageDailyCalories}</p>
+					<p className="text-3xl font-bold text-cyan-400">
+						{summary.averageDailyCalories}
+					</p>
 				</div>
 			</div>
 
@@ -662,7 +676,10 @@ function SummaryCard({ summary }: { summary: NutritionSummary }) {
 				</p>
 				<ul className="space-y-2">
 					{summary.suggestions.map((suggestion, i) => (
-						<li key={i} className="flex items-start gap-2 text-gray-300 text-sm">
+						<li
+							key={i}
+							className="flex items-start gap-2 text-gray-300 text-sm"
+						>
 							<span className="text-cyan-400 mt-0.5">•</span>
 							{suggestion}
 						</li>
@@ -676,7 +693,9 @@ function SummaryCard({ summary }: { summary: NutritionSummary }) {
 function FoodTracker() {
 	const [entries, setEntries] = useState<FoodEntry[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
-	const [summaryState, setSummaryState] = useState<SummaryState>({ phase: "idle" });
+	const [summaryState, setSummaryState] = useState<SummaryState>({
+		phase: "idle",
+	});
 
 	const handleGenerateSummary = async () => {
 		const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -704,25 +723,32 @@ function FoodTracker() {
 			if (errors?.length || !data) {
 				setSummaryState({
 					phase: "error",
-					message: "Failed to generate summary. Please check your connection and try again.",
+					message:
+						"Failed to generate summary. Please check your connection and try again.",
 				});
 				return;
 			}
 
 			if (data.status === "success" && data.summary) {
-				setSummaryState({ phase: "success", summary: data.summary as NutritionSummary });
+				setSummaryState({
+					phase: "success",
+					summary: data.summary as NutritionSummary,
+				});
 			} else if (data.status === "insufficient-data") {
 				setSummaryState({ phase: "insufficient-data" });
 			} else {
 				setSummaryState({
 					phase: "error",
-					message: data.message ?? "Failed to generate summary. Please check your connection and try again.",
+					message:
+						data.message ??
+						"Failed to generate summary. Please check your connection and try again.",
 				});
 			}
 		} catch {
 			setSummaryState({
 				phase: "error",
-				message: "Failed to generate summary. Please check your connection and try again.",
+				message:
+					"Failed to generate summary. Please check your connection and try again.",
 			});
 		}
 	};
@@ -819,9 +845,15 @@ function FoodTracker() {
 
 						{/* Result area */}
 						{summaryState.phase === "loading" && <SummaryLoadingCard />}
-						{summaryState.phase === "insufficient-data" && <InsufficientDataMessage />}
-						{summaryState.phase === "error" && <SummaryErrorMessage message={summaryState.message} />}
-						{summaryState.phase === "success" && <SummaryCard summary={summaryState.summary} />}
+						{summaryState.phase === "insufficient-data" && (
+							<InsufficientDataMessage />
+						)}
+						{summaryState.phase === "error" && (
+							<SummaryErrorMessage message={summaryState.message} />
+						)}
+						{summaryState.phase === "success" && (
+							<SummaryCard summary={summaryState.summary} />
+						)}
 					</div>
 				</div>
 			</section>

@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "name": "security-scan",
+  "description": "Scans saved source files for hardcoded credentials (AWS keys, private keys, DB connection strings, tokens, passwords) using the rules defined in security.md. Reports findings with file path, line number, credential type, and recommended fix. Excludes node_modules, dist, build, and amplify_outputs.json.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.json",
+      "**/*.yaml",
+      "**/*.yml",
+      "**/.env",
+      "**/.env.*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Read the saved file (ignore files under node_modules/, dist/, build/, and the file amplify_outputs.json — skip the scan entirely if the saved file matches any of those). Apply the credential detection rules from the security.md steering file to identify any hardcoded credentials in the file.\n\nUse the file path and surrounding code context to distinguish real credentials from:\n- Test fixtures in files under __tests__/ or matching *.test.ts / *.spec.ts\n- Documentation examples and comments\n- The allowlisted strings defined in security.md (e.g. AKIAIOSFODNN7EXAMPLE, wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY, any string ending in the literal word EXAMPLE)\n\nCredential types to detect (per security.md):\n- AWS access key IDs matching AKIA[A-Z0-9]{16} or ASIA[A-Z0-9]{16}\n- Private keys containing -----BEGIN ... PRIVATE KEY-----\n- Database connection strings with embedded credentials (postgres://, mongodb://, mysql:// with user:password)\n- GitHub tokens beginning with ghp_, gho_, ghu_, ghs_, or ghr_\n- Plain password assignments where the value appears to be a real secret\n\nFor each finding, report:\n1. File path\n2. Line number\n3. Type of credential found\n4. Recommended fix — use IAM roles for service-to-service AWS calls, AWS Systems Manager Parameter Store for configuration, or AWS Secrets Manager for credentials that need rotation (as specified in security.md)\n\nIf no credentials are found, say so briefly so the developer knows the scan completed cleanly."
+  }
+}

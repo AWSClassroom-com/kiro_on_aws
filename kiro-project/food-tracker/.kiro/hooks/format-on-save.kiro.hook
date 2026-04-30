@@ -1,0 +1,16 @@
+{
+  "name": "Format on Save",
+  "version": "1.0.0",
+  "description": "Runs Biome formatter on TypeScript and TypeScript-React files when they are saved",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.ts",
+      "**/*.tsx"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "npx biome format --write src/ amplify/ scripts/"
+  }
+}

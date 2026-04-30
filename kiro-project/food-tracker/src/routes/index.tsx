@@ -175,9 +175,24 @@ function App() {
 						</p>
 					</div>
 					<nav className="flex items-center gap-6">
-						<a href="#" className="text-gray-400 hover:text-gray-200 text-sm transition-colors">Docs</a>
-						<a href="#" className="text-gray-400 hover:text-gray-200 text-sm transition-colors">GitHub</a>
-						<a href="#" className="text-gray-400 hover:text-gray-200 text-sm transition-colors">Privacy</a>
+						<a
+							href="#"
+							className="text-gray-400 hover:text-gray-200 text-sm transition-colors"
+						>
+							Docs
+						</a>
+						<a
+							href="#"
+							className="text-gray-400 hover:text-gray-200 text-sm transition-colors"
+						>
+							GitHub
+						</a>
+						<a
+							href="#"
+							className="text-gray-400 hover:text-gray-200 text-sm transition-colors"
+						>
+							Privacy
+						</a>
 					</nav>
 				</div>
 			</footer>

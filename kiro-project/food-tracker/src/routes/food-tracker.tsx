@@ -328,6 +328,17 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 	);
 }
 
+function isExpiringSoon(expirationDate: string | null | undefined): boolean {
+	if (!expirationDate) return false;
+	const now = new Date();
+	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	const expiry = new Date(expirationDate);
+	const expiryDay = new Date(expiry.getFullYear(), expiry.getMonth(), expiry.getDate());
+	const diffMs = expiryDay.getTime() - today.getTime();
+	const diffDays = diffMs / (1000 * 60 * 60 * 24);
+	return diffDays >= 0 && diffDays <= 3;
+}
+
 function FoodEntriesList({
 	entries,
 	onDelete,
@@ -336,6 +347,8 @@ function FoodEntriesList({
 	onDelete: (id: string) => void;
 }) {
 	const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+	const [filterName, setFilterName] = useState("");
+	const [sortKey, setSortKey] = useState<"default" | "name" | "calories" | "expiration">("default");
 
 	const handleDelete = async (id: string) => {
 		try {
@@ -346,6 +359,28 @@ function FoodEntriesList({
 			console.error("Error deleting entry:", error);
 		}
 	};
+
+	const visibleEntries = entries
+		.filter((e) =>
+			filterName.trim() === "" ||
+			e.name.toLowerCase().includes(filterName.trim().toLowerCase()),
+		)
+		.sort((a, b) => {
+			if (sortKey === "name") {
+				return a.name.localeCompare(b.name);
+			}
+			if (sortKey === "calories") {
+				return (b.calories ?? -1) - (a.calories ?? -1);
+			}
+			if (sortKey === "expiration") {
+				if (!a.expirationDate && !b.expirationDate) return 0;
+				if (!a.expirationDate) return 1;
+				if (!b.expirationDate) return -1;
+				return new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime();
+			}
+			// default: newest first (original order preserved from parent)
+			return 0;
+		});
 
 	if (entries.length === 0) {
 		return (
@@ -369,12 +404,44 @@ function FoodEntriesList({
 			<h2 className="text-2xl font-semibold text-white mb-6">
 				Your Food Entries
 			</h2>
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				{entries.map((entry) => (
+
+			{/* Filter & sort bar */}
+			<div className="flex flex-col sm:flex-row gap-3 mb-6">
+				<input
+					type="text"
+					value={filterName}
+					onChange={(e) => setFilterName(e.target.value)}
+					placeholder="Filter by name…"
+					className="flex-1 px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors text-sm"
+				/>
+				<select
+					value={sortKey}
+					onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
+					className="px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors text-sm"
+				>
+					<option value="default">Sort: Default (newest first)</option>
+					<option value="name">Sort: Name (A–Z)</option>
+					<option value="calories">Sort: Calories (high to low)</option>
+					<option value="expiration">Sort: Expiration Date (soonest first)</option>
+				</select>
+			</div>
+
+			{visibleEntries.length === 0 ? (
+				<div className="text-center py-12">
+					<p className="text-gray-400 text-lg">No entries match your filter.</p>
+				</div>
+			) : (
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{visibleEntries.map((entry) => (
 					<div
 						key={entry.id}
-						className="bg-slate-700/50 border border-slate-600 rounded-lg p-6 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10"
+						className="relative bg-slate-700/50 border border-slate-600 rounded-lg p-6 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10"
 					>
+						{isExpiringSoon(entry.expirationDate) && (
+							<span className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded animate-pulse-subtle">
+								EXPIRING SOON
+							</span>
+						)}
 						<div className="flex justify-between items-start mb-4">
 							<h3 className="text-lg font-semibold text-white truncate">
 								{entry.name}
@@ -495,6 +562,7 @@ function FoodEntriesList({
 					</div>
 				))}
 			</div>
+			)}
 		</div>
 	);
 }

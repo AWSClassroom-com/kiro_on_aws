@@ -1,101 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { desc, eq } from "drizzle-orm";
 import { Plus, Trash2, UtensilsCrossed } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 
-import { db } from "@/db";
-import { foodItems, insertFoodItemSchema } from "@/db/schema";
-
-// Server function for creating food entries
-const createFoodEntry = createServerFn({ method: "POST" })
-	.inputValidator(
-		insertFoodItemSchema.pick({
-			name: true,
-			description: true,
-			category: true,
-			quantity: true,
-			unit: true,
-			calories: true,
-			protein: true,
-			carbs: true,
-			fat: true,
-			expirationDate: true,
-		}),
-	)
-	.handler(async ({ data }) => {
-		try {
-			// Convert decimal numbers to strings for database storage
-			const insertData = {
-				...data,
-				protein: data.protein?.toString(),
-				carbs: data.carbs?.toString(),
-				fat: data.fat?.toString(),
-			};
-
-			const [newEntry] = await db
-				.insert(foodItems)
-				.values(insertData)
-				.returning();
-			return { success: true, data: newEntry };
-		} catch (error) {
-			console.error("Error creating food entry:", error);
-			throw new Error("Failed to create food entry. Please try again.");
-		}
-	});
-
-// Server function for fetching food entries
-const getFoodEntries = createServerFn({ method: "GET" }).handler(async () => {
-	try {
-		const entries = await db
-			.select()
-			.from(foodItems)
-			.orderBy(desc(foodItems.createdAt));
-		return { success: true, data: entries };
-	} catch (error) {
-		console.error("Error fetching food entries:", error);
-		throw new Error("Failed to fetch food entries. Please try again.");
-	}
-});
-
-// Server function for deleting food entries
-const deleteFoodEntry = createServerFn({ method: "POST" })
-	.inputValidator(z.object({ id: z.number() }))
-	.handler(async ({ data }) => {
-		try {
-			const [deletedEntry] = await db
-				.delete(foodItems)
-				.where(eq(foodItems.id, data.id))
-				.returning();
-
-			if (!deletedEntry) {
-				throw new Error("Food entry not found");
-			}
-
-			return { success: true, data: deletedEntry };
-		} catch (error) {
-			console.error("Error deleting food entry:", error);
-			throw new Error("Failed to delete food entry. Please try again.");
-		}
-	});
+import { client } from "@/lib/amplify-client";
+import type { Schema } from "../../amplify/data/resource";
 
 export const Route = createFileRoute("/food-tracker")({
 	component: FoodTracker,
 });
 
-// Form validation schema
-const formSchema = insertFoodItemSchema.pick({
-	name: true,
-	description: true,
-	category: true,
-	quantity: true,
-	unit: true,
-	calories: true,
-	protein: true,
-	carbs: true,
-	fat: true,
-	expirationDate: true,
+type FoodEntry = Schema["FoodItem"]["type"];
+
+const formSchema = z.object({
+	name: z.string().min(1, "Name is required").max(255, "Name too long"),
+	description: z.string().optional(),
+	category: z.string().max(100, "Category too long").optional(),
+	quantity: z
+		.number()
+		.int()
+		.positive("Quantity must be positive")
+		.optional(),
+	unit: z.string().max(50, "Unit too long").optional(),
+	calories: z
+		.number()
+		.int()
+		.nonnegative("Calories cannot be negative")
+		.optional(),
+	protein: z.number().nonnegative("Protein cannot be negative").optional(),
+	carbs: z.number().nonnegative("Carbs cannot be negative").optional(),
+	fat: z.number().nonnegative("Fat cannot be negative").optional(),
+	expirationDate: z.date().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -114,7 +49,6 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 		value: string | number | Date | undefined,
 	) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
-		// Clear error when user starts typing
 		if (errors[field]) {
 			setErrors((prev) => ({ ...prev, [field]: "" }));
 		}
@@ -127,23 +61,38 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 		setSuccessMessage("");
 
 		try {
-			// Validate form data
-			const validatedData = formSchema.parse(formData);
+			const validated = formSchema.parse(formData);
 
-			// Submit to server
-			const result = await createFoodEntry({ data: validatedData });
+			const { data, errors: createErrors } = await client.models.FoodItem.create(
+				{
+					name: validated.name,
+					description: validated.description,
+					category: validated.category,
+					quantity: validated.quantity,
+					unit: validated.unit,
+					calories: validated.calories,
+					protein: validated.protein,
+					carbs: validated.carbs,
+					fat: validated.fat,
+					expirationDate: validated.expirationDate?.toISOString(),
+					addedAt: new Date().toISOString(),
+				},
+			);
 
-			if (result.success) {
-				setSuccessMessage("Food entry added successfully!");
-				setFormData({ quantity: 1, unit: "piece" }); // Reset form
-				onSuccess(); // Refresh the list
-
-				// Clear success message after 3 seconds
-				setTimeout(() => setSuccessMessage(""), 3000);
+			if (createErrors?.length || !data) {
+				throw new Error(
+					createErrors?.map((e) => e.message).join(", ") ||
+						"Failed to create food entry",
+				);
 			}
+
+			setSuccessMessage("Food entry added successfully!");
+			setFormData({ quantity: 1, unit: "piece" });
+			onSuccess();
+
+			setTimeout(() => setSuccessMessage(""), 3000);
 		} catch (error) {
 			if (error instanceof z.ZodError) {
-				// Handle validation errors
 				const fieldErrors: Record<string, string> = {};
 				error.errors.forEach((err) => {
 					if (err.path[0]) {
@@ -152,7 +101,6 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 				});
 				setErrors(fieldErrors);
 			} else {
-				// Handle server errors
 				setErrors({
 					general: error instanceof Error ? error.message : "An error occurred",
 				});
@@ -182,7 +130,6 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 			)}
 
 			<form onSubmit={handleSubmit} className="space-y-6">
-				{/* Name Field */}
 				<div>
 					<label className="block text-sm font-medium text-gray-300 mb-2">
 						Food Name *
@@ -201,7 +148,6 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 					)}
 				</div>
 
-				{/* Description Field */}
 				<div>
 					<label className="block text-sm font-medium text-gray-300 mb-2">
 						Description
@@ -215,7 +161,6 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 					/>
 				</div>
 
-				{/* Category and Unit Row */}
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<div>
 						<label className="block text-sm font-medium text-gray-300 mb-2">
@@ -250,7 +195,6 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 					</div>
 				</div>
 
-				{/* Quantity and Calories Row */}
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<div>
 						<label className="block text-sm font-medium text-gray-300 mb-2">
@@ -291,7 +235,6 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 					</div>
 				</div>
 
-				{/* Nutrition Row */}
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<div>
 						<label className="block text-sm font-medium text-gray-300 mb-2">
@@ -352,7 +295,6 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 					</div>
 				</div>
 
-				{/* Expiration Date */}
 				<div>
 					<label className="block text-sm font-medium text-gray-300 mb-2">
 						Expiration Date
@@ -374,7 +316,6 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 					/>
 				</div>
 
-				{/* Submit Button */}
 				<button
 					type="submit"
 					disabled={isSubmitting}
@@ -387,34 +328,18 @@ function AddFoodForm({ onSuccess }: { onSuccess: () => void }) {
 	);
 }
 
-interface FoodEntry {
-	id: number;
-	name: string;
-	description: string | null;
-	category: string | null;
-	quantity: number | null;
-	unit: string | null;
-	calories: number | null;
-	protein: string | null;
-	carbs: string | null;
-	fat: string | null;
-	expirationDate: Date | null;
-	createdAt: Date;
-	updatedAt: Date;
-}
-
 function FoodEntriesList({
 	entries,
 	onDelete,
 }: {
 	entries: FoodEntry[];
-	onDelete: (id: number) => void;
+	onDelete: (id: string) => void;
 }) {
-	const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+	const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-	const handleDelete = async (id: number) => {
+	const handleDelete = async (id: string) => {
 		try {
-			await deleteFoodEntry({ data: { id } });
+			await client.models.FoodItem.delete({ id });
 			onDelete(id);
 			setDeleteConfirm(null);
 		} catch (error) {
@@ -485,29 +410,31 @@ function FoodEntriesList({
 								</div>
 							)}
 
-							{entry.calories && (
+							{entry.calories != null && (
 								<div className="flex justify-between">
 									<span className="text-gray-400">Calories:</span>
 									<span className="text-white">{entry.calories}</span>
 								</div>
 							)}
 
-							{(entry.protein || entry.carbs || entry.fat) && (
+							{(entry.protein != null ||
+								entry.carbs != null ||
+								entry.fat != null) && (
 								<div className="pt-2 border-t border-slate-600">
 									<div className="grid grid-cols-3 gap-2 text-xs">
-										{entry.protein && (
+										{entry.protein != null && (
 											<div className="text-center">
 												<div className="text-gray-400">Protein</div>
 												<div className="text-white">{entry.protein}g</div>
 											</div>
 										)}
-										{entry.carbs && (
+										{entry.carbs != null && (
 											<div className="text-center">
 												<div className="text-gray-400">Carbs</div>
 												<div className="text-white">{entry.carbs}g</div>
 											</div>
 										)}
-										{entry.fat && (
+										{entry.fat != null && (
 											<div className="text-center">
 												<div className="text-gray-400">Fat</div>
 												<div className="text-white">{entry.fat}g</div>
@@ -526,15 +453,16 @@ function FoodEntriesList({
 								</div>
 							)}
 
-							<div className="flex justify-between pt-2 border-t border-slate-600">
-								<span className="text-gray-400">Added:</span>
-								<span className="text-gray-300">
-									{new Date(entry.createdAt).toLocaleDateString()}
-								</span>
-							</div>
+							{entry.addedAt && (
+								<div className="flex justify-between pt-2 border-t border-slate-600">
+									<span className="text-gray-400">Added:</span>
+									<span className="text-gray-300">
+										{new Date(entry.addedAt).toLocaleDateString()}
+									</span>
+								</div>
+							)}
 						</div>
 
-						{/* Delete Confirmation Modal */}
 						{deleteConfirm === entry.id && (
 							<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
 								<div className="bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-sm mx-4">
@@ -577,10 +505,17 @@ function FoodTracker() {
 
 	const loadEntries = useCallback(async () => {
 		try {
-			const result = await getFoodEntries();
-			if (result.success) {
-				setEntries(result.data);
+			const { data, errors } = await client.models.FoodItem.list();
+			if (errors?.length) {
+				console.error("Error loading entries:", errors);
+				return;
 			}
+			const sorted = [...data].sort((a, b) => {
+				const aTime = a.addedAt ? new Date(a.addedAt).getTime() : 0;
+				const bTime = b.addedAt ? new Date(b.addedAt).getTime() : 0;
+				return bTime - aTime;
+			});
+			setEntries(sorted);
 		} catch (error) {
 			console.error("Error loading entries:", error);
 		} finally {
@@ -589,10 +524,10 @@ function FoodTracker() {
 	}, []);
 
 	const handleEntryAdded = () => {
-		loadEntries(); // Refresh the list
+		loadEntries();
 	};
 
-	const handleEntryDeleted = (deletedId: number) => {
+	const handleEntryDeleted = (deletedId: string) => {
 		setEntries((prev) => prev.filter((entry) => entry.id !== deletedId));
 	};
 
@@ -605,7 +540,6 @@ function FoodTracker() {
 			<section className="relative py-20 px-6 overflow-hidden">
 				<div className="absolute inset-0 bg-linear-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10"></div>
 				<div className="relative max-w-4xl mx-auto">
-					{/* Header Section */}
 					<div className="text-center mb-12">
 						<div className="flex items-center justify-center gap-4 mb-6">
 							<UtensilsCrossed className="w-16 h-16 text-cyan-400" />
@@ -625,12 +559,9 @@ function FoodTracker() {
 						</p>
 					</div>
 
-					{/* Main Content Area */}
 					<div className="space-y-8">
-						{/* Add Food Form */}
 						<AddFoodForm onSuccess={handleEntryAdded} />
 
-						{/* Food Entries List */}
 						{isLoading ? (
 							<div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-8">
 								<div className="text-center py-12">

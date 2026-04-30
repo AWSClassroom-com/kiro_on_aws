@@ -5,9 +5,10 @@ dist-ssr
 *.local
 count.txt
 .env
-.nitro
 .tanstack
-.wrangler
-.output
-.vinxi
 todos.json
+
+# Amplify
+.amplify
+amplify_outputs*
+amplifyconfiguration*

@@ -1,16 +1,24 @@
-import { config } from "dotenv";
-import { db } from "./index.js";
-import { foodItems } from "./schema.js";
+import { Amplify } from "aws-amplify";
+import { generateClient } from "aws-amplify/data";
 
-config();
+import type { Schema } from "../amplify/data/resource";
+import outputs from "../amplify_outputs.json";
+
+Amplify.configure(outputs);
+const client = generateClient<Schema>();
 
 const daysFromNow = (days: number) => {
 	const d = new Date();
 	d.setDate(d.getDate() + days);
-	return d;
+	return d.toISOString();
 };
 
-const seedData = [
+type SeedItem = Omit<
+	Schema["FoodItem"]["createType"],
+	"id" | "createdAt" | "updatedAt"
+>;
+
+const seedData: SeedItem[] = [
 	{
 		name: "Organic Bananas",
 		description: "Fresh organic bananas from local farm",
@@ -21,7 +29,8 @@ const seedData = [
 		protein: 1.3,
 		carbs: 27.0,
 		fat: 0.4,
-		expirationDate: new Date("2025-01-15"),
+		expirationDate: daysFromNow(5),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Greek Yogurt",
@@ -33,7 +42,8 @@ const seedData = [
 		protein: 20.0,
 		carbs: 9.0,
 		fat: 0.0,
-		expirationDate: new Date("2025-01-10"),
+		expirationDate: daysFromNow(7),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Whole Wheat Bread",
@@ -45,7 +55,8 @@ const seedData = [
 		protein: 4.0,
 		carbs: 15.0,
 		fat: 1.0,
-		expirationDate: new Date("2025-01-08"),
+		expirationDate: daysFromNow(4),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Chicken Breast",
@@ -57,7 +68,8 @@ const seedData = [
 		protein: 31.0,
 		carbs: 0.0,
 		fat: 3.6,
-		expirationDate: new Date("2025-01-05"),
+		expirationDate: daysFromNow(2),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Baby Spinach",
@@ -69,7 +81,8 @@ const seedData = [
 		protein: 0.9,
 		carbs: 1.1,
 		fat: 0.1,
-		expirationDate: new Date("2025-01-07"),
+		expirationDate: daysFromNow(3),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Almonds",
@@ -81,7 +94,8 @@ const seedData = [
 		protein: 6.0,
 		carbs: 6.1,
 		fat: 14.2,
-		expirationDate: new Date("2025-06-01"),
+		expirationDate: daysFromNow(180),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Olive Oil",
@@ -93,7 +107,8 @@ const seedData = [
 		protein: 0.0,
 		carbs: 0.0,
 		fat: 100.0,
-		expirationDate: new Date("2026-01-01"),
+		expirationDate: daysFromNow(365),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Brown Rice",
@@ -105,7 +120,8 @@ const seedData = [
 		protein: 5.0,
 		carbs: 45.0,
 		fat: 1.8,
-		expirationDate: new Date("2025-12-01"),
+		expirationDate: daysFromNow(180),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Cheddar Cheese",
@@ -117,7 +133,8 @@ const seedData = [
 		protein: 7.0,
 		carbs: 1.0,
 		fat: 9.0,
-		expirationDate: new Date("2025-02-15"),
+		expirationDate: daysFromNow(30),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Avocados",
@@ -129,7 +146,8 @@ const seedData = [
 		protein: 2.9,
 		carbs: 12.0,
 		fat: 21.0,
-		expirationDate: new Date("2025-01-06"),
+		expirationDate: daysFromNow(3),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Strawberries",
@@ -141,8 +159,8 @@ const seedData = [
 		protein: 0.7,
 		carbs: 7.7,
 		fat: 0.3,
-		createdAt: daysFromNow(-6),
 		expirationDate: daysFromNow(2),
+		addedAt: daysFromNow(-6),
 	},
 	{
 		name: "Blueberries",
@@ -154,8 +172,8 @@ const seedData = [
 		protein: 0.7,
 		carbs: 14.5,
 		fat: 0.3,
-		createdAt: daysFromNow(-5),
 		expirationDate: daysFromNow(3),
+		addedAt: daysFromNow(-5),
 	},
 	{
 		name: "Kale",
@@ -167,8 +185,8 @@ const seedData = [
 		protein: 2.9,
 		carbs: 6.7,
 		fat: 0.6,
-		createdAt: daysFromNow(-4),
 		expirationDate: daysFromNow(4),
+		addedAt: daysFromNow(-4),
 	},
 	{
 		name: "Bell Peppers",
@@ -180,8 +198,8 @@ const seedData = [
 		protein: 1.0,
 		carbs: 6.0,
 		fat: 0.3,
-		createdAt: daysFromNow(-3),
 		expirationDate: daysFromNow(5),
+		addedAt: daysFromNow(-3),
 	},
 	{
 		name: "Salmon Fillet",
@@ -193,8 +211,8 @@ const seedData = [
 		protein: 22.0,
 		carbs: 0.0,
 		fat: 13.0,
-		createdAt: daysFromNow(-2),
 		expirationDate: daysFromNow(1),
+		addedAt: daysFromNow(-2),
 	},
 	{
 		name: "Ground Turkey",
@@ -206,8 +224,8 @@ const seedData = [
 		protein: 22.0,
 		carbs: 0.0,
 		fat: 9.0,
-		createdAt: daysFromNow(-1),
 		expirationDate: daysFromNow(2),
+		addedAt: daysFromNow(-1),
 	},
 	{
 		name: "Whole Milk",
@@ -219,8 +237,8 @@ const seedData = [
 		protein: 7.7,
 		carbs: 11.7,
 		fat: 8.0,
-		createdAt: daysFromNow(-3),
 		expirationDate: daysFromNow(6),
+		addedAt: daysFromNow(-3),
 	},
 	{
 		name: "Eggs",
@@ -232,8 +250,8 @@ const seedData = [
 		protein: 6.3,
 		carbs: 0.4,
 		fat: 4.8,
-		createdAt: daysFromNow(-5),
 		expirationDate: daysFromNow(7),
+		addedAt: daysFromNow(-5),
 	},
 	{
 		name: "Sourdough Bread",
@@ -245,8 +263,8 @@ const seedData = [
 		protein: 7.7,
 		carbs: 36.5,
 		fat: 1.2,
-		createdAt: daysFromNow(-2),
 		expirationDate: daysFromNow(4),
+		addedAt: daysFromNow(-2),
 	},
 	{
 		name: "Cherry Tomatoes",
@@ -258,8 +276,8 @@ const seedData = [
 		protein: 1.3,
 		carbs: 5.8,
 		fat: 0.3,
-		createdAt: daysFromNow(-4),
 		expirationDate: daysFromNow(3),
+		addedAt: daysFromNow(-4),
 	},
 	{
 		name: "Cucumber",
@@ -271,8 +289,8 @@ const seedData = [
 		protein: 0.7,
 		carbs: 3.6,
 		fat: 0.1,
-		createdAt: daysFromNow(-6),
 		expirationDate: daysFromNow(5),
+		addedAt: daysFromNow(-6),
 	},
 	{
 		name: "Hummus",
@@ -284,8 +302,8 @@ const seedData = [
 		protein: 7.9,
 		carbs: 14.3,
 		fat: 9.6,
-		createdAt: daysFromNow(-1),
 		expirationDate: daysFromNow(7),
+		addedAt: daysFromNow(-1),
 	},
 	{
 		name: "Carrots",
@@ -297,8 +315,8 @@ const seedData = [
 		protein: 0.9,
 		carbs: 9.6,
 		fat: 0.2,
-		createdAt: daysFromNow(-7),
 		expirationDate: daysFromNow(6),
+		addedAt: daysFromNow(-7),
 	},
 	{
 		name: "Apples",
@@ -310,8 +328,8 @@ const seedData = [
 		protein: 0.5,
 		carbs: 25.0,
 		fat: 0.3,
-		createdAt: daysFromNow(-3),
 		expirationDate: daysFromNow(7),
+		addedAt: daysFromNow(-3),
 	},
 	{
 		name: "Mozzarella",
@@ -323,8 +341,8 @@ const seedData = [
 		protein: 6.3,
 		carbs: 0.6,
 		fat: 6.3,
-		createdAt: daysFromNow(-2),
 		expirationDate: daysFromNow(3),
+		addedAt: daysFromNow(-2),
 	},
 	{
 		name: "Pasta",
@@ -336,8 +354,8 @@ const seedData = [
 		protein: 7.5,
 		carbs: 37.0,
 		fat: 0.8,
-		createdAt: daysFromNow(-5),
-		expirationDate: daysFromNow(7),
+		expirationDate: daysFromNow(180),
+		addedAt: daysFromNow(-5),
 	},
 	{
 		name: "Tofu",
@@ -349,8 +367,8 @@ const seedData = [
 		protein: 17.0,
 		carbs: 2.8,
 		fat: 8.7,
-		createdAt: daysFromNow(0),
 		expirationDate: daysFromNow(5),
+		addedAt: daysFromNow(0),
 	},
 	{
 		name: "Lemons",
@@ -362,8 +380,8 @@ const seedData = [
 		protein: 0.6,
 		carbs: 5.4,
 		fat: 0.2,
-		createdAt: daysFromNow(-4),
 		expirationDate: daysFromNow(6),
+		addedAt: daysFromNow(-4),
 	},
 	{
 		name: "Mushrooms",
@@ -375,8 +393,8 @@ const seedData = [
 		protein: 3.1,
 		carbs: 3.3,
 		fat: 0.3,
-		createdAt: daysFromNow(-2),
 		expirationDate: daysFromNow(2),
+		addedAt: daysFromNow(-2),
 	},
 	{
 		name: "Orange Juice",
@@ -388,30 +406,81 @@ const seedData = [
 		protein: 1.7,
 		carbs: 25.8,
 		fat: 0.5,
-		createdAt: daysFromNow(-1),
 		expirationDate: daysFromNow(4),
+		addedAt: daysFromNow(-1),
 	},
 ];
 
-async function seed() {
-	try {
-		console.log("🌱 Seeding database...");
+async function clearExisting() {
+	let cleared = 0;
+	let nextToken: string | null | undefined = undefined;
 
-		// Clear existing data
-		await db.delete(foodItems);
-		console.log("🗑️  Cleared existing food items");
+	do {
+		const page = await client.models.FoodItem.list({ nextToken });
+		if (page.errors?.length) {
+			throw new Error(
+				`List failed: ${page.errors.map((e) => e.message).join(", ")}`,
+			);
+		}
+		for (const item of page.data) {
+			const result = await client.models.FoodItem.delete({ id: item.id });
+			if (result.errors?.length) {
+				console.error(
+					`Failed to delete ${item.id}:`,
+					result.errors.map((e) => e.message).join(", "),
+				);
+			} else {
+				cleared++;
+			}
+		}
+		nextToken = page.nextToken;
+	} while (nextToken);
 
-		// Insert seed data
-		await db.insert(foodItems).values(seedData);
-		console.log(`✅ Inserted ${seedData.length} food items`);
-
-		console.log("🎉 Seeding completed successfully!");
-	} catch (error) {
-		console.error("❌ Error seeding database:", error);
-		process.exit(1);
-	} finally {
-		process.exit(0);
-	}
+	return cleared;
 }
 
-seed();
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function createWithRetry(item: SeedItem, maxAttempts = 4) {
+	let lastErrorMessages = "";
+	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+		const result = await client.models.FoodItem.create(item);
+		if (!result.errors?.length) return { ok: true as const };
+
+		lastErrorMessages = result.errors.map((e) => e.message).join(", ");
+		const isTransientSchema = result.errors.some((e) =>
+			/FieldUndefined|Validation error of type/i.test(e.message),
+		);
+		if (!isTransientSchema || attempt === maxAttempts) {
+			return { ok: false as const, error: lastErrorMessages };
+		}
+		await sleep(1000 * attempt);
+	}
+	return { ok: false as const, error: lastErrorMessages };
+}
+
+async function seed() {
+	console.log("Seeding FoodItem table...");
+
+	const cleared = await clearExisting();
+	console.log(`  Cleared ${cleared} existing items`);
+
+	let inserted = 0;
+	for (const item of seedData) {
+		const result = await createWithRetry(item);
+		if (result.ok) {
+			inserted++;
+		} else {
+			console.error(`  Failed to insert "${item.name}": ${result.error}`);
+		}
+	}
+	console.log(`  Inserted ${inserted}/${seedData.length} items`);
+	console.log("Done.");
+}
+
+seed()
+	.catch((err) => {
+		console.error("Seed failed:", err);
+		process.exit(1);
+	})
+	.then(() => process.exit(0));

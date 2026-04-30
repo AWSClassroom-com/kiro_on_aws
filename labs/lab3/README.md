@@ -216,6 +216,7 @@ I want this agent fully working in this lab. Generate the following:
    Each operation needs a clear, distinctive `description` — the agent reads these to pick which tool to call. Save to amplify/functions/meal-recommendations/openapi.json.
 
 3. FUNCTION RESOURCE — amplify/functions/meal-recommendations/resource.ts with a defineFunction declaration: name "meal-recommendations", entry "./handler.ts", timeoutSeconds 30.
+  - In the defineFunction call, set resourceGroupName: "data" since the function reads from the data stack.
 
 4. LAMBDA HANDLER — amplify/functions/meal-recommendations/handler.ts.
    - Use @aws-sdk/lib-dynamodb (DynamoDBDocumentClient + ScanCommand with FilterExpression).
@@ -253,15 +254,16 @@ Now watch terminal 1 (the `amplify/sandbox` watcher). It detects the `amplify/` 
 
 ### Step 11: Capture the deployed Lambda's ARN
 
-You'll need the ARN to wire the action group to the deployed function. From a third terminal (or split your existing one):
+You'll need the Lambda function name to wire the action group to the deployed function. From a third terminal (or split your existing one):
 
 ```bash
 aws lambda list-functions \
-  --query "Functions[?contains(FunctionName, 'meal-recommendations')].FunctionArn" \
-  --output text --no-cli-pager
+  --query "Functions[?starts_with(FunctionName,'amplify-foodstarter')&&contains(FunctionName,'mealrecommendations')].FunctionName" \
+  --output text
+
 ```
 
-Copy the ARN — you'll paste it into the Bedrock Console in Step 13. It'll look like `arn:aws:lambda:<region>:<account>:function:amplify-foodtracker-<you>-sandbox-<hash>-mealrecommendationsLambda…`.
+Copy the name — you'll paste it into the Bedrock Console in Step 13.
 
 > Why this works: the sandbox is a real cloud deployment scoped to your account. The Lambda is fully provisioned with an IAM role, DynamoDB read access, and an env var pointing at the FoodItem table. Bedrock can invoke it because of the resource-based policy you added in `backend.ts`. Nothing about this is mocked or stubbed.
 
@@ -276,10 +278,15 @@ Copy the agent instructions Kiro printed in chat — you'll paste them into the 
 Open the AWS Console → **Amazon Bedrock** → confirm the region matches your `aws login` region. Left navigation → **Agents** → **Create Agent**.
 
 - **Name:** `MealRecommendationAgent`
-- **Foundation model:** `anthropic.claude-sonnet-4-5-20250929-v1:0` (Claude Sonnet 4.5)
+
+Click **Create**.
+
+Fill out the rest of the form:
+
+- **Select model:** Untick "Bedrock Agents optimized" and select Antropic -> Claude Sonnet 4.5 -> Apply
 - **Instructions for the Agent:** paste the instructions Kiro generated in Step 9.
 
-Click **Save**.
+Click **Save** at the top.
 
 ### Step 13: Add the action group pointing at your deployed Lambda
 
@@ -287,7 +294,7 @@ On the agent overview page, scroll to **Action groups** → **Add**.
 
 - **Name:** `FoodEntryTools`
 - **Action group type:** Define with API schemas
-- **Lambda function:** **Use an existing Lambda function**, then paste the ARN you captured in Step 11.
+- **Lambda function:** **Use an existing Lambda function**, then paste the name you captured in Step 11.
 - **API schema:** **Define with in-line schema editor**. Paste the contents of `amplify/functions/meal-recommendations/openapi.json`.
 
 Click **Create**.
@@ -295,6 +302,8 @@ Click **Create**.
 ### Step 14: Prepare the agent
 
 Back on the agent overview, click **Prepare** (top right). This compiles the agent's instructions and action group into a runnable form. You must Prepare again after every configuration change — the easiest step in the lab to forget.
+
+> If **Prepare** is greyed out then try clicking **Save** again first.
 
 > One sanity check before testing: open your deployed Lambda in the Lambda Console (search for `meal-recommendations`) and confirm the **Configuration → Permissions → Resource-based policy statements** tab shows an entry granting `bedrock.amazonaws.com` permission to invoke. If it's missing, the `addPermission` block in `backend.ts` didn't make it through; fix that file and let the sandbox redeploy.
 

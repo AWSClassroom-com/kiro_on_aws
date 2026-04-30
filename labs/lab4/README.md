@@ -54,7 +54,7 @@ You'll paste these into the spec in Part A.
 
 ### Step 2: Describe the feature
 
-Paste as your initial prompt (replace the two `<PASTE…>` placeholders with the IDs from Prerequisite 4):
+Paste as your initial prompt, Kiro should ask you for your Agent ID and Alias ID:
 
 ```
 Create a new spec "meal-agent-chat" for a chat panel feature on the food-tracker page that lets the user converse with the MealRecommendationAgent (Bedrock Agent) deployed in Lab 3.
@@ -73,12 +73,14 @@ Requirements:
 - On error the chat shows a friendly fallback message; it does NOT throw.
 
 Bedrock specifics:
-- Agent ID: <PASTE YOUR AGENT ID>
-- Alias ID: <PASTE YOUR ALIAS ID>
+- Agent ID: [AGENT ID]
+- Alias ID: [ALIAS ID]
 - Use @aws-sdk/client-bedrock-agent-runtime (BedrockAgentRuntimeClient + InvokeAgentCommand).
 - Iterate response.completion (async iterable of chunk events), decode each chunk's bytes with TextDecoder, concatenate into a single string.
 
 Hard constraint on credentials: At runtime, the Amplify Function uses its Lambda execution role for AWS calls — the AWS SDK's default credential chain resolves to that role automatically. Do NOT design anything that reads AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_PROFILE, AWS_REGION, or any AWS credential environment variables.
+---
+Before beginning as the user for their Agents ID and the Alias ID
 ```
 
 Answer Kiro's follow-up questions as they come.

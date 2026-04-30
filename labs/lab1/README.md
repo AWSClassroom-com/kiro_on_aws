@@ -29,7 +29,7 @@ The course repo has been pre-fetched and Node dependencies installed to prevent 
 
 ## Part A: Install Kiro
 
-### Step 1: Download and install
+### Step 1: Download and/or install (if using the class VM, the Kiro installer is already in your /downloads folder. Proceed to install wizard below.)
 
 Download from https://kiro.dev for your OS:
 

@@ -63,8 +63,11 @@ You are now logged in to Kiro with your AWS Builder ID. Confirm this by hovering
 
 > Builder ID is free and separate from an AWS account — no credit card required. It's only used to authenticate to Kiro itself; the AWS credentials you'll set up in Part B are what give the Amplify sandbox access to AWS services.
 
-- On the default Kiro screen, press **Open a project** and open the class project:
+- On the default Kiro screen, press **Open a project** and open the class project located here:
 **c:/class-projects/kiro_on_aws/kiro-project/food-tracker**
+
+- Trust the authors, dismiss any alerts and you're ready to build!
+
 ---
 
 ## Part B: Set Up AWS Credentials

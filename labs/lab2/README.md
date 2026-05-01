@@ -181,7 +181,7 @@ Before making any code changes, reply in chat with:
 Implement only that one task. Do not bundle multiple tasks together. Do not add files or features the task does not explicitly require. Wait for my approval of the diff before moving on.
 ```
 
-One Kiro produces a response it will wait for you to type "Approve" in the chat before beginning the task.
+Once Kiro produces a response it will wait for you to type "Approve" in the chat before beginning the task.
 
 For each subsequent task, send: 
 

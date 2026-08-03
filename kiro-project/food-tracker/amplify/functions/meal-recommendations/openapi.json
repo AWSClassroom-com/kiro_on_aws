@@ -1,0 +1,74 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FoodEntryTools",
+    "version": "1.0.0",
+    "description": "Tools for reading the user's tracked food entries from the FoodItem table."
+  },
+  "paths": {
+    "/getRecentEntries": {
+      "get": {
+        "operationId": "getRecentEntries",
+        "summary": "Get recently added food entries",
+        "description": "Use this when the user asks what they have on hand, what they could cook or eat, or anything about their current food inventory. Returns the food entries ADDED to the tracker in the last N days (default 7), with name, category, quantity, unit, calories, protein, carbs, fat, and dates.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 7, "minimum": 1 },
+            "description": "How many days back to look for recently added entries."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recently added food entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "days": { "type": "integer" },
+                    "entries": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/findExpiringSoon": {
+      "get": {
+        "operationId": "findExpiringSoon",
+        "summary": "Find food entries that are about to expire",
+        "description": "Use this when the user asks about freshness, spoilage, waste, or what they should use up soon. Returns ONLY the food entries whose expirationDate falls within the next N days (default 3). Do not use this for general inventory questions; it excludes shelf-stable items with no expiration date.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 3, "minimum": 1 },
+            "description": "How many days ahead to look for expiring entries."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Food entries expiring within the window",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "days": { "type": "integer" },
+                    "entries": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

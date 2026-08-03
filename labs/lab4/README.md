@@ -1,25 +1,20 @@
 # Lab 4: Chat Panel and Production Deployment
 
-Use Kiro's spec-driven workflow to build a chat panel into the food-tracker that calls `InvokeAgent` against the `MealRecommendationAgent` from Lab 3. Then deploy the app to AWS Amplify Hosting by connecting your GitHub repo, following the [AWS Amplify Next.js getting-started guide](https://docs.aws.amazon.com/amplify/latest/userguide/getting-started-next.html). Every push to `trunk` redeploys both the backend and frontend automatically.
+**Objective:** Two goals. First, use Kiro's spec-driven workflow (the same one from Lab 2) to build an in-app chat panel that calls `InvokeAgent` against the `MealRecommendationAgent` from Lab 3, proving the spec process works just as well for an integration feature as for a UI feature. Second, promote the app off your developer-tied sandbox: push the code to GitHub and connect the repo to AWS Amplify Hosting, so every push to `trunk` automatically redeploys both backend and frontend.
 
-**Time:** ~90 minutes
+**Time:** 90 minutes
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
-
-## Working with Kiro
-
-- Open chat: `Cmd+L` (macOS) / `Ctrl+L` (Windows/Linux). Open command palette: `Cmd+Shift+P` / `Ctrl+Shift+P`.
-- Prefer chat and command palette over clicking buttons — button labels change between versions.
-- Agent output varies between runs. Expected results describe outcomes, not exact text. If something looks wrong, tell Kiro in chat.
-- Always read diffs before accepting.
 
 ---
 
 ## Prerequisites
 
 ### 1. Lab 3 complete
+
 The `MealRecommendationAgent` exists in the Bedrock Console with a `FoodEntryTools` action group, and the trace panel showed correct tool selection.
 
 ### 2. Sandbox + dev server running
+
 From `kiro-project/food-tracker`: `npm run amplify:sandbox` (terminal 1) and `npm run dev` (terminal 2). App at `http://localhost:3000`.
 
 ### 3. AWS CLI session valid
@@ -32,66 +27,67 @@ If expired: `aws login --region <your-region>`.
 
 ### 4. GitHub account
 
-You'll need a GitHub account to host the repo Amplify deploys from. If you don't already have one, sign up at https://github.com/signup.
-
-### 5. Create a Bedrock Agent alias and capture IDs
-
-The test alias from Lab 3 (`TSTALIASID`) only works in the Console test panel. Create a real alias.
-
-Bedrock Console → **Agents** → **MealRecommendationAgent** → **Aliases** → **Create**:
-- **Alias name:** `v1`
-- **Associate a version:** **Create a new version and associate it to this alias**
-
-Click **Create alias**. After it provisions, capture:
-- **Agent ID** — top of the agent overview page.
-- **Alias ID** — in the Aliases table.
-
-You'll paste these into the spec in Part A.
+You need a GitHub account to host the repo Amplify deploys from. If you do not have one, sign up at https://github.com/signup.
 
 ---
 
 ## Part A: Generate Requirements
 
-### Step 1: Create a new spec
+### Step 1: Start a spec session
 
-`Cmd+Shift+P` / `Ctrl+Shift+P` → `Kiro: create a new spec`.
+Open the chat panel: Cmd+L (macOS) / Ctrl+L (Windows/Linux). In the bottom-left corner of the chat input box, click the agent selector and change it to Spec.
 
 ### Step 2: Describe the feature
 
-Paste as your initial prompt, Kiro should ask you for your Agent ID and Alias ID:
+Paste as your initial prompt:
 
 ```
 Create a new spec "meal-agent-chat" for a chat panel feature on the food-tracker page that lets the user converse with the MealRecommendationAgent (Bedrock Agent) deployed in Lab 3.
 
 Requirements:
-- Floating "Ask the meal assistant" button in the bottom-right of the food-tracker page that opens a side panel.
-- The side panel slides in from the right and contains:
+- A floating "Ask the meal assistant" button in the bottom-right of the food-tracker page that opens a panel fixed to the right side of the screen.
+- The panel contains:
   - Header with title "Meal Assistant", a "New conversation" button, and a close button.
   - Scrollable messages list (user and assistant messages alternating).
   - Input box pinned to the bottom with a Send button.
-  - Typing indicator while waiting for a response.
+  - A simple "thinking..." indicator while waiting for a response.
+- Keep the styling simple and consistent with the page's dark slate theme. No animations required. No emojis anywhere in the UI.
 - Each message exchange calls a new AppSync custom query invokeMealAgent(prompt, sessionId) that returns { sessionId, completion }.
 - The query is handled by a new Amplify Function invoke-meal-agent that calls Bedrock InvokeAgent for the MealRecommendationAgent.
 - sessionId is generated client-side with crypto.randomUUID() on first use and persists across messages until "New conversation" is clicked.
-- The query is authorized for authenticated users only.
+- The query is authorized with allow.publicApiKey() to match the existing schema.
 - On error the chat shows a friendly fallback message; it does NOT throw.
+- Keep the requirements focused on user-facing behavior. Do NOT add IAM policy or permission-scoping requirements; permissions are decided in the design phase.
 
 Bedrock specifics:
-- Agent ID: [AGENT ID]
-- Alias ID: [ALIAS ID]
+- The agent and its v1 alias already exist: they are deployed by the MealAgent construct, instantiated in amplify/backend.ts as the mealAgent variable (you studied it in Lab 3).
+- Do NOT hardcode any agent or alias IDs anywhere. The backend wires them into the Lambda at deploy time from mealAgent.agent.attrAgentId and mealAgent.alias.attrAgentAliasId.
 - Use @aws-sdk/client-bedrock-agent-runtime (BedrockAgentRuntimeClient + InvokeAgentCommand).
 - Iterate response.completion (async iterable of chunk events), decode each chunk's bytes with TextDecoder, concatenate into a single string.
 
-Hard constraint on credentials: At runtime, the Amplify Function uses its Lambda execution role for AWS calls — the AWS SDK's default credential chain resolves to that role automatically. Do NOT design anything that reads AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_PROFILE, AWS_REGION, or any AWS credential environment variables.
----
-Before beginning as the user for their Agents ID and the Alias ID
+Hard constraint on credentials: At runtime, the Amplify Function uses its Lambda execution role for AWS calls; the AWS SDK's default credential chain resolves to that role automatically. Do NOT design anything that reads AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_PROFILE, AWS_REGION, or any AWS credential environment variables.
 ```
 
-Answer Kiro's follow-up questions as they come.
+Kiro may ask follow-up questions before it generates anything. Typical questions and the answers to give:
+
+- Is this spec for a new feature or a bug fix? A new feature.
+- Start with requirements or technical design? Requirements.
 
 ### Step 3: Review and approve requirements
 
-Open `requirements.md`. Confirm it covers user stories, acceptance criteria for the happy path, the new-conversation reset, and error handling. Approve through the spec workflow when satisfied.
+Open `requirements.md`. Confirm it covers user stories, acceptance criteria for the happy path, the new-conversation reset, and error handling.
+
+Then run these critical review checks with Find (Cmd+F / Ctrl+F):
+
+1. Search for `Agent ID` and scan any code-like strings. There must be NO hardcoded or invented agent/alias ID values anywhere; the backend wires real IDs from the `mealAgent` construct at deploy time, and an invented ID fails at runtime with AccessDeniedException.
+2. Search for `IAM` and `policy`. The requirements must not contain IAM or permission-scoping criteria; those belong to the design phase.
+
+Approve through the spec workflow when satisfied.
+
+> Note: agent output varies between runs. Review what Kiro actually wrote.
+
+> **Checkpoint. Validate before continuing:**
+> `requirements.md` is approved and contains your real Agent ID and Alias ID, not bracket placeholders.
 
 ---
 
@@ -104,17 +100,27 @@ In chat:
 ```
 The requirements for the meal-agent-chat spec are approved. Please generate design.md now. The design must cover:
 
-1. Architecture flow — from button click through every layer to the rendered response. Flow: React panel → AppSync custom query → invoke-meal-agent Lambda → Bedrock InvokeAgent → MealRecommendationAgent → action group Lambda → DynamoDB → back through the same path.
-2. TypeScript interfaces — message shape, panel state shape, AppSync return type (AgentResponse with sessionId and completion).
-3. Backend integration — define the Amplify Function in amplify/functions/invoke-meal-agent/ (resource.ts and handler.ts), expose via custom query in amplify/data/resource.ts using a.handler.function() with allow.authenticated() authorization, set AGENT_ID and AGENT_ALIAS_ID env vars in amplify/backend.ts, and grant the function bedrock:InvokeAgent on the agent alias ARN. Construct the ARN at synth time from the env vars using cdk Stack.of(...).region/.account in the form arn:aws:bedrock:<region>:<account>:agent-alias/<agent-id>/<alias-id>.
-4. Error handling — explicitly map: (a) Bedrock call failure (return a friendly fallback completion, do not throw), (b) network error in the React client (show fallback message, don't break the chat).
+1. Architecture flow: from button click through every layer to the rendered response. Flow: React panel -> AppSync custom query -> invoke-meal-agent Lambda -> Bedrock InvokeAgent -> MealRecommendationAgent -> action group Lambda -> DynamoDB -> back through the same path.
+2. TypeScript interfaces: message shape, panel state shape, AppSync return type (AgentResponse with sessionId and completion).
+3. Backend integration: define the Amplify Function in amplify/functions/invoke-meal-agent/ (resource.ts and handler.ts) with timeoutSeconds: 60 (agent invocations routinely take 5-15 seconds; the defineFunction default of 3 seconds would always time out) and resourceGroupName: "data" (the agent construct and the FoodItem table live in the data stack; placing this function in any other stack creates a circular cross-stack dependency that fails the deploy), expose via custom query in amplify/data/resource.ts using a.handler.function() with allow.publicApiKey() authorization, set AGENT_ID and AGENT_ALIAS_ID env vars in amplify/backend.ts from the existing mealAgent construct (mealAgent.agent.attrAgentId and mealAgent.alias.attrAgentAliasId; never hardcoded strings), and grant the function bedrock:InvokeAgent on mealAgent.alias.attrAgentAliasArn. The handler MUST be typed as Schema["invokeMealAgent"]["functionHandler"] (import type { Schema } from "../../data/resource") and read prompt and sessionId from event.arguments; AppSync delivers custom query arguments there, not at the top level of the event.
+4. Error handling: explicitly map (a) Bedrock call failure (log the real error with console.error so it appears in the Lambda logs, then return a friendly fallback completion; do not throw), (b) network error in the React client (show fallback message, don't break the chat).
 
 Hard constraint on credentials: same rule as requirements. The Lambda uses its execution role.
 ```
 
 ### Step 5: Review and approve
 
-Open `design.md` and confirm all four sections are present. Approve when satisfied.
+Open `design.md` and confirm all four sections are present.
+
+Then run these critical review checks with Find (Cmd+F / Ctrl+F):
+
+1. Search for `attrAgentId` and `attrAgentAliasId`. The backend wiring must read both IDs from the `mealAgent` construct; there must be no hardcoded or invented ID strings anywhere in the design.
+2. Search for `timeoutSeconds` and `resourceGroupName`. The function resource example must set `timeoutSeconds: 60` and `resourceGroupName: "data"`; the wrong stack placement fails the whole deploy with a circular dependency.
+3. Search for `AWS_ACCESS_KEY_ID`. It may only appear in a clearly marked incorrect-pattern example. SDK clients are constructed with no arguments.
+4. Search for `publicApiKey`. The custom query must be authorized with `allow.publicApiKey()`.
+5. Search for `console.error`. InvokeAgent failures must be logged before returning the fallback, or you cannot debug them from the Lambda logs.
+
+Approve when satisfied.
 
 ---
 
@@ -125,13 +131,13 @@ Open `design.md` and confirm all four sections are present. Approve when satisfi
 Send in chat:
 
 ```
-The design for the meal-agent-chat spec is approved. Please generate tasks.md now. This is a time-boxed lab — keep the plan to the smallest scope that delivers the feature.
+The design for the meal-agent-chat spec is approved. Please generate tasks.md now. This is a time-boxed lab; keep the plan to the smallest scope that delivers the feature.
 
 Rules:
 - Tasks ordered by dependency. Each task is one diff.
 - Each task lists the files it touches and the design section it implements.
-- First task installs any new dependencies (@aws-sdk/client-bedrock-agent-runtime).
-- Do not create Property-based tests
+- @aws-sdk/client-bedrock-agent-runtime is already installed in the starter project; do not add an install task.
+- Do NOT write any tests (no unit tests, no property-based tests, no test files).
 
 The implementation may create or edit ONLY these files:
 1. amplify/functions/invoke-meal-agent/resource.ts
@@ -139,81 +145,83 @@ The implementation may create or edit ONLY these files:
 3. amplify/data/resource.ts (edit)
 4. amplify/backend.ts (edit)
 5. src/components/MealAgentChat.tsx
-6. src/routes/food-tracker.tsx (edit — to integrate the panel and floating button)
+6. src/routes/food-tracker.tsx (edit only to integrate the panel and floating button)
 
 Behavioral constraints:
 - The Lambda buffers the full Bedrock response into one string before returning. No streaming.
-- Validation, if any, happens inline in the handler — no separate schema modules.
+- Validation, if any, happens inline in the handler; no separate schema modules.
 - The Lambda accepts the agent's response as-is. No post-processing.
+- Keep MealAgentChat simple: plain React state, no external state libraries, no animation libraries.
 
 Credentials hard rule:
 The Lambda uses its execution role via the SDK's default credential chain. Do NOT add any task that reads AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_PROFILE, AWS_REGION, or any AWS credential env vars.
 
-When done, reply with the ordered task list (title + files touched per task). Do not start implementing — wait for my approval.
+When done, reply with the ordered task list (title + files touched per task). Do not start implementing; wait for my approval.
 ```
 
-Read Kiro's recap and push back if anything's off ("task 4 modifies a file not in the allow-list", "fold this into a single task").
+Read Kiro's recap and push back if anything is off (for example: "task 4 modifies a file not in the allow-list").
+
+> **Checkpoint. Validate before continuing:**
+> The task list is short (typically 4-6 tasks), touches only the six allowed files, and contains no test tasks.
 
 ---
 
 ## Part D: Implement the Feature
 
-Kiro installs dependencies as part of its tasks — don't run `npm install` yourself.
+### Step 7: Run all tasks
 
-### Step 7: Implement tasks one at a time
+In Lab 2 you implemented tasks one at a time to practice the review protocol. Here you run the whole plan in one go: open `tasks.md` in the spec and click the "Run all tasks" button at the top of the tasks view.
 
-For the **first** task, send:
+While it runs:
 
-```
-Show me the unchecked tasks remaining in the meal-agent-chat spec, then prepare to implement the next one in order.
+1. Approve any commands Kiro asks to run.
+2. Watch terminal 1: backend tasks trigger sandbox redeploys as they land. If it reports `MultipleSandboxInstancesError`, press Ctrl+C and re-run `npm run amplify:sandbox` (known stale-lock glitch).
 
-Before making any code changes, reply in chat with:
-- The task number and title you are starting
-- The files you will create or modify
-- Any shell commands you need to run
+When all tasks show complete, review the full changeset before moving on. Open each of the six allowed files and re-run the Step 5 Find checks against the real code: `attrAgentId`/`attrAgentAliasId` wiring in `amplify/backend.ts`, `timeoutSeconds: 60` in the function resource, `event.arguments` in the handler, `console.error` before the fallback, and no hardcoded IDs anywhere.
 
-Implement only that one task. Do not bundle multiple tasks together. Do not add files or features the task does not explicitly require. Wait for my approval of the diff before moving on.
-```
-
-Once Kiro responds, type "Approve" in chat to begin.
-
-For each subsequent task:
-
-```
-Implement the next unchecked task using the same protocol.
-```
-
-For each task:
-1. Verify the recap matches `tasks.md`.
-2. Approve any commands.
-3. Review and accept the diff (or push back).
-4. Watch the sandbox terminal — wait for "Deployment completed" before the next task.
-
-> Or press **Run all tasks** in the IDE when viewing `tasks.md`.
+> **Checkpoint. Validate before continuing:**
+> 1. Every task in `tasks.md` is marked complete.
+> 2. Terminal 1 shows `Deployment completed` with no errors.
+> 3. The browser at `http://localhost:3000/food-tracker` loads with no error overlay.
 
 ### Step 8: End-to-end test
 
-1. Browser → `http://localhost:3000/food-tracker`.
-2. Click **Ask the meal assistant** (bottom-right). The panel slides in.
-3. Send: `What should I make for dinner tonight?` — confirm the response **names actual items** from your FoodItem table.
-4. Send a follow-up: `Of those, which would be quickest?` — confirm the agent references its previous answer (sessionId threading).
-5. Click **New conversation** and resend the follow-up — confirm the agent has no context now (fresh session).
+1. Browser > `http://localhost:3000/food-tracker`.
+2. Click "Ask the meal assistant" (bottom-right). The panel opens.
+3. Send: `What should I make for dinner tonight?`
 
-If anything fails, the sandbox terminal has the Lambda logs streaming. Paste any error into Kiro's chat to diagnose.
+**Expected result:** a "thinking..." indicator, then a response that names actual items from your FoodItem table.
+
+4. Send a follow-up: `Of those, which would be quickest?`
+
+**Expected result:** the agent references its previous answer. That is the sessionId threading working.
+
+5. Click "New conversation" and resend the follow-up.
+
+**Expected result:** the agent has no context now (fresh session) and asks what you mean or answers generically.
+
+> If anything fails: terminal 1 has the Lambda logs streaming. Paste any error into Kiro's chat to diagnose. An `AccessDeniedException` on `InvokeAgent` usually means the grant in `backend.ts` is not using `mealAgent.alias.attrAgentAliasArn`; check the wiring.
+
+> If the very first message after a deploy returns the fallback message, the Lambda's new IAM permission may still be propagating. Wait about 30 seconds and send the message again before debugging further.
+
+> **Checkpoint. Validate before continuing:**
+> The chat panel works end-to-end against the live agent, with session threading and reset, before you move to Part E.
 
 ---
 
 ## Part E: Deploy via GitHub-Connected Amplify Hosting
 
-The sandbox is tied to your developer machine. Push your work to GitHub and connect the repo to AWS Amplify Hosting — every push to `trunk` will redeploy both backend and frontend automatically. This follows the [AWS Amplify Next.js getting-started guide](https://docs.aws.amazon.com/amplify/latest/userguide/getting-started-next.html).
+The sandbox is tied to your developer machine. Now push your work to GitHub and connect the repo to AWS Amplify Hosting; every push to `trunk` will redeploy both backend and frontend automatically.
+
+> Region rule: do everything in this part in the same region you have used all class (your `aws login` region). The Bedrock agent, its Lambda, and your data all live there; deploying the app to a different region would break the chat feature.
 
 ### Step 9: Stop the sandbox watcher
 
-Terminal 1 → `Ctrl+C`. Resources persist until you run `ampx sandbox delete`.
+Terminal 1 > Ctrl+C. The cloud resources persist until you run the sandbox delete command; you clean them up at the end of the course.
 
 ### Step 10: Verify CDK is bootstrapped
 
-Amplify Gen 2 builds use CDK under the hood, so the toolkit must be bootstrapped in your account/region.
+Amplify Gen 2 builds use CDK under the hood, so the CDK toolkit must be bootstrapped in your account/region:
 
 ```bash
 aws cloudformation describe-stacks \
@@ -222,7 +230,7 @@ aws cloudformation describe-stacks \
   --output text --no-cli-pager
 ```
 
-Expect `CREATE_COMPLETE` or `UPDATE_COMPLETE`. If not:
+Expect `CREATE_COMPLETE` or `UPDATE_COMPLETE`. If you get an error that the stack does not exist, bootstrap now (one command, about 2 minutes):
 
 ```bash
 npx cdk bootstrap aws://$(aws sts get-caller-identity --query Account --output text --no-cli-pager)/$(aws configure get region)
@@ -230,7 +238,7 @@ npx cdk bootstrap aws://$(aws sts get-caller-identity --query Account --output t
 
 ### Step 11: Push your code to GitHub
 
-Fork `https://github.com/AWSClassroom-com/kiro_on_aws` to your account. Then from your local food-tracker directory:
+Fork `https://github.com/AWSClassroom-com/kiro_on_aws` to your GitHub account (Fork button, top right of the repo page). Then from your local food-tracker directory:
 
 ```bash
 cd ~/class-projects/kiro_on_aws/kiro-project/food-tracker
@@ -241,89 +249,77 @@ git commit -m "lab 4 work"
 git push fork trunk
 ```
 
-> If your local isn't a Git repo yet: run `git init` first, then the commands above. Use `--force` if needed.
+> If your local folder is not a Git repo yet: run `git init` first, then the commands above. Use `git push fork trunk --force` if the push is rejected.
 
-Confirm on GitHub that the `trunk` branch on your fork has your food-tracker code (including the `amplify/` folder).
+> **Checkpoint. Validate before continuing:**
+> On GitHub, your fork's `trunk` branch shows the food-tracker code, including the `amplify/` folder.
 
-### Step 12: Bootstrap and Connect the repo to Amplify Hosting
+### Step 12: Connect the repo to Amplify Hosting
 
-In the AWS Console, top-right region selector → US West (Oregon) us-west-2                                                                                                                    
-Top-right toolbar → click the >_ CloudShell icon (next to the bell/notifications)                                                                                                             
-Wait ~10 seconds for the shell to launch, then paste:
+In the AWS Console (same region), navigate to AWS Amplify and click "Deploy an app" (or "Create new app" if you have used Amplify in this region before) > choose GitHub > Next.
 
-```
-cdk bootstrap aws://$(aws sts get-caller-identity --query Account --output text)/$AWS_REGION
-```
+Authorize the AWS Amplify GitHub App on your fork when prompted. Amplify uses deploy keys scoped to that one repository; your GitHub token is not stored on AWS servers.
 
-Next navigate in the Mangagement Console to: **AWS Amplify** and click **Deploy an app** (or **Create new app** if you've used Amplify in this region before) → choose **GitHub** → **Next**.
+On "Add repository branch":
 
-Authorize the **AWS Amplify GitHub App** on your fork when prompted. Amplify uses deploy keys scoped to that one repository — your GitHub token isn't stored on AWS servers.
+- Repository: `<your-username>/kiro_on_aws`
+- Branch: `trunk`
+- "My app is a monorepo": tick the box
+  - Monorepo root directory: `kiro-project/food-tracker`
+- Click Next.
 
-On **Add repository branch**:
-- **Repository:** `<your-username>/kiro_on_aws`
-- **Branch:** `trunk`
-- **My app is a monorepo**: Tick the box
-  - **Monorepo root directory**: kiro-project/food-tracker
-- Click **Next**.
+On "App settings":
 
-On **App settings**:
-- **App name:** `food-tracker-<your-username>`
-- **Frontend build command** and **Build output directory:** Amplify auto-detects these from `package.json` and the `amplify/` folder. It will add `npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID` to the build phase for the Gen 2 backend. Leave the detected settings as-is.
-- **My monorepo uses Amplify Gen2 Backend**: Tick the box
-- **Service role:** choose **Create and use a new service role**. Amplify attaches the `AmplifyBackendDeployFullAccess` managed policy automatically so the build can deploy your backend.
-- Click **Next**.
+- App name: `food-tracker-<your-username>`
+- Build settings: Amplify auto-detects the build from `package.json` and the `amplify/` folder, and adds `npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID` for the Gen 2 backend. Leave the detected settings as-is.
+- "My monorepo uses Amplify Gen2 Backend": tick the box
+- Service role: choose "Create and use a new service role". Amplify attaches the `AmplifyBackendDeployFullAccess` managed policy automatically so the build can deploy your backend.
+- Click Next.
 
-On **Review**: confirm everything, then click **Save and deploy**.
+On "Review": confirm everything, then click "Save and deploy".
 
-### Step 13: Wait for the first deploy and capture the App ID
+### Step 13: Wait for the first deploy
 
-The first build provisions the backend (Cognito, AppSync, DynamoDB, the `meal-recommendations` Lambda, the `invoke-meal-agent` Lambda) and then deploys the frontend. Watch the build logs on the `trunk` branch page. Total: 5–10 minutes.
+The first build provisions the backend (AppSync, DynamoDB, Cognito, the `meal-recommendations` Lambda, the `invoke-meal-agent` Lambda) and then deploys the frontend. Watch the build logs on the `trunk` branch page. Total: 5-10 minutes.
 
-When **Provision**, **Build**, **Deploy**, and **Verify** all show green, capture the **App ID** from the top of the app overview page. You'll see it in the URL too: `https://<region>.console.aws.amazon.com/amplify/apps/<APP_ID>/...`.
+> **Checkpoint. Validate before continuing:**
+> Provision, Build, Deploy, and Verify all show green on the `trunk` branch page.
 
-### Step 14: Re-point the agent's action group at the new Lambda
+> Note: the production build deployed its own complete Bedrock agent (the MealAgent construct is part of the backend), pointing at the production Lambda, with its own `v1` alias, and the chat Lambda's env vars already reference it. There is nothing to re-point or re-configure. Your sandbox agent and the production agent coexist under different name suffixes.
 
-The deploy created a new `mealrecommendations` Lambda with a new name. The agent's action group still points at the sandbox one from Lab 3.
+### Step 14: Test the public URL
 
-```bash
-aws lambda list-functions \
-  --query "Functions[?starts_with(FunctionName,'amplify-foodstarter')&&contains(FunctionName,'mealrecommendations')].FunctionName" \
-  --output text
-```
+The `trunk` branch page shows a URL like `https://trunk.d1a2b3c4d5e6f7.amplifyapp.com`. Open it.
 
-Copy the name. Then in Bedrock Console → **Agents** → **MealRecommendationAgent** → **Edit in Agent Builder** → **FoodEntryTools** action group → change Lambda name to the new one → **Save** → back on the agent overview → **Prepare**.
+1. The homepage and food-tracker page load. The production database starts empty (it is a separate backend from your sandbox); add a few food items on the food-tracker page.
+2. Open the chat panel and ask what to make for dinner.
 
-Then **Aliases** → click `v1` → **Edit** → **Associate a new version** → **Create a new version and associate it** → **Save**.
+**Expected result:** the response names the items you just added. The chat is now flowing through the agent's `v1` alias, backed by your production Lambda and production DynamoDB table.
 
-### Step 15: Test the public URL
-
-The branch page shows a URL like `https://trunk.d1a2b3c4d5e6f7.amplifyapp.com`. Open it. Add a few food items. Test the chat panel — it should now hit the agent's `v1` alias backed by your production Lambda.
-
-From here, every `git push fork trunk` triggers an automatic redeploy of both backend and frontend. No keys, no zip uploads, no manual `pipeline-deploy` calls.
+From here, every `git push fork trunk` triggers an automatic redeploy of both backend and frontend.
 
 ---
 
-## Validation Checklist
+## Cleanup (end of course)
 
-- [ ] Approved `requirements.md`, `design.md`, and `tasks.md` for the meal-agent-chat spec
-- [ ] All tasks in `tasks.md` complete
-- [ ] Sandbox redeployed cleanly with the new function
-- [ ] Chat panel opens, accepts messages, returns responses naming real items from FoodItem
-- [ ] sessionId threads turns within a conversation; "New conversation" resets it
-- [ ] Code pushed to GitHub fork on the `trunk` branch
-- [ ] GitHub repo connected to Amplify Hosting; first build (Provision, Build, Deploy, Verify) all green
-- [ ] Agent's `v1` alias re-pointed at a new version targeting the production `meal-recommendations` Lambda
-- [ ] Public Amplify URL loads, signup works, chat panel works against production backend
-- [ ] A second `git push fork trunk` triggers an automatic redeploy
+When the course is fully wrapped up:
+
+```bash
+npm run amplify:sandbox:delete
+aws logout
+```
+
+The first command asks for confirmation; type `y`. It removes everything the sandbox created, including the sandbox's Bedrock agent. To remove the production deployment too: AWS Console > Amplify > your app > App settings > Delete app (the production agent is part of that backend and is removed with it).
 
 ---
 
 ## Summary
 
-You used Kiro's spec workflow to add a chat panel feature to the food-tracker — a Lambda + AppSync custom query + React panel — calling the Bedrock Agent from Lab 3. Then you promoted the backend off the developer-tied sandbox by pushing your code to GitHub and connecting the repo to AWS Amplify Hosting. Amplify now redeploys both backend and frontend automatically on every push to `trunk`.
+You used Kiro's spec workflow to add a chat panel to the food-tracker (a Lambda + AppSync custom query + React panel) calling the Bedrock Agent from Lab 3, with session IDs threading multi-turn conversations. Then you promoted the backend off the developer-tied sandbox by pushing to GitHub and connecting the repo to AWS Amplify Hosting, which now redeploys both backend and frontend automatically on every push to `trunk`.
 
-Take-homes from this lab:
+Take-homes:
 
-- Spec-driven works the same for an integration feature (calling another AWS service via Lambda) as for a UI feature.
-- A versioned alias on a Bedrock Agent gives you the rollback boundary you'll want the first time something goes wrong in production.
-- Connecting Amplify Hosting to a Git repo gives you a CI/CD pipeline for free — Amplify auto-detects Gen 2 build settings, runs `ampx pipeline-deploy` for you, and stores no AWS credentials anywhere outside its managed service role.
+- Spec-driven development works the same for an integration feature (calling another AWS service via Lambda) as for a UI feature.
+- A versioned alias on a Bedrock Agent gives you the rollback boundary you want the first time something goes wrong in production.
+- Connecting Amplify Hosting to a Git repo gives you a CI/CD pipeline for free. Amplify auto-detects Gen 2 build settings, runs `ampx pipeline-deploy` for you, and stores no AWS credentials outside its managed service role.
+- This lab authorized the chat query with the public API key to match the class schema. In a real product you would put Cognito authentication in front of it (`allow.authenticated()`) so only signed-in users can invoke the agent; the wiring is identical, only the authorization rule changes.

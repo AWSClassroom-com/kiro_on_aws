@@ -1,6 +1,6 @@
 # Lab 2: Build a Weekly Nutrition Summary with Specs and Bedrock
 
-**Objective:** In Lab 1 you vibe-coded: quick prompts, quick diffs. In this lab you move to spec-driven development. You describe a feature once, and Kiro turns it into formal `requirements.md`, `design.md`, and `tasks.md` documents that you review and approve before any code is written. Then you implement the feature task by task: an AI-powered weekly nutrition summary where an Amplify Function (Lambda) calls Amazon Bedrock, exposed to the frontend through a custom AppSync query. This function + custom query + IAM grant pattern is the same one you would use for any AI feature in a real Amplify app.
+**Objective:** In Lab 1, you vibe-coded: quick prompts, quick diffs. In this lab, you move to spec-driven development. You describe a feature once, and Kiro turns it into formal `requirements.md`, `design.md`, and `tasks.md` documents that you review and approve before any code is written. Then you implement the feature task by task: an AI-powered weekly nutrition summary where an Amplify Function (Lambda) calls Amazon Bedrock, exposed to the frontend through a custom AppSync query. This function + custom query + IAM grant pattern is the same one you would use for any AI feature in a real Amplify app.
 
 **Time:** 60 minutes
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
@@ -15,13 +15,13 @@ Kiro installed and signed in with Builder ID. Food-tracker app running with both
 
 ### 2. AWS CLI session still valid
 
-The `aws login` session from Lab 1 lasts 12 hours. If you have come back later or are not sure, open a new terminal tab (Ctrl+Shift+`) and run:
+The `aws login` session from Lab 1 lasts 12 hours. If you have come back later or are not sure, open a new terminal tab (CTRL+SHIFT+`) and run:
 
 ```bash
 aws sts get-caller-identity --no-cli-pager
 ```
 
-If this fails with an expired-token error, re-authenticate:
+If this fails with an expired-token error, reauthenticate:
 
 ```bash
 aws login --region <your-region>
@@ -55,7 +55,7 @@ npx tsx scripts/test-bedrock.ts
 > The command must print a one-sentence greeting from Claude.
 >
 > If it fails, read the full error. Common causes:
-> - Expired credentials: re-run `aws login --region <your-region>`.
+> - Expired credentials: rerun `aws login --region <your-region>`.
 > - Model access not enabled (`AccessDeniedException`): ask your instructor (Bedrock console > Model access).
 > - `ValidationException` about the model identifier: the class model is not available in this account/region; ask your instructor.
 >
@@ -67,7 +67,7 @@ npx tsx scripts/test-bedrock.ts
 
 ### Step 1: Start a spec session
 
-Open the chat panel: Cmd+L (macOS) / Ctrl+L (Windows/Linux). In the bottom-left corner of the chat input box, click the agent selector and change it to Spec.
+Open the chat panel: Cmd+L (macOS) / CTRL+L (Windows/Linux). In the bottom-left corner of the chat input box, click the agent selector and change it to **Spec**.
 
 ### Step 2: Describe the feature
 
@@ -106,7 +106,7 @@ Open `requirements.md`. Confirm it covers:
 - The fewer-than-3-entries edge case, including a criterion that Bedrock is NOT called in that case
 - A note that results are not persisted
 
-Then run these critical review checks. Each one has failed in real runs of this lab; use Find (Cmd+F / Ctrl+F) in the file:
+Then run these critical review checks. Each one has failed in real runs of this lab; use Find (Cmd+F / CTRL+F) in the file:
 
 1. Search for `us.anthropic` and `apac.`. Both must return zero results. If found, the model ID drifted; tell Kiro to use exactly `global.anthropic.claude-sonnet-4-5-20250929-v1:0` everywhere.
 2. Search for `IAM` and `policy`. The requirements must not contain IAM or permission-scoping criteria; those belong to the design phase. If found, tell Kiro to remove them.
@@ -127,10 +127,10 @@ In chat:
 ```
 The requirements for the weekly-nutrition-summary spec are approved. Please generate design.md now. The design must cover:
 
-1. Architecture flow: from the button click in src/routes/food-tracker.tsx through every layer the request passes through, ending at the rendered summary card. The flow must be: browser -> custom AppSync query -> Amplify Function (Lambda) -> Bedrock InvokeModel -> back through the same path.
-2. TypeScript interfaces: a shape for the summary returned to the UI (totals, macro breakdown, narrative, suggestions) and a response shape that signals success, error, or insufficient-data outcomes.
-3. Backend integration: define an Amplify Function in amplify/functions/nutrition-summary/ (resource.ts and handler.ts) with timeoutSeconds: 30 (the defineFunction default of 3 seconds is too short for a Bedrock call), expose it via a custom query in amplify/data/resource.ts using a.handler.function(), authorize the query with allow.publicApiKey() to match the existing schema, and grant the function's execution role bedrock:InvokeModel permission in amplify/backend.ts (for simplicity in this lab, use resources: ["*"] in the policy statement). The handler MUST be typed as Schema["generateNutritionSummary"]["functionHandler"] (import type { Schema } from "../../data/resource") and read its inputs from event.arguments; AppSync delivers custom query arguments there, not at the top level of the event, and hand-rolled event interfaces hide that mistake from the type checker.
-4. Error handling: explicitly map each of these failure modes to a response: (a) Bedrock call failure (log the real error with console.error so it appears in the Lambda logs, then return an error response), (b) fewer than 3 entries (do not call Bedrock; the client returns an insufficient-data indicator before invoking the query), (c) malformed JSON from Bedrock. For (c): models often wrap JSON in markdown code fences, so the prompt to Bedrock must demand raw JSON with no fences AND the handler must parse the substring from the first "{" to the last "}" of the model's text rather than the raw response.
+1. Architecture flow: From the button, click in src/routes/food-tracker.tsx through every layer the request passes through, ending at the rendered summary card. The flow must be: browser -> custom AppSync query -> Amplify Function (Lambda) -> Bedrock InvokeModel -> back through the same path.
+2. TypeScript interfaces: A shape for the summary returned to the UI (totals, macro breakdown, narrative, suggestions) and a response shape that signals success, error, or insufficient-data outcomes.
+3. Backend integration: Define an Amplify Function in amplify/functions/nutrition-summary/ (resource.ts and handler.ts) with timeoutSeconds: 30 (the defineFunction default of 3 seconds is too short for a Bedrock call), expose it via a custom query in amplify/data/resource.ts using a.handler.function(), authorize the query with allow.publicApiKey() to match the existing schema, and grant the function's execution role bedrock:InvokeModel permission in amplify/backend.ts (for simplicity in this lab, use resources: ["*"] in the policy statement). The handler MUST be typed as Schema["generateNutritionSummary"]["functionHandler"] (import type { Schema } from "../../data/resource") and read its inputs from event.arguments; AppSync delivers custom query arguments there, not at the top level of the event, and hand-rolled event interfaces hide that mistake from the type checker.
+4. Error handling: Explicitly map each of these failure modes to a response: (a) Bedrock call failure (log the real error with console.error so it appears in the Lambda logs, then return an error response), (b) fewer than 3 entries (do not call Bedrock; the client returns an insufficient-data indicator before invoking the query), (c) malformed JSON from Bedrock. For (c): models often wrap JSON in markdown code fences, so the prompt to Bedrock must demand raw JSON with no fences AND the handler must parse the substring from the first "{" to the last "}" of the model's text rather than the raw response.
 
 Hard constraint on credentials: At runtime, the Amplify Function uses its Lambda execution role for AWS calls; the AWS SDK's default credential chain resolves to that role automatically. Do NOT design anything that reads AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_PROFILE, AWS_REGION, or any AWS credential environment variables. Construct SDK clients with no arguments.
 
@@ -141,7 +141,7 @@ Hard constraint on the model ID: every code example in the design must use EXACT
 
 Open `design.md` and confirm all four sections are present. In the TypeScript interfaces section, a reasonable summary shape includes the calorie totals, the three macro percentages, the narrative text, a suggestions list, and metadata such as an entry count and a generated-at timestamp. Field names will vary; that is fine.
 
-Then run these critical review checks. Each one has failed in real runs of this lab; use Find (Cmd+F / Ctrl+F) in the file:
+Then run these critical review checks. Each one has failed in real runs of this lab; use Find (Cmd+F / CTRL+F) in the file:
 
 1. Search for `us.anthropic` and `apac.`. Both must return zero results in every code example. This drift has happened even when the requirements carried the correct ID.
 2. Search for `timeoutSeconds`. The function resource example must set `timeoutSeconds: 30`; the 3-second default guarantees a timeout on Bedrock calls.
@@ -212,7 +212,7 @@ Before making any code changes, reply in chat with:
 Implement only that one task. Do not bundle multiple tasks together. Do not add files or features the task does not explicitly require. Wait for my approval of the diff before moving on.
 ```
 
-Once Kiro produces its recap, type "Approve" in chat to begin the task.
+Once Kiro produces its recap, type **Approve** in chat to begin the task.
 
 For each subsequent task, send:
 
@@ -225,7 +225,7 @@ For every task, follow the same loop:
 1. Verify the recap matches the task in `tasks.md`.
 2. Approve any commands Kiro wants to run.
 3. Read the full diff before accepting. Agent output varies between runs; if anything looks wrong, push back in chat and let Kiro fix it before you accept.
-4. Watch terminal 1 (the sandbox). When `amplify/` files change, it redeploys automatically; wait for `Deployment completed` before proceeding. If it reports `MultipleSandboxInstancesError` instead, press Ctrl+C and re-run `npm run amplify:sandbox` (known stale-lock glitch; your cloud resources are unaffected).
+4. Watch terminal 1 (the sandbox). When `amplify/` files change, it redeploys automatically; wait for `Deployment completed` before proceeding. If it reports `MultipleSandboxInstancesError` instead, press CTRL+C and rerun `npm run amplify:sandbox` (known stale-lock glitch; your cloud resources are unaffected).
 5. Confirm the task is marked complete, then move on.
 
 > If Kiro stalls or loses track of which tasks are done (checkboxes in `tasks.md` not updating), do not keep repeating the same prompt. Open `tasks.md` and either tick the finished task yourself (change `[ ]` to `[x]`) or name the next task explicitly in chat, for example: "Implement task 4: add the custom query". If it stays stuck, the "Run all tasks" button at the top of the tasks view runs the remaining tasks in order.
@@ -234,13 +234,13 @@ For every task, follow the same loop:
 
 1. Make sure both terminals are still running and terminal 1 shows no deploy errors after the function was added.
 2. Open `http://localhost:3000/food-tracker`.
-3. Click "Generate Weekly Summary".
+3. Click **Generate Weekly Summary**.
 
-**Expected result:** a loading indicator appears, then (after 2-4 seconds) a card renders with total calories, average daily calories, a macro breakdown summing to 100%, a 2-3 sentence narrative, and 2-3 suggestions, all derived from your actual seeded entries.
+**Expected result:** A loading indicator appears, then (after 2-4 seconds) a card renders with total calories, average daily calories, a macro breakdown summing to 100%, a 2-3 sentence narrative, and 2-3 suggestions, all derived from your actual seeded entries.
 
 4. (Optional) Temporarily delete entries until fewer than 3 remain from the last 7 days and confirm the friendly "not enough data" message appears without calling the Lambda. Re-add a few items afterward.
 
-> If clicking the button shows an error: terminal 1 usually has the Lambda logs streaming; check there first, then paste the error into Kiro's chat to diagnose. If the error mentions the model ID or access, re-run the Prerequisite 4 smoke test to confirm Bedrock still responds outside the Lambda.
+> If clicking the button shows an error: terminal 1 usually has the Lambda logs streaming; check there first, then paste the error into Kiro's chat to diagnose. If the error mentions the model ID or access, refrun the Prerequisite 4 smoke test to confirm Bedrock still responds outside the Lambda.
 
 ---
 

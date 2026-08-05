@@ -2,7 +2,7 @@
 
 **Objective:** Two goals. First, use Kiro's spec-driven workflow (the same one from Lab 2) to build an in-app chat panel that calls `InvokeAgent` against the `MealRecommendationAgent` from Lab 3, proving the spec process works just as well for an integration feature as for a UI feature. Second, promote the app off your developer-tied sandbox: push the code to GitHub and connect the repo to AWS Amplify Hosting, so every push to `trunk` automatically redeploys both backend and frontend.
 
-**Time:** 90 minutes
+**Time:** 90 minutes<BR>
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
 
 ---
@@ -35,7 +35,7 @@ You need a GitHub account to host the repo Amplify deploys from. If you do not h
 
 ### Step 1: Start a spec session
 
-Open the chat panel: Cmd+L (macOS) / Ctrl+L (Windows/Linux). In the bottom-left corner of the chat input box, click the agent selector and change it to Spec.
+Open the chat panel: Cmd+L (macOS) / CTRL+L (Windows/Linux). In the bottom-left corner of the chat input box, click the agent selector and change it to **Spec**.
 
 ### Step 2: Describe the feature
 
@@ -45,7 +45,7 @@ Paste as your initial prompt:
 Create a new spec "meal-agent-chat" for a chat panel feature on the food-tracker page that lets the user converse with the MealRecommendationAgent (Bedrock Agent) deployed in Lab 3.
 
 Requirements:
-- A floating "Ask the meal assistant" button in the bottom-right of the food-tracker page that opens a panel fixed to the right side of the screen.
+- A floating "Ask the meal assistant" button in the bottom right of the food-tracker page that opens a panel fixed to the right side of the screen.
 - The panel contains:
   - Header with title "Meal Assistant", a "New conversation" button, and a close button.
   - Scrollable messages list (user and assistant messages alternating).
@@ -77,14 +77,14 @@ Kiro may ask follow-up questions before it generates anything. Typical questions
 
 Open `requirements.md`. Confirm it covers user stories, acceptance criteria for the happy path, the new-conversation reset, and error handling.
 
-Then run these critical review checks with Find (Cmd+F / Ctrl+F):
+Then run these critical review checks with Find (Cmd+F / CTRL+F):
 
 1. Search for `Agent ID` and scan any code-like strings. There must be NO hardcoded or invented agent/alias ID values anywhere; the backend wires real IDs from the `mealAgent` construct at deploy time, and an invented ID fails at runtime with AccessDeniedException.
 2. Search for `IAM` and `policy`. The requirements must not contain IAM or permission-scoping criteria; those belong to the design phase.
 
 Approve through the spec workflow when satisfied.
 
-> Note: agent output varies between runs. Review what Kiro actually wrote.
+> Note: Agent output varies between runs. Review what Kiro actually wrote.
 
 > **Checkpoint. Validate before continuing:**
 > `requirements.md` is approved and contains your real Agent ID and Alias ID, not bracket placeholders.
@@ -112,7 +112,7 @@ Hard constraint on credentials: same rule as requirements. The Lambda uses its e
 
 Open `design.md` and confirm all four sections are present.
 
-Then run these critical review checks with Find (Cmd+F / Ctrl+F):
+Then run these critical review checks with Find (Cmd+F / CTRL+F):
 
 1. Search for `attrAgentId` and `attrAgentAliasId`. The backend wiring must read both IDs from the `mealAgent` construct; there must be no hardcoded or invented ID strings anywhere in the design.
 2. Search for `timeoutSeconds` and `resourceGroupName`. The function resource example must set `timeoutSeconds: 60` and `resourceGroupName: "data"`; the wrong stack placement fails the whole deploy with a circular dependency.
@@ -170,14 +170,14 @@ Read Kiro's recap and push back if anything is off (for example: "task 4 modifie
 
 ### Step 7: Run all tasks
 
-In Lab 2 you implemented tasks one at a time to practice the review protocol. Here you run the whole plan in one go: open `tasks.md` in the spec and click the "Run all tasks" button at the top of the tasks view.
+In Lab 2, you implemented tasks one at a time to practice the review protocol. Here you run the whole plan in one go: open `tasks.md` in the spec and click the **Run all tasks** button at the top of the tasks view.
 
 While it runs:
 
 1. Approve any commands Kiro asks to run.
-2. Watch terminal 1: backend tasks trigger sandbox redeploys as they land. If it reports `MultipleSandboxInstancesError`, press Ctrl+C and re-run `npm run amplify:sandbox` (known stale-lock glitch).
+2. Watch terminal 1: backend tasks trigger sandbox redeploys as they land. If it reports `MultipleSandboxInstancesError`, press CTRL+C and rerun `npm run amplify:sandbox` (known stale-lock glitch).
 
-When all tasks show complete, review the full changeset before moving on. Open each of the six allowed files and re-run the Step 5 Find checks against the real code: `attrAgentId`/`attrAgentAliasId` wiring in `amplify/backend.ts`, `timeoutSeconds: 60` in the function resource, `event.arguments` in the handler, `console.error` before the fallback, and no hardcoded IDs anywhere.
+When all tasks show complete, review the full changeset before moving on. Open each of the six allowed files and rerun the Step 5 Find checks against the real code: `attrAgentId`/`attrAgentAliasId` wiring in `amplify/backend.ts`, `timeoutSeconds: 60` in the function resource, `event.arguments` in the handler, `console.error` before the fallback, and no hardcoded IDs anywhere.
 
 > **Checkpoint. Validate before continuing:**
 > 1. Every task in `tasks.md` is marked complete.
@@ -187,20 +187,20 @@ When all tasks show complete, review the full changeset before moving on. Open e
 ### Step 8: End-to-end test
 
 1. Browser > `http://localhost:3000/food-tracker`.
-2. Click "Ask the meal assistant" (bottom-right). The panel opens.
+2. Click **Ask the meal assistant** (bottom right). The panel opens.
 3. Send: `What should I make for dinner tonight?`
 
-**Expected result:** a "thinking..." indicator, then a response that names actual items from your FoodItem table.
+**Expected result:** A "thinking..." indicator, then a response that names actual items from your FoodItem table.
 
 4. Send a follow-up: `Of those, which would be quickest?`
 
-**Expected result:** the agent references its previous answer. That is the sessionId threading working.
+**Expected result:** The agent references its previous answer. That is the sessionId threading working.
 
-5. Click "New conversation" and resend the follow-up.
+5. Click **New conversation** and resend the follow-up.
 
-**Expected result:** the agent has no context now (fresh session) and asks what you mean or answers generically.
+**Expected result:** The agent has no context now (fresh session) and asks what you mean or answers generically.
 
-> If anything fails: terminal 1 has the Lambda logs streaming. Paste any error into Kiro's chat to diagnose. An `AccessDeniedException` on `InvokeAgent` usually means the grant in `backend.ts` is not using `mealAgent.alias.attrAgentAliasArn`; check the wiring.
+> If anything fails: Terminal 1 has the Lambda logs streaming. Paste any error into Kiro's chat to diagnose. An `AccessDeniedException` on `InvokeAgent` usually means the grant in `backend.ts` is not using `mealAgent.alias.attrAgentAliasArn`; check the wiring.
 
 > If the very first message after a deploy returns the fallback message, the Lambda's new IAM permission may still be propagating. Wait about 30 seconds and send the message again before debugging further.
 
@@ -213,11 +213,11 @@ When all tasks show complete, review the full changeset before moving on. Open e
 
 The sandbox is tied to your developer machine. Now push your work to GitHub and connect the repo to AWS Amplify Hosting; every push to `trunk` will redeploy both backend and frontend automatically.
 
-> Region rule: do everything in this part in the same region you have used all class (your `aws login` region). The Bedrock agent, its Lambda, and your data all live there; deploying the app to a different region would break the chat feature.
+> Region rule: Do everything in this part in the same region you have used all class (your `aws login` region). The Bedrock agent, its Lambda, and your data all live there; deploying the app to a different region would break the chat feature.
 
 ### Step 9: Stop the sandbox watcher
 
-Terminal 1 > Ctrl+C. The cloud resources persist until you run the sandbox delete command; you clean them up at the end of the course.
+Terminal 1 > CTRL+C. The cloud resources persist until you run the sandbox delete command; you clean them up at the end of the course.
 
 ### Step 10: Verify CDK is bootstrapped
 
@@ -249,14 +249,14 @@ git commit -m "lab 4 work"
 git push fork trunk
 ```
 
-> If your local folder is not a Git repo yet: run `git init` first, then the commands above. Use `git push fork trunk --force` if the push is rejected.
+> If your local folder is not a Git repo yet, run `git init` first, then the commands above. Use `git push fork trunk --force` if the push is rejected.
 
 > **Checkpoint. Validate before continuing:**
 > On GitHub, your fork's `trunk` branch shows the food-tracker code, including the `amplify/` folder.
 
 ### Step 12: Connect the repo to Amplify Hosting
 
-In the AWS Console (same region), navigate to AWS Amplify and click "Deploy an app" (or "Create new app" if you have used Amplify in this region before) > choose GitHub > Next.
+In the AWS Console (same region), navigate to AWS Amplify and click **Deploy an app** (or **Create new app** if you have used Amplify in this region before) > choose **GitHub > Next**.
 
 Authorize the AWS Amplify GitHub App on your fork when prompted. Amplify uses deploy keys scoped to that one repository; your GitHub token is not stored on AWS servers.
 
@@ -294,7 +294,7 @@ The `trunk` branch page shows a URL like `https://trunk.d1a2b3c4d5e6f7.amplifyap
 1. The homepage and food-tracker page load. The production database starts empty (it is a separate backend from your sandbox); add a few food items on the food-tracker page.
 2. Open the chat panel and ask what to make for dinner.
 
-**Expected result:** the response names the items you just added. The chat is now flowing through the agent's `v1` alias, backed by your production Lambda and production DynamoDB table.
+**Expected result:** The response names the items you just added. The chat is now flowing through the agent's `v1` alias, backed by your production Lambda and production DynamoDB table.
 
 From here, every `git push fork trunk` triggers an automatic redeploy of both backend and frontend.
 

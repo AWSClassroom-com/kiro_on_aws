@@ -92,7 +92,7 @@ Check the region selector in the top-right corner and set it to the region your 
 
 ### Step 6: Authenticate the AWS CLI with `aws login`
 
-In Kiro, open the integrated terminal: Ctrl+` (backtick), or Terminal > New Terminal from the menu bar.
+In Kiro, open the integrated terminal: CTRL+` (backtick), or Terminal > New Terminal from the menu bar.
 
 1. Verify your AWS CLI version is at least 2.32.0 (earlier versions do not have the `aws login` command):
 

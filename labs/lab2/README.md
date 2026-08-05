@@ -2,7 +2,7 @@
 
 **Objective:** In Lab 1, you vibe-coded: quick prompts, quick diffs. In this lab, you move to spec-driven development. You describe a feature once, and Kiro turns it into formal `requirements.md`, `design.md`, and `tasks.md` documents that you review and approve before any code is written. Then you implement the feature task by task: an AI-powered weekly nutrition summary where an Amplify Function (Lambda) calls Amazon Bedrock, exposed to the frontend through a custom AppSync query. This function + custom query + IAM grant pattern is the same one you would use for any AI feature in a real Amplify app.
 
-**Time:** 60 minutes
+**Time:** 60 minutes<br>
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
 
 ---

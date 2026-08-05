@@ -2,7 +2,7 @@
 
 **Objective:** This lab covers two distinct kinds of automation. First, workflow automation inside Kiro: you refine your steering files with a security policy and build two hooks, one Ask Kiro hook (AI judgment: "is this a real credential?") and one Run Command hook (deterministic: "format this file"), experiencing both action types and how hooks and steering work together. Second, AI automation on AWS: you study the working Amazon Bedrock Agent that ships with the starter project, reading each of its building blocks (the tool Lambda, the agent instructions, the OpenAPI schema that drives tool selection, and the CDK code that deploys it), reviewing the deployed result in the Bedrock Console, and smoke-testing it with the trace panel open.
 
-**Time:** 60 minutes
+**Time:** 60 minutes<br>
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
 
 ---
@@ -23,7 +23,7 @@ From `kiro-project/food-tracker`, both terminals are still up: `npm run amplify:
 aws sts get-caller-identity --no-cli-pager
 ```
 
-If it fails with an expired-token error, re-run `aws login --region <your-region>` from Lab 1.
+If it fails with an expired-token error, rerun `aws login --region <your-region>` from Lab 1.
 
 ### 4. Bedrock Claude Sonnet 4.5 access
 
@@ -45,11 +45,11 @@ Lab 1 created the three foundational steering files. Now you add a fourth, `secu
 
 ### Step 1: Open the Steering panel
 
-Click the Kiro icon (ghost) in the activity bar. Find the Steering section. You should see your three foundational files.
+Click the **Kiro icon (ghost)** in the activity bar. Find the Steering section. You should see your three foundational files.
 
 ### Step 2: Add a security steering file
 
-In the Steering section, click the plus button to add a new file. Select "food-tracker agent steering". Name it `security`.
+In the Steering section, click the **plus** button to add a new file. Select **food-tracker agent steering**. Name it `security`.
 
 Once the file has been created, replace the default contents with:
 
@@ -112,7 +112,7 @@ This part builds an Ask Kiro hook. Part C builds a Run Command hook, so you use 
 
 ### Step 3: Open the Hooks panel
 
-In the Kiro pane (ghost icon in the activity bar), find Agent Hooks. Click the plus button, then "Ask Kiro to create a hook".
+In the Kiro pane (ghost icon in the activity bar), find Agent Hooks. Click the **plus** button, then **Ask Kiro to create a hook**.
 
 ### Step 4: Describe the hook
 
@@ -278,7 +278,7 @@ What's expiring soon that I should use this week?
 
 **Expected result:** the trace shows `findExpiringSoon` this time. The Lambda runs a Scan with a different FilterExpression (against `expirationDate` instead of `addedAt`), and the response calls out specific items by name, for example "your yogurt expires in 2 days".
 
-> Note: this is the connection to take away. The tool the agent picks is driven entirely by the `description` fields you read in `openapi.json`. If you ever build an agent whose tool selection misbehaves, those descriptions are the first place to look.
+> Note: This is the connection to take away. The tool the agent picks is driven entirely by the `description` fields you read in `openapi.json`. If you ever build an agent whose tool selection misbehaves, those descriptions are the first place to look.
 
 ---
 

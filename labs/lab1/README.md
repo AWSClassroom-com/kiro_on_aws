@@ -1,8 +1,8 @@
 # Lab 1: Getting Started with Kiro
 
-**Objective:** By the end of this lab you will have a complete working environment: Kiro installed and signed in, the AWS CLI authenticated, and the food-tracker starter app running against your own personal AWS Amplify sandbox. You will then complete your first vibe coding session: describing a change in plain language, reviewing the diff Kiro proposes, and accepting or pushing back. Every later lab builds on the environment and habits you set up here.
+**Objective:** By the end of this lab, you will have a complete working environment: Kiro installed and signed in, the AWS CLI authenticated, and the food-tracker starter app running against your own personal AWS Amplify sandbox. You will then complete your first vibe coding session: describing a change in plain language, reviewing the diff Kiro proposes, and accepting or pushing back. Every later lab builds on the environment and habits you set up here.
 
-**Time:** 60 minutes
+**Time:** 60 minutes<br>
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
 The course repo has been pre-fetched and Node dependencies installed to prevent class day-of network errors blocking lab progress.
 
@@ -36,23 +36,23 @@ Download from https://kiro.dev for your OS:
 On the install wizard:
 
 1. Accept the licence agreement.
-2. Leave the default destination folder and choose Next.
-3. Keep all defaults and keep pressing Next until Kiro is installed.
-4. Make sure "Launch Kiro" is checked and press Finish.
+2. Leave the default destination folder and choose **Next**.
+3. Keep all defaults and keep pressing **Next** until Kiro is installed.
+4. Make sure **Launch Kiro** is checked and press **Finish**.
 
 ### Step 2: Sign in with Builder ID
 
-On the Kiro welcome screen, choose Sign in, then select AWS Builder ID.
+On the Kiro welcome screen, choose **Sign in**, then select **AWS Builder ID**.
 
 - Existing Builder ID: enter email and password; complete MFA if enabled.
-- New Builder ID: choose Create one and follow the email-verification flow.
+- New Builder ID: choose **Create one** and follow the email-verification flow.
 
 After entering your Builder ID information:
 
-1. Choose Never if Chrome offers to save your password.
-2. On the "Allow Kiro IDE to access your data?" screen, press Allow Access.
+1. Choose **Never** if Chrome offers to save your password.
+2. On the "Allow Kiro IDE to access your data?" screen, press **Allow Access**.
 3. Close the browser and return to Kiro.
-4. Choose Skip All for Configuration Imports.
+4. Choose **Skip All** for Configuration Imports.
 
 > Note: Builder ID is free and separate from an AWS account. It only authenticates you to Kiro itself. The AWS credentials you set up in Part B are what give the Amplify sandbox access to AWS services.
 
@@ -72,7 +72,7 @@ git clone https://github.com/AWSClassroom-com/kiro_on_aws
 
 ### Step 4: Open the project
 
-On the Kiro start screen, press "Open a project" and select the `class-projects/kiro_on_aws/kiro-project/food-tracker` folder (on the Course VM: `c:/class-projects/kiro_on_aws/kiro-project/food-tracker`). When prompted, trust the authors.
+On the Kiro start screen, press **Open a project** and select the `class-projects/kiro_on_aws/kiro-project/food-tracker` folder (on the Course VM: `c:/class-projects/kiro_on_aws/kiro-project/food-tracker`). When prompted, trust the authors.
 
 The status bar shows an indexing indicator while Kiro analyzes the codebase.
 
@@ -108,7 +108,7 @@ If the version is too old (or the CLI is not installed), follow the [AWS CLI ins
 aws login --region <your-region>
 ```
 
-Your default browser opens a confirmation page. Review what is being authorized and click Allow (or Confirm). When the page reports success, return to your terminal.
+Your default browser opens a confirmation page. Review what is being authorized and click **Allow (or Confirm)**. When the page reports success, return to your terminal.
 
 3. Verify:
 
@@ -127,7 +127,7 @@ The food-tracker is an AWS Amplify Gen 2 app: a React + Vite frontend talking to
 
 ### Step 7: Start the Amplify sandbox
 
-Open the integrated terminal (Ctrl+`) and run:
+Open the integrated terminal (CTRL+`) and run:
 
 ```bash
 npm install && npm run amplify:sandbox
@@ -137,9 +137,9 @@ This provisions a per-developer cloud backend (AppSync API, DynamoDB, Cognito) u
 
 The first deploy takes roughly 3-5 minutes. Leave this terminal running afterward; it watches the `amplify/` folder and automatically redeploys when backend files change.
 
-> If the command fails with a credentials error, your `aws login` session may have expired. Re-run `aws login --region <your-region>` from Part B and try again.
+> If the command fails with a credentials error, your `aws login` session may have expired. Rerun `aws login --region <your-region>` from Part B and try again.
 
-> If the sandbox reports `MultipleSandboxInstancesError` (this can happen even with a single sandbox, due to a stale lock), press Ctrl+C and re-run `npm run amplify:sandbox`. Your cloud resources are unaffected; the watcher just restarts.
+> If the sandbox reports `MultipleSandboxInstancesError` (this can happen even with a single sandbox, due to a stale lock), press CTRL+C and rerun `npm run amplify:sandbox`. Your cloud resources are unaffected; the watcher just restarts.
 
 > **Checkpoint. Validate before continuing:**
 > 1. Terminal 1 shows the line `✔ Deployment completed`.
@@ -147,9 +147,9 @@ The first deploy takes roughly 3-5 minutes. Leave this terminal running afterwar
 
 ### Step 8: Seed sample data and start the dev server
 
-The sandbox terminal from Step 7 must stay running. Do not close it, do not press Ctrl+C in it, and do not type this step's command into it.
+The sandbox terminal from Step 7 must stay running. Do not close it, do not press CTRL+C in it, and do not type this step's command into it.
 
-Open a second terminal: Terminal > New Terminal from the menu bar (or Ctrl+Shift+`). You now have two terminals; the sandbox keeps running in the first while you work in the new one.
+Open a second terminal: Terminal > New Terminal from the menu bar (or CTRL+SHIFT+`). You now have two terminals; the sandbox keeps running in the first while you work in the new one.
 
 In the new terminal, run:
 
@@ -157,11 +157,11 @@ In the new terminal, run:
 npm run seed && npm run dev
 ```
 
-The seed script loads 30 sample food items (with realistic added and expiration dates relative to today) into your DynamoDB table, then the Vite dev server starts. The seed is safe to re-run; it skips itself if the table already has data.
+The seed script loads 30 sample food items (with realistic added and expiration dates relative to today) into your DynamoDB table, then the Vite dev server starts. The seed is safe to rerun; it skips itself if the table already has data.
 
 > **Checkpoint. Validate before continuing:**
 > 1. Open `http://localhost:3000` in your browser. You must see the Food Tracker homepage.
-> 2. Click "Start Tracking Food" (or open `http://localhost:3000/food-tracker`). The food-tracker page must show "30 items tracked" and a grid of food entry cards.
+> 2. Click **Start Tracking Food** (or open `http://localhost:3000/food-tracker`). The food-tracker page must show "30 items tracked" and a grid of food entry cards.
 >
 > Leave both terminals running for the rest of the lab. Vite hot-reloads any changes Kiro makes under `src/`; no manual restart is needed.
 
@@ -179,13 +179,13 @@ Open each panel once so you know where things live:
   - Expand `amplify/`. You should see `backend.ts`, plus `auth/` and `data/` folders.
   - Expand `amplify/data/`. You should see `resource.ts` (the FoodItem schema).
 - Kiro Panel (ghost icon in the activity bar): Specs, Agent Hooks, Steering, Skills, MCP Servers.
-- Chat Panel: Cmd+L (macOS) / Ctrl+L (Windows/Linux), or via command palette "Kiro: Open Chat".
+- Chat Panel: Cmd+L (macOS) / CTRL+L (Windows/Linux), or via command palette "Kiro: Open Chat".
 
 Now install the Biome extension. This is required: Biome is the formatter and linter this project uses, and the format-on-save hook you build in Lab 3 depends on this tooling.
 
-1. Open the Extensions panel: Cmd+Shift+X (macOS) / Ctrl+Shift+X (Windows/Linux).
+1. Open the Extensions panel: Cmd+SHIFT+X (macOS) / CTRL+SHIFT+X (Windows/Linux).
 2. Search for "Biome" (publisher: biomejs).
-3. Click Install.
+3. Click **Install**.
 
 > **Checkpoint. Validate before continuing:**
 > The Biome extension shows as Installed in the Extensions panel.
@@ -203,9 +203,9 @@ Now install the Biome extension. This is required: Biome is the formatter and li
 
 Steering files are project-level markdown that Kiro loads on every interaction so it knows what your project is, what tech stack to stick to, and how the code is organized, without you having to explain it each time.
 
-Open the command palette (Cmd+Shift+P / Ctrl+Shift+P), search for "Steering", and select "Kiro: Generate project steering documents".
+Open the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P), search for "Steering", and select **Kiro: Generate project steering documents**.
 
-> Note: throughout these labs, prefer the command palette (Cmd+Shift+P / Ctrl+Shift+P) over clicking buttons. Button labels change between Kiro versions; palette command names are stable.
+> Note: Throughout these labs, prefer the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P) over clicking buttons. Button labels change between Kiro versions; palette command names are stable.
 
 Kiro explores key files (`README.md`, `package.json`, `amplify/`, `src/`) and creates a `.kiro/steering/` folder with three files:
 
@@ -215,7 +215,7 @@ Kiro explores key files (`README.md`, `package.json`, `amplify/`, `src/`) and cr
 
 Open each file and skim it. If something is wrong (for example it lists a library you do not use), edit the file directly. These are plain markdown and your edits stick.
 
-Now add one more instruction via the chat panel (Cmd+L / Ctrl+L). Paste this prompt and press ENTER:
+Now add one more instruction via the chat panel (Cmd+L / CTRL+L). Paste this prompt and press ENTER:
 
 ```
 Add an instruction to the steering files: whenever you create or edit files under amplify/, remind the user to watch the Amplify sandbox terminal and wait for it to print "Deployment completed" before testing the change or moving on to the next task. If the sandbox terminal shows a failed deployment instead, tell the user to fix or restart the sandbox with npm run amplify:sandbox before continuing.
@@ -223,7 +223,7 @@ Add an instruction to the steering files: whenever you create or edit files unde
 
 Review the diff Kiro proposes and accept it.
 
-> Note: backend changes are not live the moment a file is saved; the sandbox has to redeploy them first. This steering instruction makes Kiro remind you to wait at the right moments in every future lab.
+> Note: Backend changes are not live the moment a file is saved; the sandbox has to redeploy them first. This steering instruction makes Kiro remind you to wait at the right moments in every future lab.
 
 > **Checkpoint. Validate before continuing:**
 > 1. `.kiro/steering/` contains `product.md`, `tech.md`, and `structure.md`.
@@ -237,7 +237,7 @@ Work in Supervised mode (Autopilot off) so you review each diff before accepting
 
 The loop for every step below is the same: prompt, read the diff, push back if needed, accept, refresh and verify.
 
-> Note: agent output varies between runs. The expected results below describe outcomes, not exact code or text. Always read the full diff before accepting. If anything looks wrong, say so in chat and let Kiro fix it before you accept.
+> Note: Agent output varies between runs. The expected results below describe outcomes, not exact code or text. Always read the full diff before accepting. If anything looks wrong, say so in chat and let Kiro fix it before you accept.
 
 ### Step 12: Add an "EXPIRING SOON" badge
 
@@ -249,7 +249,7 @@ On the food tracker page (src/routes/food-tracker.tsx), add an "EXPIRING SOON" b
 
 Review the diff. If the date logic, styling, or null-handling looks off, push back in chat (for example: "the badge is showing for entries 5 days out, please fix" or "items expiring exactly 3 days from now are not getting the badge, the window should include the full third day"). If the badge covers the category pill, say so. Accept when correct, then refresh `http://localhost:3000/food-tracker`.
 
-**Expected result:** items expiring within 3 days (several of the seeded items qualify) show the orange badge; shelf-stable items with no expiration date show nothing.
+**Expected result:** Items expiring within 3 days (several of the seeded items qualify) show the orange badge; shelf-stable items with no expiration date show nothing.
 
 ### Step 13: Iterate on the badge
 
@@ -278,7 +278,7 @@ The filtering and sorting should be done in-memory using React state. Do not cha
 
 Review and accept. Refresh the browser.
 
-**Expected result:** typing in the filter box narrows the cards live; each sort option reorders them; items without an expiration date sink to the bottom when sorting by expiration.
+**Expected result:** Typing in the filter box narrows the cards live; each sort option reorders them; items without an expiration date sink to the bottom when sorting by expiration.
 
 ### Step 15: Restyle the homepage palette
 
@@ -322,4 +322,4 @@ Lab 2 depends on all of these. Confirm them before moving on:
 
 ## Summary
 
-You installed Kiro, signed in with Builder ID, authenticated the AWS CLI with `aws login`, ran the food-tracker starter app on a personal AWS Amplify sandbox, seeded it with sample data, generated steering files so Kiro understands the project on every future prompt, and used vibe coding (natural language prompts with diff-by-diff review) to add features. In Lab 2 you move from vibe coding to spec-driven development: building features with formal requirements, design documents, and sequenced tasks.
+You installed Kiro, signed in with Builder ID, authenticated the AWS CLI with `aws login`, ran the food-tracker starter app on a personal AWS Amplify sandbox, seeded it with sample data, generated steering files so Kiro understands the project on every future prompt, and used vibe coding (natural language prompts with diff-by-diff review) to add features. In Lab 2, you move from vibe coding to spec-driven development: building features with formal requirements, design documents, and sequenced tasks.

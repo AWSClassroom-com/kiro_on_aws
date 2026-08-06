@@ -34,9 +34,7 @@ This lab uses Claude Sonnet 4.5 through the global cross-region inference profil
 Confirm the profile is available in your region:
 
 ```bash
-aws bedrock list-inference-profiles \
-  --query "inferenceProfileSummaries[?inferenceProfileId=='global.anthropic.claude-sonnet-4-5-20250929-v1:0'].[inferenceProfileId,status]" \
-  --output table --no-cli-pager
+aws bedrock list-inference-profiles --query "inferenceProfileSummaries[?inferenceProfileId=='global.anthropic.claude-sonnet-4-5-20250929-v1:0'].[inferenceProfileId,status]" --output table --no-cli-pager
 ```
 
 You should see the profile with status `ACTIVE`. If the result is empty or you get `AccessDeniedException`, Claude access has not been enabled in this account/region; ask your instructor before continuing.

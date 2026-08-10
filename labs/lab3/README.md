@@ -30,9 +30,7 @@ If it fails with an expired-token error, rerun `aws login --region <your-region>
 You verified you can invoke Claude in Lab 2's smoke test. Confirm the inference profile the agent will use is still active in your region:
 
 ```bash
-aws bedrock list-inference-profiles \
-  --query "inferenceProfileSummaries[?inferenceProfileId=='global.anthropic.claude-sonnet-4-5-20250929-v1:0'].[inferenceProfileId,status]" \
-  --output table --no-cli-pager
+aws bedrock list-inference-profiles --query "inferenceProfileSummaries[?inferenceProfileId=='global.anthropic.claude-sonnet-4-5-20250929-v1:0'].[inferenceProfileId,status]" --output table --no-cli-pager
 ```
 
 You should see the profile with status `ACTIVE`. If the result is empty, model access has not been enabled in this account/region; ask your instructor.

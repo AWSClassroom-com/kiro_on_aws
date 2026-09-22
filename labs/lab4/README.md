@@ -29,6 +29,15 @@ If expired: `aws login --region <your-region>`.
 
 You need a GitHub account to host the repo Amplify deploys from. If you do not have one, sign up at https://github.com/signup.
 
+### 5. Chat model set to Haiku 4.5
+
+> [!WARNING]
+> ⚠️ **Confirm the chat model is Haiku 4.5, not Auto, before starting the spec session.**
+>
+> In the chat panel (Cmd+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
+>
+> This is the most credit-hungry lab in the course: a full spec workflow followed by **Run all tasks** in Part D, which executes every remaining task back to back. If your credits run out mid-run you will be left with a partially implemented feature and a broken sandbox deploy.
+
 ---
 
 ## Part A: Generate Requirements

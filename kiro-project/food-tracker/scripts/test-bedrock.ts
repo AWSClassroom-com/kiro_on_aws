@@ -9,7 +9,7 @@
  */
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 
-const modelId = process.argv[2] ?? "global.anthropic.claude-sonnet-4-5-20250929-v1:0";
+const modelId = process.argv[2] ?? "global.anthropic.claude-sonnet-4-6";
 
 // The AWS SDK default credential chain picks up your aws login session.
 const client = new BedrockRuntimeClient();

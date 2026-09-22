@@ -25,15 +25,24 @@ aws sts get-caller-identity --no-cli-pager
 
 If it fails with an expired-token error, rerun `aws login --region <your-region>` from Lab 1.
 
-### 4. Bedrock Claude Sonnet 4.5 access
+### 4. Bedrock Claude Sonnet 4.6 access
 
 You verified you can invoke Claude in Lab 2's smoke test. Confirm the inference profile the agent will use is still active in your region:
 
 ```bash
-aws bedrock list-inference-profiles --query "inferenceProfileSummaries[?inferenceProfileId=='global.anthropic.claude-sonnet-4-5-20250929-v1:0'].[inferenceProfileId,status]" --output table --no-cli-pager
+aws bedrock list-inference-profiles --query "inferenceProfileSummaries[?inferenceProfileId=='global.anthropic.claude-sonnet-4-6'].[inferenceProfileId,status]" --output table --no-cli-pager
 ```
 
 You should see the profile with status `ACTIVE`. If the result is empty, model access has not been enabled in this account/region; ask your instructor.
+
+### 5. Chat model set to Haiku 4.5
+
+> [!WARNING]
+> ⚠️ **Confirm the chat model is Haiku 4.5, not Auto, before building the hooks.**
+>
+> In the chat panel (Cmd+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
+>
+> This matters more in this lab than anywhere else. The security hook you build in Part B is an **Ask Kiro** hook, which sends a prompt to the agent on **every file save** for the rest of the course. On Auto, ordinary editing burns credits in the background without you noticing.
 
 ---
 
@@ -148,7 +157,14 @@ const exampleKey = "AKIAIOSFODNN7EXAMPLE";
 const fabricatedKey = "AKIA2QHFZ6PXVMK3WYJN";
 ```
 
-Save the file. The hook fires; watch the chat panel.
+> [!NOTE]
+> ℹ️ **Read this before you save.** Saving this file is the test. The moment you save, the `security-scan` hook fires on its own, sends the file to the agent, and writes its findings into the **chat panel**. The findings do not appear in the editor, and no notification is raised.
+>
+> Open the chat panel (Cmd+L / CTRL+L) and keep it visible **before** you save. If the panel is closed you will miss the result and may conclude the hook did not run.
+>
+> Do not paste the file contents into chat, and do not ask Kiro to review the file. Neither is needed. The hook scans the file on save without any prompt from you.
+
+Now save the file and watch the chat panel.
 
 **Expected result:** the agent flags `AKIA2QHFZ6PXVMK3WYJN` as a real-looking AWS access key ID, and explicitly identifies `AKIAIOSFODNN7EXAMPLE` as the documented test value from the allowlist (and does not flag it). It suggests IAM roles or Secrets Manager as the right home for real credentials. Exact wording varies between runs; judge the outcome, not the phrasing.
 
@@ -238,7 +254,7 @@ Open the AWS Console > Amazon Bedrock. Confirm the region (top-right selector) m
 Match each console section to the file it came from:
 
 1. Instructions for the Agent: the text of `agent-instructions.md`.
-2. The model: Claude Sonnet 4.5, served through the global inference profile.
+2. The model: Claude Sonnet 4.6, served through the global inference profile.
 3. Action groups > `FoodEntryTools`: open it and confirm the schema is your `openapi.json` and the Lambda is `meal-recommendations`.
 4. Aliases: a `v1` alias exists.
 

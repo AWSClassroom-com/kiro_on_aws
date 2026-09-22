@@ -29,12 +29,12 @@ aws login --region <your-region>
 
 ### 3. Verify Bedrock model access
 
-This lab uses Claude Sonnet 4.5 through the global cross-region inference profile `global.anthropic.claude-sonnet-4-5-20250929-v1:0`. That full string is the model ID you use everywhere in this lab. (An inference profile is how Bedrock routes requests for newer models; you invoke the profile ID instead of the bare model ID.)
+This lab uses Claude Sonnet 4.6 through the global cross-region inference profile `global.anthropic.claude-sonnet-4-6`. That full string is the model ID you use everywhere in this lab. (An inference profile is how Bedrock routes requests for newer models; you invoke the profile ID instead of the bare model ID.)
 
 Confirm the profile is available in your region:
 
 ```bash
-aws bedrock list-inference-profiles --query "inferenceProfileSummaries[?inferenceProfileId=='global.anthropic.claude-sonnet-4-5-20250929-v1:0'].[inferenceProfileId,status]" --output table --no-cli-pager
+aws bedrock list-inference-profiles --query "inferenceProfileSummaries[?inferenceProfileId=='global.anthropic.claude-sonnet-4-6'].[inferenceProfileId,status]" --output table --no-cli-pager
 ```
 
 You should see the profile with status `ACTIVE`. If the result is empty or you get `AccessDeniedException`, Claude access has not been enabled in this account/region; ask your instructor before continuing.
@@ -59,6 +59,15 @@ npx tsx scripts/test-bedrock.ts
 >
 > Fix the cause before moving on. Nothing later in this lab works until this does.
 
+### 5. Chat model set to Haiku 4.5
+
+> [!WARNING]
+> ⚠️ **Confirm the chat model is Haiku 4.5, not Auto, before starting the spec session.**
+>
+> In the chat panel (Cmd+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
+>
+> This lab runs a full three-phase spec workflow plus four to six implementation tasks. On Auto, that can exhaust the 50-credit monthly free tier before you reach Part D, and individual steps may hit rate limits and stall the lab.
+
 ---
 
 ## Part A: Generate Requirements
@@ -77,7 +86,7 @@ Create a new spec "weekly-nutrition-summary" for a new feature that is an AI-pow
 Requirements:
 - On the food tracker page, add a "Generate Weekly Summary" button.
 - When clicked, the app filters the food entries from the last 7 days. Entries are already loaded on the page via the AppSync data client (client.models.FoodItem.list()); no extra fetch is required.
-- The filtered entries are sent to Amazon Bedrock (Claude Sonnet 4.5, model ID global.anthropic.claude-sonnet-4-5-20250929-v1:0; use EXACTLY this model ID everywhere, do not substitute a different regional prefix like us. or apac.) which returns:
+- The filtered entries are sent to Amazon Bedrock (Claude Sonnet 4.6, model ID global.anthropic.claude-sonnet-4-6; use EXACTLY this model ID everywhere, do not substitute a different regional prefix such as us. or au.) which returns:
   - totalCalories (sum across all entries)
   - averageDailyCalories (totalCalories divided by 7)
   - macroBreakdown: proteinPercent, carbsPercent, fatPercent (must sum to 100)
@@ -106,7 +115,7 @@ Open `requirements.md`. Confirm it covers:
 
 Then run these critical review checks. Each one has failed in real runs of this lab; use Find (Cmd+F / CTRL+F) in the file:
 
-1. Search for `us.anthropic` and `apac.`. Both must return zero results. If found, the model ID drifted; tell Kiro to use exactly `global.anthropic.claude-sonnet-4-5-20250929-v1:0` everywhere.
+1. Search for `us.anthropic` and `au.anthropic`. Both must return zero results. If found, the model ID drifted; tell Kiro to use exactly `global.anthropic.claude-sonnet-4-6` everywhere.
 2. Search for `IAM` and `policy`. The requirements must not contain IAM or permission-scoping criteria; those belong to the design phase. If found, tell Kiro to remove them.
 3. Search for `global.anthropic`. It must appear, spelled exactly as in the Step 2 prompt.
 
@@ -132,7 +141,7 @@ The requirements for the weekly-nutrition-summary spec are approved. Please gene
 
 Hard constraint on credentials: At runtime, the Amplify Function uses its Lambda execution role for AWS calls; the AWS SDK's default credential chain resolves to that role automatically. Do NOT design anything that reads AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_PROFILE, AWS_REGION, or any AWS credential environment variables. Construct SDK clients with no arguments.
 
-Hard constraint on the model ID: every code example in the design must use EXACTLY the model ID global.anthropic.claude-sonnet-4-5-20250929-v1:0. Do not substitute a different regional prefix such as us. or apac.
+Hard constraint on the model ID: every code example in the design must use EXACTLY the model ID global.anthropic.claude-sonnet-4-6. Do not substitute a different regional prefix such as us. or au.
 ```
 
 ### Step 5: Review and approve
@@ -141,7 +150,7 @@ Open `design.md` and confirm all four sections are present. In the TypeScript in
 
 Then run these critical review checks. Each one has failed in real runs of this lab; use Find (Cmd+F / CTRL+F) in the file:
 
-1. Search for `us.anthropic` and `apac.`. Both must return zero results in every code example. This drift has happened even when the requirements carried the correct ID.
+1. Search for `us.anthropic` and `au.anthropic`. Both must return zero results in every code example. This drift has happened even when the requirements carried the correct ID.
 2. Search for `timeoutSeconds`. The function resource example must set `timeoutSeconds: 30`; the 3-second default guarantees a timeout on Bedrock calls.
 3. Search for `AWS_ACCESS_KEY_ID`. It may only appear in a clearly marked incorrect-pattern example. The correct client construction takes no arguments, for example `new BedrockRuntimeClient({})`.
 4. Search for `resources`. The IAM grant must be `bedrock:InvokeModel` with `resources: ["*"]`.
@@ -209,6 +218,22 @@ Before making any code changes, reply in chat with:
 
 Implement only that one task. Do not bundle multiple tasks together. Do not add files or features the task does not explicitly require. Wait for my approval of the diff before moving on.
 ```
+
+> [!WARNING]
+> ⚠️ **Type the word `Approve` into the chat box and press ENTER. Do not look for a button.**
+>
+> This is the first point in the course where approval is a message you send rather than a control you click. Up to now, Kiro has asked for permission with **Run**, **Trust**, or **Accept** buttons, and those are still used for running commands and accepting diffs. Approving a task recap is different: Kiro is waiting for you to reply in the conversation.
+>
+> If you hunt for an Approve button you will not find one, and the task will sit unstarted.
+>
+> Buttons you will still see, and what they do:
+>
+> | Control | When it appears | What it does |
+> | --- | --- | --- |
+> | **Run** | Kiro wants to run a shell command | Runs it once |
+> | **Trust** | Same prompt as Run | Permits the command for later, **does not run it now** |
+> | **Accept** | A file diff is ready | Applies the change |
+> | *(type `Approve`)* | Kiro has posted a task recap | Starts that task |
 
 Once Kiro produces its recap, type **Approve** in chat to begin the task.
 

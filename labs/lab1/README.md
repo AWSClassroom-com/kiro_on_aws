@@ -169,6 +169,19 @@ The seed script loads 30 sample food items (with realistic added and expiration 
 
 ## Part D: Explore Kiro
 
+> [!WARNING]
+> ⚠️ **Set two things in the chat panel before you send a single prompt.** Open it with Cmd+L (macOS) / CTRL+L (Windows/Linux).
+>
+> **1. Model: choose Haiku 4.5.** Click the model selector at the bottom of the input box. Do not leave it on **Auto**.
+>
+> Everything from Step 11 onward spends credits. In testing, one steering-generation command on Auto consumed roughly **a quarter of the 50-credit monthly free tier**, took **over 6 minutes**, and hit rate limits twice. The same work on Haiku 4.5 finished in **28 seconds**. You will run dozens of prompts across the four labs. On Auto you will run out of credits before you finish.
+>
+> **2. Autopilot: turn it off.** Autopilot is **on by default**.
+>
+> While Autopilot is on, Kiro applies its changes straight to your files and there is no diff to approve. Step 11 below, and every step in Part E, asks you to review a proposed diff before accepting it. None of that happens until you switch Autopilot off.
+>
+> Both settings are per-window. If you close Kiro or open a different folder, set them again.
+
 ### Step 9: Get oriented and install the Biome extension
 
 Open each panel once so you know where things live:
@@ -233,7 +246,7 @@ Review the diff Kiro proposes and accept it.
 
 ## Part E: Vibe Coding
 
-Work in Supervised mode (Autopilot off) so you review each diff before accepting. Vite picks up edits under `src/` automatically; refresh the browser to see each change.
+Confirm Autopilot is still off before you start, so you review each diff before accepting it. You turned it off at the beginning of Part D, but the setting is per-window and resets if you reopened Kiro. Vite picks up edits under `src/` automatically; refresh the browser to see each change.
 
 The loop for every step below is the same: prompt, read the diff, push back if needed, accept, refresh and verify.
 

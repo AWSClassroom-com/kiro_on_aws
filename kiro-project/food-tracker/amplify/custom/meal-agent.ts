@@ -6,7 +6,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 
-const MODEL_ID = "global.anthropic.claude-sonnet-4-5-20250929-v1:0";
+const MODEL_ID = "global.anthropic.claude-sonnet-4-6";
 
 export interface MealAgentProps {
   /** The Lambda that backs the FoodEntryTools action group. */

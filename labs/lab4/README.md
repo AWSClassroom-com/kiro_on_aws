@@ -15,7 +15,9 @@ The `MealRecommendationAgent` exists in the Bedrock Console with a `FoodEntryToo
 
 ### 2. Sandbox + dev server running
 
-From `kiro-project/food-tracker`: `npm run amplify:sandbox` (terminal 1) and `npm run dev` (terminal 2). App at `http://localhost:3000`.
+From `kiro-project/food-tracker`: `npm run amplify:sandbox -- --identifier <your-sandbox-name>` (terminal 1) and `npm run dev` (terminal 2). App at `http://localhost:3000`.
+
+Use the same sandbox name you chose in Lab 1 Step 7.
 
 ### 3. AWS CLI session valid
 
@@ -44,7 +46,11 @@ You need a GitHub account to host the repo Amplify deploys from. If you do not h
 
 ### Step 1: Start a spec session
 
-Open the chat panel: Cmd+L (macOS) / CTRL+L (Windows/Linux). In the bottom-left corner of the chat input box, click the agent selector and change it to **Spec**.
+Open a new chat session: Cmd+L (macOS) / CTRL+L (Windows/Linux), or the **+** button in the chat panel.
+
+The new session screen offers two cards, **Vibe** and **Spec**. Choose **Spec**.
+
+> Note: there is no agent selector in the chat input box. Spec mode is chosen on the new session screen.
 
 ### Step 2: Describe the feature
 
@@ -96,13 +102,20 @@ Approve through the spec workflow when satisfied.
 > Note: Agent output varies between runs. Review what Kiro actually wrote.
 
 > **Checkpoint. Validate before continuing:**
-> `requirements.md` is approved and contains your real Agent ID and Alias ID, not bracket placeholders.
+> `requirements.md` is approved and contains **no** agent or alias ID values at all. The backend supplies them at deploy time from the `mealAgent` construct, so any ID written into the requirements is invented and will fail at runtime.
 
 ---
 
 ## Part B: Generate Design
 
 ### Step 4: Generate the design
+
+As in Lab 2, the prompt is long because it pins decisions that fail in specific ways. The two that matter most here:
+
+| Constraint | Why |
+| --- | --- |
+| `timeoutSeconds: 60` | Agent invocations take 5 to 15 seconds, sometimes longer. Measured at about 11 seconds for a single tool call in this project |
+| `resourceGroupName: "data"` | The agent construct and the FoodItem table live in the data stack. Placing this function anywhere else creates a circular cross-stack dependency and the whole deploy fails |
 
 In chat:
 
@@ -183,8 +196,14 @@ In Lab 2, you implemented tasks one at a time to practice the review protocol. H
 
 While it runs:
 
-1. Approve any commands Kiro asks to run.
-2. Watch terminal 1: backend tasks trigger sandbox redeploys as they land. If it reports `MultipleSandboxInstancesError`, press CTRL+C and rerun `npm run amplify:sandbox` (known stale-lock glitch).
+1. Approve any commands Kiro asks to run. The dialog offers **Reject**, **Trust** and **Run**. Click **Run**. **Trust** permits the command for later but does not execute it now, so the task will appear to stall.
+2. Watch terminal 1: backend tasks trigger sandbox redeploys as they land. If it reports `MultipleSandboxInstancesError`, a previous sandbox process is still running and rerunning will not clear it. Close all sandbox processes first:
+
+```
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'amplify:sandbox|ampx.js' } | Stop-Process -Force
+```
+
+Then start one again with your own sandbox name.
 
 When all tasks show complete, review the full changeset before moving on. Open each of the six allowed files and rerun the Step 5 Find checks against the real code: `attrAgentId`/`attrAgentAliasId` wiring in `amplify/backend.ts`, `timeoutSeconds: 60` in the function resource, `event.arguments` in the handler, `console.error` before the fallback, and no hardcoded IDs anywhere.
 
@@ -313,10 +332,16 @@ From here, every `git push fork trunk` triggers an automatic redeploy of both ba
 
 When the course is fully wrapped up:
 
-```bash
-npm run amplify:sandbox:delete
+```
+npm run amplify:sandbox:delete -- --identifier <your-sandbox-name>
+```
+
+```
 aws logout
 ```
+
+> [!WARNING]
+> ⚠️ **Use the same sandbox name you chose in Lab 1 Step 7.** Deleting without it, or with a different name, targets a sandbox that does not exist and leaves yours running and billing in the shared class account.
 
 The first command asks for confirmation; type `y`. It removes everything the sandbox created, including the sandbox's Bedrock agent. To remove the production deployment too: AWS Console > Amplify > your app > App settings > Delete app (the production agent is part of that backend and is removed with it).
 

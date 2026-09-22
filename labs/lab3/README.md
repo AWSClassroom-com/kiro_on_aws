@@ -9,13 +9,20 @@
 
 ## Prerequisites
 
+> [!NOTE]
+> ℹ️ **Parts A, B and C need only Kiro and this project open.** They make no AWS calls. If you fell behind in Lab 2, you can still do them.
+>
+> Prerequisites 2, 3 and 4 below are required only for Parts D, E and F, which use the deployed agent.
+
 ### 1. Lab 2 complete
 
 The weekly nutrition summary feature works end-to-end. Foundational steering files (`product.md`, `tech.md`, `structure.md`) exist in `.kiro/steering/` from Lab 1.
 
 ### 2. Sandbox + dev server running
 
-From `kiro-project/food-tracker`, both terminals are still up: `npm run amplify:sandbox` (terminal 1) and `npm run dev` (terminal 2). The food-tracker app is reachable at `http://localhost:3000`.
+From `kiro-project/food-tracker`, both terminals are still up: `npm run amplify:sandbox -- --identifier <your-sandbox-name>` (terminal 1) and `npm run dev` (terminal 2). The food-tracker app is reachable at `http://localhost:3000`.
+
+Use the same sandbox name you chose in Lab 1 Step 7.
 
 ### 3. AWS CLI session valid
 
@@ -185,17 +192,26 @@ Now the deterministic counterpart: a hook that runs Biome's formatter on save. N
 
 ### Step 7: Create the format hook
 
-In the Kiro pane > Agent Hooks > plus button > "Ask Kiro to create a hook":
+This time use the other creation path. In the Kiro pane > Agent Hooks > plus button, the menu offers two options:
 
-```
-Create a hook named "format-on-save" that fires when a TypeScript or TypeScript-React file is saved. Trigger type: fileEdited. File patterns: **/*.ts, **/*.tsx. Exclude node_modules, dist, src/routeTree.gen.ts, and amplify_outputs.json.
+| Option | What it does |
+| --- | --- |
+| Manually create a hook | Fills in a form. No model call, no credits |
+| Ask Kiro to create a hook | Describes it in natural language. Spends credits |
 
-Action type: runCommand. Command: npx biome format --write src/ amplify/ scripts/
+You used **Ask Kiro** in Part B, where the hook needed judgment about what counts as a credential. This hook has a fixed trigger, two file patterns and one shell command, so there is nothing for a model to reason about. Choose **Manually create a hook**.
 
-Save to .kiro/hooks/format-on-save.kiro.hook.
-```
+Fill in the form:
 
-Review before saving: the generated file uses `type: runCommand` (not `askAgent`) and the command is the exact `npx biome format --write src/ amplify/ scripts/` line above. Save.
+- **Name**: `format-on-save`
+- **Trigger**: `fileEdited`
+- **File patterns**: `**/*.ts`, `**/*.tsx`
+- **Action type**: `runCommand`
+- **Command**: `npx biome format --write src/ amplify/ scripts/`
+
+Save to `.kiro/hooks/format-on-save.kiro.hook`.
+
+Building it by hand also shows you the JSON structure behind every hook, including the one Kiro generated for you in Part B. Open both files and compare them.
 
 ### Step 8: Test it
 
@@ -205,7 +221,13 @@ Create a scratch file `src/scratch-format.ts` (a scratch file keeps test junk ou
 export const   foo  =      'bar'   ;
 ```
 
-Save. The Run Command hook fires Biome silently. Within a moment the line reformats to clean spacing and double quotes: `export const foo = "bar";`
+Save the file.
+
+Kiro asks permission to run the command. The dialog offers **Reject**, **Trust** and **Run**. Click **Run**.
+
+**Trust** permits the command for later but does not run it now. If you click Trust and nothing happens, that is why.
+
+Once you click Run, the line reformats within a moment to clean spacing and double quotes: `export const foo = "bar";`
 
 Then delete `src/scratch-format.ts`.
 

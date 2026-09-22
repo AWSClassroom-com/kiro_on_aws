@@ -28,7 +28,7 @@ If you are using the Course VM, Kiro has already been downloaded to your /downlo
 
 Download from https://kiro.dev for your OS:
 
-- Windows (class VM option): "Download for Windows (x64)" and run the downloaded 194mb `.exe` installer with default settings.
+- Windows (class VM option): "Download for Windows (x64)" and run the downloaded `.exe` installer with default settings.
 - macOS: open the `.dmg`, drag Kiro to Applications. If macOS blocks it, go to System Preferences > Security & Privacy and click Open Anyway.
 - Linux (Debian/Ubuntu): `sudo dpkg -i kiro_*.deb`
 - Linux (Fedora/RHEL): `sudo rpm -i kiro_*.rpm`
@@ -65,8 +65,15 @@ If you are using the Course VM, the course repo is already cloned at `c:/class-p
 
 On your own machine, clone it from a terminal:
 
-```bash
-mkdir -p ~/class-projects && cd ~/class-projects
+```
+New-Item -ItemType Directory -Force "$HOME\class-projects"
+```
+
+```
+cd "$HOME\class-projects"
+```
+
+```
 git clone https://github.com/AWSClassroom-com/kiro_on_aws
 ```
 
@@ -75,6 +82,27 @@ git clone https://github.com/AWSClassroom-com/kiro_on_aws
 On the Kiro start screen, press **Open a project** and select the `class-projects/kiro_on_aws/kiro-project/food-tracker` folder (on the Course VM: `c:/class-projects/kiro_on_aws/kiro-project/food-tracker`). When prompted, trust the authors.
 
 The status bar shows an indexing indicator while Kiro analyzes the codebase.
+
+> [!WARNING]
+> ⚠️ **Open the `/food-tracker/` folder, which is located inside of the `/kiro-project` folder within the repo you just cloned to your machine.**
+>
+> The repository contains several folders. The application lives in `kiro-project/food-tracker`, and that is the folder Kiro must have open. Opening the repository root instead looks correct and breaks the rest of the course in two ways.
+>
+> **Commands fail.** Kiro's terminal opens in whatever folder you opened. `package.json` lives in `food-tracker`, so Step 7 fails straight away:
+>
+> ```
+> npm error code ENOENT
+> npm error Could not read package.json
+> ```
+>
+> **Kiro learns the wrong things about the project.** With the repository root open, Kiro reads the `labs/` folder as part of your codebase. In Step 11 it then writes steering files describing *the training course* rather than the food-tracker application, and it may generate Lab 2's specification before you reach Lab 2. Nothing warns you, and every later prompt inherits that wrong context.
+>
+> **Check before continuing:**
+>
+> 1. The Kiro window title reads **food-tracker**.
+> 2. The File Explorer shows `src/`, `amplify/`, `scripts/` and `package.json` at the top level. If you can see a `labs/` folder, you have opened the wrong one.
+>
+> If either check fails, use **File > Open Folder** and select `kiro-project/food-tracker`. Do this now rather than later; steering files written from the wrong folder have to be deleted and regenerated.
 
 ---
 
@@ -119,6 +147,25 @@ aws sts get-caller-identity
 > **Checkpoint. Validate before continuing:**
 > `aws sts get-caller-identity` must print your account ID and IAM user ARN. If it fails with a permissions error, your IAM user is probably missing the [SignInLocalDevelopmentAccess](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SignInLocalDevelopmentAccess.html) managed policy; ask your instructor.
 
+4. Confirm the default region is set. Every AWS SDK client in this project is constructed without an explicit region, so an unset default produces a "Region is missing" error later that does not explain itself:
+
+```
+aws configure get region
+```
+
+This must print a region. If it prints nothing, rerun `aws login --region <your-region>`.
+
+5. Confirm you can actually invoke the model. Listing models is not the same as being able to call one, and access problems are much cheaper to find now than in Lab 2:
+
+```
+npx tsx scripts/test-bedrock.ts
+```
+
+> **Checkpoint. Validate before continuing:**
+> The command prints a one-sentence greeting from Claude. If it returns `AccessDeniedException`, model access has not been enabled for this account; ask your instructor before going further. Nothing in Lab 2 or Lab 3 works until this does.
+>
+> This requires `npm install` to have run. If you get a missing-module error, complete Step 7 first and come back.
+
 ---
 
 ## Part C: Run the Starter App
@@ -127,11 +174,34 @@ The food-tracker is an AWS Amplify Gen 2 app: a React + Vite frontend talking to
 
 ### Step 7: Start the Amplify sandbox
 
-Open the integrated terminal (CTRL+`) and run:
+> [!WARNING]
+> ⚠️ **Choose your own sandbox name before you run anything, and write it down.**
+>
+> Everyone in this class shares one AWS account. Your sandbox is told apart from everyone else's by a single name, and **by default that name is the Windows username of the machine you are on**. On a classroom VM image every student has the same username, so without a name of your own you would all deploy on top of each other.
+>
+> Pick a short, lowercase, unique name. Letters and numbers only, no spaces. Combine your initials with a few random digits, for example `jd7215` or `amk904`. Do not use your machine name, `student`, `admin`, or anything a classmate might also pick.
+>
+> **Write it on paper or in a scratch file. You need the exact same name for every sandbox command in all four labs, including the cleanup at the end of Lab 4.** A different name creates a second sandbox and leaves the first one running and billing.
+>
+> Throughout the labs, replace `<your-sandbox-name>` with the name you chose.
 
-```bash
-npm install && npm run amplify:sandbox
+Open the integrated terminal (CTRL+`).
+
+Install dependencies first:
+
 ```
+npm install
+```
+
+Then start the sandbox, substituting your own name:
+
+```
+npm run amplify:sandbox -- --identifier <your-sandbox-name>
+```
+
+> Note: the `--` before `--identifier` is required. It tells npm to pass the option through to the sandbox rather than interpreting it itself.
+
+> Note: these are two separate commands. Do not join them with `&&`. Kiro's terminal on Windows is PowerShell, which does not support `&&` and will fail with `The token '&&' is not a valid statement separator in this version.`
 
 This provisions a per-developer cloud backend (AppSync API, DynamoDB, Cognito) using the AWS credentials from Part B, and writes `amplify_outputs.json` to the project root: the config file the frontend reads to find your backend.
 
@@ -139,7 +209,15 @@ The first deploy takes roughly 3-5 minutes. Leave this terminal running afterwar
 
 > If the command fails with a credentials error, your `aws login` session may have expired. Rerun `aws login --region <your-region>` from Part B and try again.
 
-> If the sandbox reports `MultipleSandboxInstancesError` (this can happen even with a single sandbox, due to a stale lock), press CTRL+C and rerun `npm run amplify:sandbox`. Your cloud resources are unaffected; the watcher just restarts.
+> If the sandbox reports `MultipleSandboxInstancesError`, a previous sandbox is still running. Stopping a sandbox with CTRL+C does not always stop the background process it started, and starting another one adds a second. Rerunning the command will not clear it.
+>
+> Close all sandbox processes first, then start one:
+>
+> ```
+> Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'amplify:sandbox|ampx.js' } | Stop-Process -Force
+> ```
+>
+> Your cloud resources are unaffected.
 
 > **Checkpoint. Validate before continuing:**
 > 1. Terminal 1 shows the line `✔ Deployment completed`.
@@ -151,17 +229,21 @@ The sandbox terminal from Step 7 must stay running. Do not close it, do not pres
 
 Open a second terminal: Terminal > New Terminal from the menu bar (or CTRL+SHIFT+`). You now have two terminals; the sandbox keeps running in the first while you work in the new one.
 
-In the new terminal, run:
+In the new terminal, run these as two separate commands. Wait for the first to finish before starting the second:
 
-```bash
-npm run seed && npm run dev
+```
+npm run seed
+```
+
+```
+npm run dev
 ```
 
 The seed script loads 30 sample food items (with realistic added and expiration dates relative to today) into your DynamoDB table, then the Vite dev server starts. The seed is safe to rerun; it skips itself if the table already has data.
 
 > **Checkpoint. Validate before continuing:**
 > 1. Open `http://localhost:3000` in your browser. You must see the Food Tracker homepage.
-> 2. Click **Start Tracking Food** (or open `http://localhost:3000/food-tracker`). The food-tracker page must show "30 items tracked" and a grid of food entry cards.
+> 2. Click **Start Tracking Food** (or open `http://localhost:3000/food-tracker`). The page first shows "0 items tracked" and "Loading your food items..." for a second or two. Wait for it to finish loading, then confirm it shows "30 items tracked" and a grid of food entry cards.
 >
 > Leave both terminals running for the rest of the lab. Vite hot-reloads any changes Kiro makes under `src/`; no manual restart is needed.
 
@@ -191,7 +273,7 @@ Open each panel once so you know where things live:
   - Expand `src/routes/`. You should see `index.tsx` (the homepage) and `food-tracker.tsx` (the main page).
   - Expand `amplify/`. You should see `backend.ts`, plus `auth/` and `data/` folders.
   - Expand `amplify/data/`. You should see `resource.ts` (the FoodItem schema).
-- Kiro Panel (ghost icon in the activity bar): Specs, Agent Hooks, Steering, Skills, MCP Servers.
+- Kiro Panel (ghost icon in the activity bar). You should see four sections: **Specs**, **Agent Hooks**, **Agent Steering & Skills**, and **MCP Servers**. Steering and Skills share one section; they are not listed separately.
 - Chat Panel: Cmd+L (macOS) / CTRL+L (Windows/Linux), or via command palette "Kiro: Open Chat".
 
 Now install the Biome extension. This is required: Biome is the formatter and linter this project uses, and the format-on-save hook you build in Lab 3 depends on this tooling.
@@ -252,6 +334,13 @@ The loop for every step below is the same: prompt, read the diff, push back if n
 
 > Note: Agent output varies between runs. The expected results below describe outcomes, not exact code or text. Always read the full diff before accepting. If anything looks wrong, say so in chat and let Kiro fix it before you accept.
 
+> [!NOTE]
+> ℹ️ **If a prompt appears to do nothing, look for a pending approval before assuming it failed.**
+>
+> Kiro pauses and waits for you at several points. It may show a **Run** button to execute a command, or an **Accept** button to apply a diff. Until you click, nothing happens and no error is shown.
+>
+> Steps 14 and 15 below ask you to start new chat sessions. An approval left pending in an earlier session stays there and is easy to miss, because you are now looking at a different session. If a step seems to have had no effect, scroll back through your earlier chat sessions and check for an unclicked button.
+
 ### Step 12: Add an "EXPIRING SOON" badge
 
 Open a new session in the chat panel and send:
@@ -304,6 +393,17 @@ On the homepage only (src/routes/index.tsx), change the color theme from emerald
 Review and accept. Refresh the homepage.
 
 **Expected result:** the hero gradient, the "Start Tracking Food" button, the feature-card hover state and accent bars, and the bottom CTA button all show the new warm palette. The food-tracker page and the nav bar are unchanged.
+
+This step asks for an exhaustive replacement across a whole file, and a partial result is common. The badge near the top may change while the larger elements stay green, which is easy to miss at a glance.
+
+> **Checkpoint. Validate before continuing:**
+> Open `src/routes/index.tsx` and use Find (Cmd+F / CTRL+F) to search for `emerald` and then `cyan`. **Both must return zero results.** Checking by eye is not reliable here.
+
+If either search returns a match, push back in chat:
+
+```
+You only changed part of the page. Search src/routes/index.tsx for emerald and cyan and replace every remaining one with an amber, orange, or rose equivalent. Do not modify any other route or component.
+```
 
 ### Step 16: Add a footer to the homepage
 

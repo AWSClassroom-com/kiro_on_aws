@@ -207,27 +207,38 @@ This provisions a per-developer cloud backend (AppSync API, DynamoDB, Cognito) u
 
 The first deploy takes roughly 3-5 minutes. Leave this terminal running afterward; it watches the `amplify/` folder and automatically redeploys when backend files change.
 
+> [!NOTE]
+> ℹ️ **Name this terminal now.** Kiro labels a terminal tab after whatever process is in the foreground, so this one will read `node`, then `esbuild`, then `Kiro` as the work changes. By Lab 4 you will have five tabs and no reliable way to tell them apart. Right click the tab, choose **Rename**, and call it `sandbox`. Every later step in every lab refers to it by that name.
+
 > If the command fails with a credentials error, your `aws login` session may have expired. Rerun `aws login --region <your-region>` from Part B and try again.
 
-> If the sandbox reports `MultipleSandboxInstancesError`, a previous sandbox is still running. Stopping a sandbox with CTRL+C does not always stop the background process it started, and starting another one adds a second. Rerunning the command will not clear it.
+> If the sandbox reports `MultipleSandboxInstancesError`, there are two possible causes and they need different fixes. Rerunning the command clears neither.
 >
-> Close all sandbox processes first, then start one:
+> **Cause 1, a leftover process.** Stopping a sandbox with CTRL+C does not always stop the background process it started, and starting another one adds a second. Close all sandbox processes, then start one:
 >
 > ```
 > Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'amplify:sandbox|ampx.js' } | Stop-Process -Force
 > ```
 >
-> Your cloud resources are unaffected.
+> **Cause 2, a stale lock file.** Read the PID in the error message. If that PID is the only sandbox running, it has deadlocked against its own lock, which happens when files change while a deploy is already in progress. The lock file outlives the process, so CTRL+C and rerun fails in exactly the same way. Press CTRL+C, clear the lock, then restart the sandbox in that same terminal:
+>
+> ```
+> Remove-Item ".amplify\artifacts\cdk.out\read.*.lock" -Force -ErrorAction SilentlyContinue
+> ```
+>
+> ⚠️ **This failure is quiet.** After the error the sandbox prints `Watching for file changes...` and looks perfectly healthy, while nothing you save reaches AWS. In a real run it went unnoticed for hours. If a deploy you are expecting never appears, check here first.
+>
+> Your cloud resources are unaffected by either fix.
 
 > **Checkpoint. Validate before continuing:**
-> 1. Terminal 1 shows the line `✔ Deployment completed`.
+> 1. The `sandbox` terminal shows the line `✔ Deployment completed`.
 > 2. The file `amplify_outputs.json` exists in the project root (visible in the File Explorer).
 
 ### Step 8: Seed sample data and start the dev server
 
 The sandbox terminal from Step 7 must stay running. Do not close it, do not press CTRL+C in it, and do not type this step's command into it.
 
-Open a second terminal: Terminal > New Terminal from the menu bar (or CTRL+SHIFT+`). You now have two terminals; the sandbox keeps running in the first while you work in the new one.
+Open a second terminal: Terminal > New Terminal from the menu bar (or CTRL+SHIFT+`). Right click the new tab, choose **Rename**, and call it `dev`. You now have two named terminals, `sandbox` and `dev`. The sandbox keeps running while you work in the new one.
 
 In the new terminal, run these as two separate commands. Wait for the first to finish before starting the second:
 
@@ -473,7 +484,7 @@ Review and accept. Refresh and resize the browser to confirm the layout switches
 
 Lab 2 depends on all of these. Confirm them before moving on:
 
-- [ ] Both terminals still running: the sandbox (terminal 1) and the dev server (terminal 2)
+- [ ] Both terminals still running: `sandbox` and `dev`
 - [ ] App at `http://localhost:3000` with the seeded data and your Part E features working
 - [ ] `.kiro/steering/` populated, including the sandbox-deployment instruction
 - [ ] AWS CLI session valid (`aws sts get-caller-identity` succeeds)

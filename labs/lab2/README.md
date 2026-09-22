@@ -11,7 +11,7 @@
 
 ### 1. Lab 1 complete
 
-Kiro installed and signed in with Builder ID. Food-tracker app running with both terminals up: `npm run amplify:sandbox -- --identifier <your-sandbox-name>` (terminal 1) and `npm run dev` (terminal 2). App reachable at `http://localhost:3000`.
+Kiro installed and signed in with Builder ID. Food-tracker app running with both terminals up: `npm run amplify:sandbox -- --identifier <your-sandbox-name>` in the `sandbox` terminal and `npm run dev` in the `dev` terminal. If you did not rename the tabs in Lab 1, do it now: right click each tab and choose **Rename**. Kiro renames tabs after the running process, so both position and label are unreliable. App reachable at `http://localhost:3000`.
 
 Use the same sandbox name you chose in Lab 1 Step 7. A different name creates a second sandbox and leaves the first one running.
 
@@ -292,13 +292,19 @@ For every task, follow the same loop:
 1. Verify the recap matches the task in `tasks.md`.
 2. Approve any commands Kiro wants to run.
 3. Read the full diff before accepting. Agent output varies between runs; if anything looks wrong, push back in chat and let Kiro fix it before you accept.
-4. Watch terminal 1 (the sandbox). When `amplify/` files change, it redeploys automatically; wait for `Deployment completed` before proceeding. If it reports `MultipleSandboxInstancesError`, a previous sandbox process is still running. Rerunning will not clear it. Close all sandbox processes first, then start one with your own sandbox name:
+4. Watch the `sandbox` terminal. When `amplify/` files change, it redeploys automatically; wait for `Deployment completed` before proceeding. If it reports `MultipleSandboxInstancesError`, rerunning will not clear it. Read the PID in the error message. If other sandbox processes are running, close them all and start one again with your own sandbox name:
 
 ```
 Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'amplify:sandbox|ampx.js' } | Stop-Process -Force
 ```
 
-Your cloud resources are unaffected.
+If the PID in the error is the only sandbox running, it has deadlocked against its own lock file, which happens when files change while a deploy is in progress. Press CTRL+C, clear the lock, then restart the sandbox in that same terminal:
+
+```
+Remove-Item ".amplify\artifacts\cdk.out\read.*.lock" -Force -ErrorAction SilentlyContinue
+```
+
+Your cloud resources are unaffected. Note that after this error the sandbox prints `Watching for file changes...` and looks healthy while nothing reaches AWS, so if a deploy you expect never appears, check here first.
 5. Confirm the task is marked complete, then move on.
 
 > **Checkpoint. After the handler task specifically:**
@@ -311,11 +317,11 @@ Your cloud resources are unaffected.
 >
 > The review checks in Parts A and B verify the plan. This one verifies the code that was actually written.
 
-> If Kiro stalls or loses track of which tasks are done (checkboxes in `tasks.md` not updating), do not keep repeating the same prompt. Open `tasks.md` and either tick the finished task yourself (change `[ ]` to `[x]`) or name the next task explicitly in chat, for example: "Implement task 4: add the custom query". If it stays stuck, the "Run all tasks" button at the top of the tasks view runs the remaining tasks in order.
+> If Kiro stalls or loses track of which tasks are done (checkboxes in `tasks.md` not updating), do not keep repeating the same prompt. Open `tasks.md` and either tick the finished task yourself (change `[ ]` to `[x]`) or name the next task explicitly in chat, for example: "Implement task 4: add the custom query". If it stays stuck, the **Run all tasks** button runs the remaining tasks in order. Find it via the **Kiro icon (ghost)** in the activity bar, then **Specs**, then **weekly-nutrition-summary**, then **tasks**. The underlying file is `.kiro/specs/weekly-nutrition-summary/tasks.md`, but opening it from the Explorer gives plain markdown with no buttons; the control only appears in the Specs panel view.
 
 ### Step 8: End-to-end test
 
-1. Make sure both terminals are still running and terminal 1 shows no deploy errors after the function was added.
+1. Make sure both terminals are still running and the `sandbox` terminal shows no deploy errors after the function was added.
 2. Open `http://localhost:3000/food-tracker`.
 3. Click **Generate Weekly Summary**.
 
@@ -323,7 +329,7 @@ Your cloud resources are unaffected.
 
 4. (Optional) Temporarily delete entries until fewer than 3 remain from the last 7 days and confirm the friendly "not enough data" message appears without calling the Lambda. Re-add a few items afterward.
 
-> If clicking the button shows an error: terminal 1 usually has the Lambda logs streaming; check there first, then paste the error into Kiro's chat to diagnose. If the error mentions the model ID or access, refrun the Prerequisite 4 smoke test to confirm Bedrock still responds outside the Lambda.
+> If clicking the button shows an error: the `sandbox` terminal usually has the Lambda logs streaming; check there first, then paste the error into Kiro's chat to diagnose. If the error mentions the model ID or access, refrun the Prerequisite 4 smoke test to confirm Bedrock still responds outside the Lambda.
 
 ---
 
@@ -331,7 +337,7 @@ Your cloud resources are unaffected.
 
 Lab 3 depends on all of these. Confirm them before moving on:
 
-- [ ] Both terminals still running: the sandbox (terminal 1) and the dev server (terminal 2)
+- [ ] Both terminals still running: `sandbox` and `dev`
 - [ ] "Generate Weekly Summary" produces a card with totals, macros summing to 100%, a narrative, and suggestions
 - [ ] The Prerequisite 4 smoke test passed (Claude replied)
 - [ ] AWS CLI session valid (`aws sts get-caller-identity` succeeds)

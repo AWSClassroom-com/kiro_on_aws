@@ -20,7 +20,7 @@ The weekly nutrition summary feature works end-to-end. Foundational steering fil
 
 ### 2. Sandbox + dev server running
 
-From `kiro-project/food-tracker`, both terminals are still up: `npm run amplify:sandbox -- --identifier <your-sandbox-name>` (terminal 1) and `npm run dev` (terminal 2). The food-tracker app is reachable at `http://localhost:3000`.
+From `kiro-project/food-tracker`, both terminals are still up: `npm run amplify:sandbox -- --identifier <your-sandbox-name>` in the `sandbox` terminal and `npm run dev` in the `dev` terminal. If the tabs are not named, right click each one and choose **Rename**; Kiro renames tabs after the running process, so neither position nor label can be relied on. The food-tracker app is reachable at `http://localhost:3000`.
 
 Use the same sandbox name you chose in Lab 1 Step 7.
 
@@ -386,13 +386,13 @@ Two or three sentences. Practical, not chatty. No emoji.
 
 Both versions satisfy the same four requirements. Yours does not need to look like either one, as long as it names the two real tools and covers the four points.
 
-Save the file. Watch terminal 1 and wait for `Deployment completed`.
+Save the file. Watch the `sandbox` terminal and wait for `Deployment completed`.
 
 > **Checkpoint. Validate before continuing:**
 > 1. Your instructions name `getRecentEntries` and `findExpiringSoon`, spelled exactly, and no other tool.
 > 2. They say when to use each one.
 > 3. They forbid inventing items and say what to do when a tool returns nothing.
-> 4. Terminal 1 shows `Deployment completed` after your edit. If it does not, the agent still has the old instructions and the tests in Part F will not reflect your work.
+> 4. The `sandbox` terminal shows `Deployment completed` after your edit. If it does not, the agent still has the old instructions and the tests in Part F will not reflect your work.
 
 ### Step 11: Write the tool descriptions
 
@@ -414,7 +414,7 @@ Save the file and wait for `Deployment completed`.
 > **Checkpoint. Validate before continuing:**
 > 1. Both `description` fields are in your own words.
 > 2. Each one says when to use the tool, not only what it returns.
-> 3. Terminal 1 shows `Deployment completed`.
+> 3. The `sandbox` terminal shows `Deployment completed`.
 
 ---
 
@@ -504,7 +504,7 @@ Lab 4 depends on all of these. Confirm them before moving on:
 - [ ] `agent-instructions.md` and both `openapi.json` descriptions are in your own words
 - [ ] The trace showed tool calls returning real FoodItem data for both test prompts
 - [ ] You saw tool selection change when you degraded a description, and restored it
-- [ ] Both terminals still running: the sandbox (terminal 1) and the dev server (terminal 2)
+- [ ] Both terminals still running: `sandbox` and `dev`
 - [ ] AWS CLI session valid (`aws sts get-caller-identity` succeeds)
 
 ---

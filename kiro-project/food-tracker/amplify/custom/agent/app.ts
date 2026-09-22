@@ -224,9 +224,16 @@ async function runTurn(prompt: string, sessionId: string): Promise<string> {
       const { toolUseId, name, input } = block.toolUse;
       const binding = name ? toolsByName.get(name) : undefined;
 
+      // Logged so the tool the model chose, and the arguments it passed, are
+      // visible in CloudWatch. AgentCore gives each session its own log stream,
+      // so this is where you watch one conversation think.
+      console.log(`tool call: ${name} ${JSON.stringify(input ?? {})}`);
+
       const result = binding
         ? await callTool(binding, (input ?? {}) as Record<string, unknown>)
         : JSON.stringify({ error: `Unknown tool: ${name}` });
+
+      console.log(`tool result: ${name} returned ${result.length} bytes`);
 
       toolResults.push({
         toolResult: {

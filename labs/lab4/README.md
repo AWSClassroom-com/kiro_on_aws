@@ -11,7 +11,7 @@
 
 ### 1. Lab 3 complete
 
-The `MealRecommendationAgent` exists in the Bedrock Console with a `FoodEntryTools` action group, and the trace panel showed correct tool selection.
+The `MealRecommendationAgent` runtime is deployed on Amazon Bedrock AgentCore with status `READY`, and you saw it choose the right tool for the question you asked.
 
 ### 2. Sandbox + dev server running
 
@@ -75,10 +75,12 @@ Requirements:
 - Keep the requirements focused on user-facing behavior. Do NOT add IAM policy or permission-scoping requirements; permissions are decided in the design phase.
 
 Bedrock specifics:
-- The agent and its v1 alias already exist: they are deployed by the MealAgent construct, instantiated in amplify/backend.ts as the mealAgent variable (you studied it in Lab 3).
-- Do NOT hardcode any agent or alias IDs anywhere. The backend wires them into the Lambda at deploy time from mealAgent.agent.attrAgentId and mealAgent.alias.attrAgentAliasId.
-- Use @aws-sdk/client-bedrock-agent-runtime (BedrockAgentRuntimeClient + InvokeAgentCommand).
-- Iterate response.completion (async iterable of chunk events), decode each chunk's bytes with TextDecoder, concatenate into a single string.
+- The agent runtime already exists: it is deployed by the MealAgent construct, instantiated in amplify/backend.ts as the mealAgent variable (you studied it in Lab 3).
+- Do NOT hardcode the runtime ARN anywhere. The backend wires it into the Lambda at deploy time from mealAgent.agentRuntimeArn.
+- Use @aws-sdk/client-bedrock-agentcore (BedrockAgentCoreClient + InvokeAgentRuntimeCommand).
+- The payload is bytes, not a string: encode JSON.stringify({ prompt }) with TextEncoder.
+- The response body is a streaming blob. Read it with await response.response.transformToString(), then JSON.parse it. The agent returns { sessionId, completion }.
+- runtimeSessionId must be at least 33 characters. InvokeAgentRuntime rejects anything shorter. crypto.randomUUID() produces 36, so generate the session id that way and never invent a short one.
 
 Hard constraint on credentials: At runtime, the Amplify Function uses its Lambda execution role for AWS calls; the AWS SDK's default credential chain resolves to that role automatically. Do NOT design anything that reads AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_PROFILE, AWS_REGION, or any AWS credential environment variables.
 ```
@@ -122,9 +124,9 @@ In chat:
 ```
 The requirements for the meal-agent-chat spec are approved. Please generate design.md now. The design must cover:
 
-1. Architecture flow: from button click through every layer to the rendered response. Flow: React panel -> AppSync custom query -> invoke-meal-agent Lambda -> Bedrock InvokeAgent -> MealRecommendationAgent -> action group Lambda -> DynamoDB -> back through the same path.
+1. Architecture flow: from button click through every layer to the rendered response. Flow: React panel -> AppSync custom query -> invoke-meal-agent Lambda -> InvokeAgentRuntime -> MealRecommendationAgent on AgentCore Runtime -> meal-recommendations Lambda -> DynamoDB -> back through the same path.
 2. TypeScript interfaces: message shape, panel state shape, AppSync return type (AgentResponse with sessionId and completion).
-3. Backend integration: define the Amplify Function in amplify/functions/invoke-meal-agent/ (resource.ts and handler.ts) with timeoutSeconds: 60 (agent invocations routinely take 5-15 seconds; the defineFunction default of 3 seconds would always time out) and resourceGroupName: "data" (the agent construct and the FoodItem table live in the data stack; placing this function in any other stack creates a circular cross-stack dependency that fails the deploy), expose via custom query in amplify/data/resource.ts using a.handler.function() with allow.publicApiKey() authorization, set AGENT_ID and AGENT_ALIAS_ID env vars in amplify/backend.ts from the existing mealAgent construct (mealAgent.agent.attrAgentId and mealAgent.alias.attrAgentAliasId; never hardcoded strings), and grant the function bedrock:InvokeAgent on mealAgent.alias.attrAgentAliasArn. The handler MUST be typed as Schema["invokeMealAgent"]["functionHandler"] (import type { Schema } from "../../data/resource") and read prompt and sessionId from event.arguments; AppSync delivers custom query arguments there, not at the top level of the event.
+3. Backend integration: define the Amplify Function in amplify/functions/invoke-meal-agent/ (resource.ts and handler.ts) with timeoutSeconds: 60 (agent invocations routinely take 5-15 seconds; the defineFunction default of 3 seconds would always time out) and resourceGroupName: "data" (the agent construct and the FoodItem table live in the data stack; placing this function in any other stack creates a circular cross-stack dependency that fails the deploy), expose via custom query in amplify/data/resource.ts using a.handler.function() with allow.publicApiKey() authorization, set an AGENT_RUNTIME_ARN env var in amplify/backend.ts from the existing mealAgent construct (mealAgent.agentRuntimeArn; never a hardcoded string), and grant the function permission to invoke it by calling mealAgent.runtime.grantInvokeRuntime() with the Lambda, rather than writing an IAM policy by hand. The handler MUST be typed as Schema["invokeMealAgent"]["functionHandler"] (import type { Schema } from "../../data/resource") and read prompt and sessionId from event.arguments; AppSync delivers custom query arguments there, not at the top level of the event.
 4. Error handling: explicitly map (a) Bedrock call failure (log the real error with console.error so it appears in the Lambda logs, then return a friendly fallback completion; do not throw), (b) network error in the React client (show fallback message, don't break the chat).
 
 Hard constraint on credentials: same rule as requirements. The Lambda uses its execution role.
@@ -136,7 +138,7 @@ Open `design.md` and confirm all four sections are present.
 
 Then run these critical review checks with Find (Cmd+F / CTRL+F):
 
-1. Search for `attrAgentId` and `attrAgentAliasId`. The backend wiring must read both IDs from the `mealAgent` construct; there must be no hardcoded or invented ID strings anywhere in the design.
+1. Search for `agentRuntimeArn`. The backend wiring must read the ARN from the `mealAgent` construct; there must be no hardcoded or invented ARN strings anywhere in the design. Search for `grantInvokeRuntime` as well: the design should use it instead of a hand-written IAM policy.
 2. Search for `timeoutSeconds` and `resourceGroupName`. The function resource example must set `timeoutSeconds: 60` and `resourceGroupName: "data"`; the wrong stack placement fails the whole deploy with a circular dependency.
 3. Search for `AWS_ACCESS_KEY_ID`. It may only appear in a clearly marked incorrect-pattern example. SDK clients are constructed with no arguments.
 4. Search for `publicApiKey`. The custom query must be authorized with `allow.publicApiKey()`.
@@ -230,7 +232,7 @@ The design for the meal-agent-chat spec is approved. Please generate tasks.md no
 Rules:
 - Tasks ordered by dependency. Each task is one diff.
 - Each task lists the files it touches and the design section it implements.
-- @aws-sdk/client-bedrock-agent-runtime is already installed in the starter project; do not add an install task.
+- @aws-sdk/client-bedrock-agentcore is already installed in the starter project; do not add an install task.
 - Do NOT write any tests (no unit tests, no property-based tests, no test files).
 
 The implementation may create or edit ONLY these files:
@@ -304,19 +306,22 @@ Open the files and check each item:
 | | `event.arguments` | present |
 | | `console.error` | present, before the fallback is returned |
 | | `AWS_ACCESS_KEY_ID` | absent |
-| `amplify/backend.ts` | `attrAgentId`, `attrAgentAliasId` | both present |
-| | the `bedrock:InvokeAgent` resource | `mealAgent.alias.attrAgentAliasArn` |
+| `amplify/backend.ts` | `agentRuntimeArn` | present, read from `mealAgent` |
+| | the invoke grant | `mealAgent.runtime.grantInvokeRuntime(...)`, not a hand-written policy |
+| `amplify/functions/invoke-meal-agent/handler.ts` | `runtimeSessionId` | present, and at least 33 characters |
 
 > [!WARNING]
 > ⚠️ **Two faults have appeared in real runs of this step. Check for both.** Neither stops the deploy, and both break Step 8.
 >
-> **Fault A: the alias ARN is hand-built and missing the account ID.** In `amplify/backend.ts`, look for a template literal like:
+> **Fault A: the IAM grant is written by hand instead of using the construct.** In `amplify/backend.ts`, look for a `PolicyStatement` with a template-literal ARN, something like:
 >
 > ```ts
-> const agentAliasArn = `arn:aws:bedrock:${lambdaStack.region}::agent-alias/${mealAgent.agent.attrAgentId}/${mealAgent.alias.attrAgentAliasId}`;
+> const runtimeArn = `arn:aws:bedrock-agentcore:${lambdaStack.region}::runtime/${name}`;
 > ```
 >
-> Note the `::` in the middle. That is an empty account field. A real alias ARN is `arn:aws:bedrock:us-east-1:123456789012:agent-alias/AGENTID/ALIASID`. The IAM grant will not match the agent, and Step 8 fails with `AccessDeniedException` on `InvokeAgent`.
+> Two things go wrong. An empty account field, the `::` in the middle, produces an ARN that matches nothing. And invoking a runtime needs permission on both the runtime ARN **and** `ARN/*`, because endpoints are separate resources. Miss either and Step 8 fails with `AccessDeniedException` on `bedrock-agentcore:InvokeAgentRuntime`.
+>
+> `mealAgent.runtime.grantInvokeRuntime(backend.invokeMealAgent.resources.lambda)` gets both right. Prefer it over any hand-written policy.
 >
 > **Fault B: the handler uses a hand-rolled event interface.** Look for:
 >
@@ -332,7 +337,7 @@ Open the files and check each item:
 > ```
 > Two corrections to the generated code.
 >
-> 1. In amplify/backend.ts, the agent alias ARN is hand-built with a template literal and omits the account ID, producing arn:aws:bedrock:REGION::agent-alias/... which will fail with AccessDeniedException. Use mealAgent.alias.attrAgentAliasArn directly as the resource instead of constructing the string.
+> 1. In amplify/backend.ts, the invoke permission is granted with a hand-written IAM policy and a constructed ARN. Replace it with mealAgent.runtime.grantInvokeRuntime(backend.invokeMealAgent.resources.lambda), which grants bedrock-agentcore:InvokeAgentRuntime on both the runtime ARN and ARN/* without building any string.
 >
 > 2. In amplify/functions/invoke-meal-agent/handler.ts, the handler uses a hand-rolled AppSyncEvent interface. Type it as Schema["invokeMealAgent"]["functionHandler"] with import type { Schema } from "../../data/resource", as the design requires, and read prompt and sessionId from event.arguments.
 >
@@ -376,16 +381,24 @@ Open the files and check each item:
 >
 > If you see type errors, paste them into chat and add: *"These came from the sandbox terminal after your last change. Fix them and tell me what you changed."*
 >
-> **A third fault seen in real runs:** `InvokeAgentCommand` requires `sessionId` as a **top-level** property. Generated code has placed it inside `sessionState.sessionAttributes` instead. That fails the type check, and it also breaks the multi-turn conversation you test in Step 8, because Bedrock threads a conversation by `sessionId` and would treat every message as a new one. The correct shape is:
+> ⚠️ **Check the session id length.** `InvokeAgentRuntime` requires `runtimeSessionId` to be **at least 33 characters** and rejects anything shorter with a validation error that does not mention length. A short id such as `"session-1"` looks perfectly reasonable in generated code and fails every call.
+>
+> `crypto.randomUUID()` gives 36 characters, so the React panel should generate it that way and pass it through unchanged. The correct command shape is:
 >
 > ```ts
-> const command = new InvokeAgentCommand({
->   agentId: process.env.AGENT_ID,
->   agentAliasId: process.env.AGENT_ALIAS_ID,
->   sessionId,
->   inputText: prompt,
+> const command = new InvokeAgentRuntimeCommand({
+>   agentRuntimeArn: process.env.AGENT_RUNTIME_ARN,
+>   runtimeSessionId: sessionId,
+>   contentType: "application/json",
+>   payload: new TextEncoder().encode(JSON.stringify({ prompt })),
 > });
+>
+> const response = await client.send(command);
+> const body = JSON.parse(await response.response.transformToString());
+> // body is { sessionId, completion }
 > ```
+>
+> The body is a streaming blob, not a string and not an async iterable of chunks. Reading it with anything other than `transformToString()` is the other easy mistake here.
 
 > **Checkpoint. Validate before continuing:**
 > 1. Every task in `tasks.md` is marked complete.
@@ -429,7 +442,7 @@ Open the files and check each item:
 >
 > Note which of these two you chose. The schema fix is the one that matches `design.md`, and the gap between a design that was approved and code that was deployed is worth noticing.
 
-> If anything fails: the `sandbox` terminal has the Lambda logs streaming. Paste any error into Kiro's chat to diagnose. An `AccessDeniedException` on `InvokeAgent` usually means the grant in `backend.ts` is not using `mealAgent.alias.attrAgentAliasArn`; check the wiring.
+> If anything fails: the `sandbox` terminal has the Lambda logs streaming. Paste any error into Kiro's chat to diagnose. An `AccessDeniedException` on `bedrock-agentcore:InvokeAgentRuntime` usually means the grant in `backend.ts` was written by hand instead of using `mealAgent.runtime.grantInvokeRuntime()`; check the wiring. A `ValidationException` on the session id means it is shorter than 33 characters.
 
 > If the very first message after a deploy returns the fallback message, the Lambda's new IAM permission may still be propagating. Wait about 30 seconds and send the message again before debugging further.
 

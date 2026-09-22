@@ -142,6 +142,19 @@ Then run these critical review checks with Find (Cmd+F / CTRL+F):
 4. Search for `publicApiKey`. The custom query must be authorized with `allow.publicApiKey()`.
 5. Search for `console.error`. InvokeAgent failures must be logged before returning the fallback, or you cannot debug them from the Lambda logs.
 
+> [!WARNING]
+> ⚠️ **Before approving, confirm the design can actually be built.**
+>
+> The five checks above confirm the design says the right things. They do not confirm it compiles. A design can pass every one of them and still fail to deploy, because the model can invent APIs that do not exist in the installed version of Amplify.
+>
+> Three things to look for in the code examples:
+>
+> 1. **Every Amplify schema call must be real.** `a.customType()`, `a.ref()`, `a.json()`, `a.enum()`, `a.string()` and `a.integer()` exist. `a.object()` does not. If you see a call you do not recognise, ask Kiro to confirm it exists in `@aws-amplify/data-schema` before approving.
+> 2. **Custom query arguments cannot reference a model.** `a.ref("FoodItem")` as an argument fails at deploy time, because AppSync accepts only custom types and enums there. Arguments here should be plain scalars: `prompt` and `sessionId` are both strings.
+> 3. **The return type must be simple.** `{ sessionId, completion }` are two strings. Do not accept a design that nests `a.customType()` inside `.returns()`; that produces a generated type the Lambda handler cannot satisfy, and the deploy fails type checking. Either return the two strings directly or return `a.json()`.
+>
+> Correcting these now takes a sentence. Finding them in Part D costs several failed deploys, and Part D runs every task at once rather than one at a time.
+
 Approve when satisfied.
 
 ---

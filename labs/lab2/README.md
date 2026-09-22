@@ -268,9 +268,12 @@ Implement only that one task. Do not bundle multiple tasks together. Do not add 
 >
 > | Control | When it appears | What it does |
 > | --- | --- | --- |
-> | **Run** | Kiro wants to run a shell command | Runs it once |
+> | **Allow** | Kiro wants to run a command it chose, such as `npm run build` | Runs it once, and asks again next time |
+> | **Always allow** | Same prompt as Allow | Runs it and stops asking for that command. Use this |
+> | **Run** | A hook or command you configured | Runs it once |
 > | **Trust** | Same prompt as Run | Permits the command for later, **does not run it now** |
 > | **Accept** | A file diff is ready | Applies the change |
+> | **Accept all** | A "Review changes (N of N pending)" panel lists several files | Writes all of them. Nothing is written until you click |
 > | *(type `Approve`)* | Kiro has posted a task recap | Starts that task |
 
 > [!NOTE]

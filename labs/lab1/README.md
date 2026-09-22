@@ -302,13 +302,22 @@ Open the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P), search for "Steering", an
 
 > Note: Throughout these labs, prefer the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P) over clicking buttons. Button labels change between Kiro versions; palette command names are stable.
 
-Kiro explores key files (`README.md`, `package.json`, `amplify/`, `src/`) and creates a `.kiro/steering/` folder with three files:
+Kiro explores key files (`README.md`, `package.json`, `amplify/`, `src/`) and proposes a `.kiro/steering/` folder with three files:
 
 - `product.md`: what the project is, in plain language.
 - `tech.md`: the tech the project uses (React 19, TanStack Router, AWS Amplify Gen 2, Tailwind v4, Biome, etc.). Keeps Kiro from suggesting divergent tools.
 - `structure.md`: key folders and files. Helps Kiro find the right place to make a change.
 
-Open each file and skim it. If something is wrong (for example it lists a library you do not use), edit the file directly. These are plain markdown and your edits stick.
+> [!WARNING]
+> ⚠️ **Click Accept all. The files do not exist until you do.**
+>
+> Kiro does not write the files straight to disk. It shows a **Review changes (3 of 3 pending)** panel listing one change each to `product.md`, `tech.md` and `structure.md`, with a tick and a cross beside each, and **Accept all** and **Reject all** at the bottom.
+>
+> Click **Accept all**.
+>
+> Until you do, `.kiro/steering/` is empty and the next instruction has nothing to open. If you scroll past the panel, or click **Cancel**, the work is discarded and Step 11 has to be repeated at the cost of more credits.
+
+Once the files are written, open each one and skim it. If something is wrong (for example it lists a library you do not use), edit the file directly. These are plain markdown and your edits stick.
 
 Now add one more instruction via the chat panel (Cmd+L / CTRL+L). Paste this prompt and press ENTER:
 
@@ -333,6 +342,24 @@ Confirm Autopilot is still off before you start, so you review each diff before 
 The loop for every step below is the same: prompt, read the diff, push back if needed, accept, refresh and verify.
 
 > Note: Agent output varies between runs. The expected results below describe outcomes, not exact code or text. Always read the full diff before accepting. If anything looks wrong, say so in chat and let Kiro fix it before you accept.
+
+> [!WARNING]
+> ⚠️ **Kiro will ask permission to run commands. Click "Always allow" the first time.**
+>
+> While working on these steps Kiro checks its own work, usually by running `npm run build`. Each time it does, it stops and shows:
+>
+> ```
+> Your approval is required to continue: npm run build
+>   [Allow]  [Always allow]  [Deny]  [Always deny]
+> ```
+>
+> Click **Always allow**. **Allow** permits it once and you will be asked again on the next step.
+
+Always allow applies to that exact command. Kiro may choose a different command later, for example `npx tsc --noEmit`, and will ask again. Click **Always allow** each time. This is expected and does not mean the setting failed.
+>
+> Do not click **Deny** or **Always deny**. Kiro cannot verify its work, and Always deny blocks the command for future sessions too.
+>
+> This dialog is not the same as the **Run / Trust / Reject** dialog you may see elsewhere. Kiro has more than one way of asking.
 
 > [!NOTE]
 > ℹ️ **If a prompt appears to do nothing, look for a pending approval before assuming it failed.**

@@ -1,0 +1,38 @@
+# Normalize line endings across platforms.
+#
+# The Course VM is Windows, where Git's core.autocrlf defaults to true. Without
+# this file, Git checks source files out as CRLF, any tool that rewrites a file
+# persists CRLF, and `git status` then reports around twenty files as modified
+# that the student never touched. That makes the diff review taught in Labs 1,
+# 2 and 4 impractical, and makes the allowed-file checks in Labs 2 and 4 report
+# false positives.
+#
+# Declaring eol=lf checks files out with LF on every platform, so the working
+# tree matches what Git stores and `git status` stays quiet.
+
+* text=auto eol=lf
+
+# Source and config
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.js    text eol=lf
+*.jsx   text eol=lf
+*.mjs   text eol=lf
+*.json  text eol=lf
+*.css   text eol=lf
+*.html  text eol=lf
+*.md    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.graphql text eol=lf
+*.svg   text eol=lf
+
+# Binary assets, never converted
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary

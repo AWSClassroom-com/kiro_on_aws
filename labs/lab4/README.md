@@ -15,7 +15,9 @@ The `MealRecommendationAgent` exists in the Bedrock Console with a `FoodEntryToo
 
 ### 2. Sandbox + dev server running
 
-From `kiro-project/food-tracker`: `npm run amplify:sandbox` (terminal 1) and `npm run dev` (terminal 2). App at `http://localhost:3000`.
+From `kiro-project/food-tracker`: `npm run amplify:sandbox -- --identifier <your-sandbox-name>` in the `sandbox` terminal and `npm run dev` in the `dev` terminal. If the tabs are not named, right click each one and choose **Rename** now. This lab refers to them by name, and by this point you may have four or five tabs open, all of which Kiro labels after whatever process happens to be running. App at `http://localhost:3000`.
+
+Use the same sandbox name you chose in Lab 1 Step 7.
 
 ### 3. AWS CLI session valid
 
@@ -44,7 +46,11 @@ You need a GitHub account to host the repo Amplify deploys from. If you do not h
 
 ### Step 1: Start a spec session
 
-Open the chat panel: Cmd+L (macOS) / CTRL+L (Windows/Linux). In the bottom-left corner of the chat input box, click the agent selector and change it to **Spec**.
+Open a new chat session: Cmd+L (macOS) / CTRL+L (Windows/Linux), or the **+** button in the chat panel.
+
+The new session screen offers two cards, **Vibe** and **Spec**. Choose **Spec**.
+
+> Note: there is no agent selector in the chat input box. Spec mode is chosen on the new session screen.
 
 ### Step 2: Describe the feature
 
@@ -96,13 +102,20 @@ Approve through the spec workflow when satisfied.
 > Note: Agent output varies between runs. Review what Kiro actually wrote.
 
 > **Checkpoint. Validate before continuing:**
-> `requirements.md` is approved and contains your real Agent ID and Alias ID, not bracket placeholders.
+> `requirements.md` is approved and contains **no** agent or alias ID values at all. The backend supplies them at deploy time from the `mealAgent` construct, so any ID written into the requirements is invented and will fail at runtime.
 
 ---
 
 ## Part B: Generate Design
 
 ### Step 4: Generate the design
+
+As in Lab 2, the prompt is long because it pins decisions that fail in specific ways. The two that matter most here:
+
+| Constraint | Why |
+| --- | --- |
+| `timeoutSeconds: 60` | Agent invocations take 5 to 15 seconds, sometimes longer. Measured at about 11 seconds for a single tool call in this project |
+| `resourceGroupName: "data"` | The agent construct and the FoodItem table live in the data stack. Placing this function anywhere else creates a circular cross-stack dependency and the whole deploy fails |
 
 In chat:
 
@@ -128,6 +141,78 @@ Then run these critical review checks with Find (Cmd+F / CTRL+F):
 3. Search for `AWS_ACCESS_KEY_ID`. It may only appear in a clearly marked incorrect-pattern example. SDK clients are constructed with no arguments.
 4. Search for `publicApiKey`. The custom query must be authorized with `allow.publicApiKey()`.
 5. Search for `console.error`. InvokeAgent failures must be logged before returning the fallback, or you cannot debug them from the Lambda logs.
+
+> [!WARNING]
+> ⚠️ **Before approving, confirm the design can actually be built.**
+>
+> The five checks above confirm the design says the right things. They do not confirm it compiles. A design can pass every one of them and still fail to deploy, because the model can invent APIs that do not exist in the installed version of Amplify.
+>
+> Three things to look for in the code examples:
+>
+> 1. **Every Amplify schema call must be real.** `a.customType()`, `a.ref()`, `a.json()`, `a.enum()`, `a.string()` and `a.integer()` exist. `a.object()` does not. If you see a call you do not recognise, ask Kiro to confirm it exists in `@aws-amplify/data-schema` before approving.
+> 2. **Custom query arguments cannot reference a model.** `a.ref("FoodItem")` as an argument fails at deploy time, because AppSync accepts only custom types and enums there. Arguments here should be plain scalars: `prompt` and `sessionId` are both strings.
+> 3. **The return type must be a named custom type.** `{ sessionId, completion }` are two strings, and the query has to hand them back as an object the frontend can read. Do not accept a design that nests `a.customType()` inside `.returns()`; that produces a generated type the Lambda handler cannot satisfy, and the deploy fails type checking. Do not accept `.returns(a.json())` either. It compiles, but AppSync exposes it as `AWSJSON` and sends the result as one JSON-encoded string, and the chat panel in Part D then displays raw JSON instead of the answer. The shape that works is a custom type declared at the top level of the schema and referenced with `a.ref()`.
+>
+> **Two specific faults have been seen in real runs of this step.** Check for both, and if you find either, paste the correction below rather than trying to work out the wording yourself.
+>
+> **Fault A: `resourceGroupName` present but commented out.** The code example reads:
+>
+> ```ts
+> timeoutSeconds: 60,
+> memory: 512,
+> // resourceGroupName: "data" - scoped to data stack to avoid circular dependency
+> ```
+>
+> The prose underneath still claims the function is scoped to the data stack, so the design contradicts itself and review check 2 passes anyway, because searching for `resourceGroupName` finds the commented line. A commented property does nothing, the function lands in the wrong stack, and the deploy fails with a circular dependency.
+>
+> **Fault B: the return type wrapped in `a.customType()`.** The code example reads:
+>
+> ```ts
+> .returns(
+>   a.customType({
+>     sessionId: a.string().required(),
+>     completion: a.string().required(),
+>   })
+> )
+> ```
+>
+> A nested custom type inside `.returns()` generates a `Schema` type the Lambda handler cannot satisfy, and the deploy fails type checking.
+>
+> **The shape that works declares the type at the top level of the schema and references it:**
+>
+> ```ts
+> const schema = a.schema({
+>   MealAgentResponse: a.customType({
+>     sessionId: a.string().required(),
+>     completion: a.string().required(),
+>   }),
+>
+>   invokeMealAgent: a
+>     .query()
+>     .arguments({ prompt: a.string().required(), sessionId: a.string().required() })
+>     .returns(a.ref("MealAgentResponse"))
+>     .authorization((allow) => [allow.publicApiKey()])
+>     .handler(a.handler.function(invokeMealAgent)),
+> });
+> ```
+>
+> ⚠️ **`.returns(a.json())` is the trap here.** It is a real API and it compiles, so it survives every check in this step and every check in Part D. AppSync then serialises the whole object into a single string, and in Step 8 the chat panel renders `{"sessionId":"...","completion":"..."}` with escaped newlines instead of the answer. This was observed in a real run, after everything else had passed.
+>
+> **If you find either, send this in chat:**
+>
+> ```
+> Two corrections to design.md before I approve it.
+>
+> 1. In the resource.ts example, resourceGroupName: "data" is commented out. It must be an active property, not a comment. The prose below the example already says the function is scoped to the data stack, so the code and the prose currently disagree.
+>
+> 2. The custom query wraps its return in a.customType({ sessionId, completion }) inside .returns(). A nested custom type there produces a generated Schema type that the Lambda handler cannot satisfy, and the deploy fails type checking. Do not replace it with a.json(), because AppSync serialises that into a single JSON string that the chat UI cannot read. Instead declare MealAgentResponse as a top-level custom type in the schema, with sessionId and completion as required strings, and have the query use .returns(a.ref("MealAgentResponse")).
+>
+> Do not change anything else.
+> ```
+>
+> Then confirm `design.md` shows `resourceGroupName: "data",` with no leading `//`, a top-level `MealAgentResponse: a.customType({ ... })` in the schema, and `.returns(a.ref("MealAgentResponse"))` on the query, with no `a.customType(` inside `.returns()` and no `a.json()`.
+>
+> Correcting these now takes one message. Finding them in Part D costs several failed deploys, and Part D runs every task at once rather than one at a time.
 
 Approve when satisfied.
 
@@ -179,18 +264,132 @@ Read Kiro's recap and push back if anything is off (for example: "task 4 modifie
 
 ### Step 7: Run all tasks
 
-In Lab 2, you implemented tasks one at a time to practice the review protocol. Here you run the whole plan in one go: open `tasks.md` in the spec and click the **Run all tasks** button at the top of the tasks view.
+In Lab 2, you implemented tasks one at a time to practice the review protocol. Here you run the whole plan in one go.
+
+**To find the tasks view:** click the **Kiro icon (ghost)** in the activity bar, open the **Specs** section, expand **meal-agent-chat**, and click **tasks**. The **Run all tasks** button sits at the top of that view.
+
+**Run all tasks opens a menu with two choices.** Pick **Run required and optional tasks**. Your task list has no optional tasks, so both choices run the same six, but this is the one that matches what the step is asking for and it stays correct if a task list ever does include optional work.
+
+> [!NOTE]
+> ℹ️ **Use the Specs panel, not the file tree.** The underlying file is `.kiro/specs/meal-agent-chat/tasks.md`, but opening it from the Explorer gives you plain markdown with no buttons. The Run all tasks control only appears in the Specs panel view.
+>
+> `.kiro` is a hidden-style folder, so in the Explorer it sorts above `amplify` and `src` and is easy to scroll past. The Specs panel avoids the problem entirely.
 
 While it runs:
 
-1. Approve any commands Kiro asks to run.
-2. Watch terminal 1: backend tasks trigger sandbox redeploys as they land. If it reports `MultipleSandboxInstancesError`, press CTRL+C and rerun `npm run amplify:sandbox` (known stale-lock glitch).
+1. Approve any commands Kiro asks to run. The dialog offers **Reject**, **Trust** and **Run**. Click **Run**. **Trust** permits the command for later but does not execute it now, so the task will appear to stall.
+2. Watch the `sandbox` terminal: backend tasks trigger redeploys as they land. If it reports `MultipleSandboxInstancesError`, rerunning will not clear it. Read the PID in the error message. If other sandbox processes are running, close them all and start one again with your own sandbox name:
 
-When all tasks show complete, review the full changeset before moving on. Open each of the six allowed files and rerun the Step 5 Find checks against the real code: `attrAgentId`/`attrAgentAliasId` wiring in `amplify/backend.ts`, `timeoutSeconds: 60` in the function resource, `event.arguments` in the handler, `console.error` before the fallback, and no hardcoded IDs anywhere.
+```
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'amplify:sandbox|ampx.js' } | Stop-Process -Force
+```
+
+If the PID in the error is the only sandbox running, it has deadlocked against its own lock file, which happens when files change while a deploy is in progress. Press CTRL+C, clear the lock, then restart the sandbox in that same terminal:
+
+```
+Remove-Item ".amplify\artifacts\cdk.out\read.*.lock" -Force -ErrorAction SilentlyContinue
+```
+
+Your cloud resources are unaffected. Note that after this error the sandbox prints `Watching for file changes...` and looks healthy while nothing reaches AWS, so if a deploy you expect never appears, check here first.
+
+When all tasks show complete, review the generated code before moving on. The Step 5 checks verified the plan; these verify the build.
+
+Open the files and check each item:
+
+| File | Look for | Must be |
+| --- | --- | --- |
+| `amplify/functions/invoke-meal-agent/resource.ts` | `timeoutSeconds` | `60` |
+| | `resourceGroupName` | `"data"`, not commented out |
+| `amplify/functions/invoke-meal-agent/handler.ts` | handler type | `Schema["invokeMealAgent"]["functionHandler"]` |
+| | `event.arguments` | present |
+| | `console.error` | present, before the fallback is returned |
+| | `AWS_ACCESS_KEY_ID` | absent |
+| `amplify/backend.ts` | `attrAgentId`, `attrAgentAliasId` | both present |
+| | the `bedrock:InvokeAgent` resource | `mealAgent.alias.attrAgentAliasArn` |
+
+> [!WARNING]
+> ⚠️ **Two faults have appeared in real runs of this step. Check for both.** Neither stops the deploy, and both break Step 8.
+>
+> **Fault A: the alias ARN is hand-built and missing the account ID.** In `amplify/backend.ts`, look for a template literal like:
+>
+> ```ts
+> const agentAliasArn = `arn:aws:bedrock:${lambdaStack.region}::agent-alias/${mealAgent.agent.attrAgentId}/${mealAgent.alias.attrAgentAliasId}`;
+> ```
+>
+> Note the `::` in the middle. That is an empty account field. A real alias ARN is `arn:aws:bedrock:us-east-1:123456789012:agent-alias/AGENTID/ALIASID`. The IAM grant will not match the agent, and Step 8 fails with `AccessDeniedException` on `InvokeAgent`.
+>
+> **Fault B: the handler uses a hand-rolled event interface.** Look for:
+>
+> ```ts
+> interface AppSyncEvent { arguments: { prompt: string; sessionId: string } }
+> export const handler = async (event: AppSyncEvent) => {
+> ```
+>
+> The design requires `Schema["invokeMealAgent"]["functionHandler"]`. A hand-rolled interface compiles even when it is wrong about where AppSync puts the arguments, which is the mistake it is meant to prevent.
+>
+> **If you find either, send this in chat:**
+>
+> ```
+> Two corrections to the generated code.
+>
+> 1. In amplify/backend.ts, the agent alias ARN is hand-built with a template literal and omits the account ID, producing arn:aws:bedrock:REGION::agent-alias/... which will fail with AccessDeniedException. Use mealAgent.alias.attrAgentAliasArn directly as the resource instead of constructing the string.
+>
+> 2. In amplify/functions/invoke-meal-agent/handler.ts, the handler uses a hand-rolled AppSyncEvent interface. Type it as Schema["invokeMealAgent"]["functionHandler"] with import type { Schema } from "../../data/resource", as the design requires, and read prompt and sessionId from event.arguments.
+>
+> Do not change anything else.
+> ```
+>
+> Wait for `Deployment completed` in the `sandbox` terminal after the corrections land.
+
+> [!NOTE]
+> ℹ️ **Kiro will tell you the code is ready before it is. Check for yourself.**
+>
+> After making corrections Kiro commonly reports something like "The handler is now fully type-safe. Ready for deployment." That statement is a prediction, not a verification. In real runs of this step it has been wrong more than once, with type errors still present.
+>
+> Two things are true at the same time, and it is easy to conflate them:
+>
+> - **Tasks complete** means Kiro finished writing files.
+> - **Deployment completed** means AWS accepted them.
+>
+> Between the two sits a type check that can fail silently as far as the chat panel is concerned. Kiro reports the first and does not always notice the second.
+>
+> **Verify it yourself before moving on.** The `sandbox` terminal type checks the backend on every save and then deploys it, so it already does this work for you. You only have to read it.
+>
+> Switch to the `sandbox` terminal and look at the last few lines. A healthy run looks like this:
+>
+> ```
+> 9:43:56 AM  Backend synthesized in 13.97 seconds
+> 9:44:05 AM  Type checks completed in 8.99 seconds
+> 9:44:08 AM  Built and published assets
+> 9:44:08 AM  Deployment in progress...
+> ```
+>
+> | What you see | What it means |
+> |---|---|
+> | `Type checks completed`, then `Deployment completed` | Compiled, and AWS accepted it. Move on |
+> | `Type checks completed`, then `Deployment in progress...` | Still working. A backend deploy takes two to four minutes |
+> | A block of `error TS....` lines | It did not compile. Nothing reached AWS, whatever the chat panel said |
+> | `[MultipleSandboxInstancesError]`, then `Watching for file changes...` | The deploy was abandoned. Use the recovery steps earlier in this step |
+> | Nothing new since before Kiro's last edit | The save was not picked up. Open `handler.ts`, add a space, save, and watch again |
+>
+> The fourth row is the dangerous one, because the terminal looks healthy afterwards while nothing you save reaches AWS.
+>
+> If you see type errors, paste them into chat and add: *"These came from the sandbox terminal after your last change. Fix them and tell me what you changed."*
+>
+> **A third fault seen in real runs:** `InvokeAgentCommand` requires `sessionId` as a **top-level** property. Generated code has placed it inside `sessionState.sessionAttributes` instead. That fails the type check, and it also breaks the multi-turn conversation you test in Step 8, because Bedrock threads a conversation by `sessionId` and would treat every message as a new one. The correct shape is:
+>
+> ```ts
+> const command = new InvokeAgentCommand({
+>   agentId: process.env.AGENT_ID,
+>   agentAliasId: process.env.AGENT_ALIAS_ID,
+>   sessionId,
+>   inputText: prompt,
+> });
+> ```
 
 > **Checkpoint. Validate before continuing:**
 > 1. Every task in `tasks.md` is marked complete.
-> 2. Terminal 1 shows `Deployment completed` with no errors.
+> 2. The `sandbox` terminal shows `Deployment completed` with no errors.
 > 3. The browser at `http://localhost:3000/food-tracker` loads with no error overlay.
 
 ### Step 8: End-to-end test
@@ -209,7 +408,28 @@ When all tasks show complete, review the full changeset before moving on. Open e
 
 **Expected result:** The agent has no context now (fresh session) and asks what you mean or answers generically.
 
-> If anything fails: Terminal 1 has the Lambda logs streaming. Paste any error into Kiro's chat to diagnose. An `AccessDeniedException` on `InvokeAgent` usually means the grant in `backend.ts` is not using `mealAgent.alias.attrAgentAliasArn`; check the wiring.
+> [!WARNING]
+> ⚠️ **If the reply arrives as raw JSON, the backend is fine and the return type is wrong.**
+>
+> A bubble that begins like this:
+>
+> ```
+> {"sessionId":"06f6307f-64db-4bd9-95d8-46c2e305a4bf","completion":"You've got a great variety of ingredients to work with!\n\n---\n\n
+> ```
+>
+> means the whole chain worked, AppSync to Lambda to Bedrock Agent to DynamoDB, and only the presentation failed. The query returned `a.json()`, so AppSync sent one JSON-encoded string, and `MealAgentChat.tsx` assigned that string straight into the message body. The session ID leaks into the chat, newlines show as `\n`, and the markdown never renders.
+>
+> **The proper fix is the schema change from Step 5:** a top-level `MealAgentResponse` custom type returned with `a.ref("MealAgentResponse")`. That is the shape the design asked for, and it costs another sandbox deploy of two to four minutes.
+>
+> **If you are short of time,** send this instead. It changes only the frontend, so Vite hot reloads in seconds:
+>
+> ```
+> In src/components/MealAgentChat.tsx the result of invokeMealAgent arrives as a JSON-encoded string, because the query returns a.json(). Parse it before reading the answer: if the result is a string, JSON.parse it and read completion from the parsed object, falling back to the raw string if parsing fails. Do not change anything else.
+> ```
+>
+> Note which of these two you chose. The schema fix is the one that matches `design.md`, and the gap between a design that was approved and code that was deployed is worth noticing.
+
+> If anything fails: the `sandbox` terminal has the Lambda logs streaming. Paste any error into Kiro's chat to diagnose. An `AccessDeniedException` on `InvokeAgent` usually means the grant in `backend.ts` is not using `mealAgent.alias.attrAgentAliasArn`; check the wiring.
 
 > If the very first message after a deploy returns the fallback message, the Lambda's new IAM permission may still be propagating. Wait about 30 seconds and send the message again before debugging further.
 
@@ -220,13 +440,22 @@ When all tasks show complete, review the full changeset before moving on. Open e
 
 ## Part E: Deploy via GitHub-Connected Amplify Hosting
 
+> [!NOTE]
+> ℹ️ **Optional homework. Everything from here on is bonus work.**
+>
+> The course objectives are met at the end of Part D. You have used Kiro to author a spec, review a design, generate an implementation, correct it, and verify it against a running backend.
+>
+> This part is for people who already work with Git and GitHub, because it needs a GitHub account, a repository you own, and a push. It is not taught in class and there is no instructor checkpoint for it. If you are not a Git user, stop at the end of Part D and go to the cleanup section, which you should complete either way so your account stops billing.
+>
+> If you do continue, expect roughly 30 to 45 minutes, most of it waiting for the first Amplify Hosting build.
+
 The sandbox is tied to your developer machine. Now push your work to GitHub and connect the repo to AWS Amplify Hosting; every push to `trunk` will redeploy both backend and frontend automatically.
 
 > Region rule: Do everything in this part in the same region you have used all class (your `aws login` region). The Bedrock agent, its Lambda, and your data all live there; deploying the app to a different region would break the chat feature.
 
 ### Step 9: Stop the sandbox watcher
 
-Terminal 1 > CTRL+C. The cloud resources persist until you run the sandbox delete command; you clean them up at the end of the course.
+In the `sandbox` terminal, press CTRL+C. The cloud resources persist until you run the sandbox delete command; you clean them up at the end of the course.
 
 ### Step 10: Verify CDK is bootstrapped
 
@@ -313,10 +542,16 @@ From here, every `git push fork trunk` triggers an automatic redeploy of both ba
 
 When the course is fully wrapped up:
 
-```bash
-npm run amplify:sandbox:delete
+```
+npm run amplify:sandbox:delete -- --identifier <your-sandbox-name>
+```
+
+```
 aws logout
 ```
+
+> [!WARNING]
+> ⚠️ **Use the same sandbox name you chose in Lab 1 Step 7.** Deleting without it, or with a different name, targets a sandbox that does not exist and leaves yours running and billing in the shared class account.
 
 The first command asks for confirmation; type `y`. It removes everything the sandbox created, including the sandbox's Bedrock agent. To remove the production deployment too: AWS Console > Amplify > your app > App settings > Delete app (the production agent is part of that backend and is removed with it).
 

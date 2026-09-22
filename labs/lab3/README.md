@@ -1,6 +1,6 @@
 # Lab 3: Hooks, Steering, and a Meal Recommendation Agent
 
-**Objective:** This lab covers two distinct kinds of automation. First, workflow automation inside Kiro: you refine your steering files with a security policy and build two hooks, one Ask Kiro hook (AI judgment: "is this a real credential?") and one Run Command hook (deterministic: "format this file"), experiencing both action types and how hooks and steering work together. Second, AI automation on AWS: you study the working Amazon Bedrock Agent that ships with the starter project, reading each of its building blocks (the tool Lambda, the agent instructions, the OpenAPI schema that drives tool selection, and the CDK code that deploys it), reviewing the deployed result in the Bedrock Console, and smoke-testing it with the trace panel open.
+**Objective:** This lab covers two distinct kinds of automation. First, workflow automation inside Kiro: you refine your steering files with a security policy and build two hooks, one Ask Kiro hook (AI judgment: "is this a real credential?") and one Run Command hook (deterministic: "format this file"), experiencing both action types and how hooks and steering work together. Second, AI automation on AWS: you author the behaviour of the Amazon Bedrock Agent that ships with the starter project. The tool Lambda is written for you; you write the two files that decide whether the agent is any good, its instructions and its tool descriptions. Then you deploy them, review the result in the Bedrock Console, watch the trace, and deliberately break tool selection to prove what drives it.
 
 **Time:** 60 minutes<br>
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
@@ -9,13 +9,20 @@
 
 ## Prerequisites
 
+> [!NOTE]
+> ℹ️ **Parts A, B and C need only Kiro and this project open.** They make no AWS calls. If you fell behind in Lab 2, you can still do them.
+>
+> Prerequisites 2, 3 and 4 below are required only for Parts D, E and F, which use the deployed agent.
+
 ### 1. Lab 2 complete
 
 The weekly nutrition summary feature works end-to-end. Foundational steering files (`product.md`, `tech.md`, `structure.md`) exist in `.kiro/steering/` from Lab 1.
 
 ### 2. Sandbox + dev server running
 
-From `kiro-project/food-tracker`, both terminals are still up: `npm run amplify:sandbox` (terminal 1) and `npm run dev` (terminal 2). The food-tracker app is reachable at `http://localhost:3000`.
+From `kiro-project/food-tracker`, both terminals are still up: `npm run amplify:sandbox -- --identifier <your-sandbox-name>` in the `sandbox` terminal and `npm run dev` in the `dev` terminal. If the tabs are not named, right click each one and choose **Rename**; Kiro renames tabs after the running process, so neither position nor label can be relied on. The food-tracker app is reachable at `http://localhost:3000`.
+
+Use the same sandbox name you chose in Lab 1 Step 7.
 
 ### 3. AWS CLI session valid
 
@@ -106,16 +113,18 @@ Save the file.
 
 ---
 
-## Part B: A File-Save Security Hook (Ask Kiro action)
+## Part B: A Security Hook on Agent Writes (Ask Kiro action)
 
 Kiro hooks have two action types:
 
 | Action type | What it does | Cost | Use when |
 | --- | --- | --- | --- |
-| Ask Kiro (`askAgent`) | Sends a natural-language prompt to the agent | Slow, uses tokens | The question requires judgment ("is this a real secret or a test fixture?") |
-| Run Command (`runCommand`) | Runs a shell command | Fast, free, deterministic | There is a single right answer ("does this file pass the formatter?") |
+| Ask Kiro | Sends a natural-language prompt to the agent | Slow, uses tokens | The question requires judgment ("is this a real secret or a test fixture?") |
+| Run Command | Runs a shell command | Fast, free, deterministic | There is a single right answer ("does this file pass the formatter?") |
 
 This part builds an Ask Kiro hook. Part C builds a Run Command hook, so you use both.
+
+One thing to know before you start, because it shapes how both hooks are tested: **file triggers fire on files Kiro writes, not on files you save yourself.** Kiro's documentation is explicit that manually saving, creating or deleting a file in the editor does not fire `PostFileSave`, `PostFileCreate` or `PostFileDelete`. Hooks guard the agent's output, which is exactly what you want in Labs 2 and 4 where Kiro writes most of the backend code.
 
 ### Step 3: Open the Hooks panel
 
@@ -126,9 +135,9 @@ In the Kiro pane (ghost icon in the activity bar), find Agent Hooks. Click the *
 In the chat session that opens, paste this prompt and press ENTER:
 
 ```
-Create a hook named "security-scan" that fires when a TypeScript, JavaScript, JSON, YAML, or .env file is saved. Trigger type: fileEdited. File patterns: **/*.ts, **/*.tsx, **/*.js, **/*.jsx, **/*.json, **/*.yaml, **/*.yml, **/.env, **/.env.*. Exclude node_modules, dist, build, and amplify_outputs.json.
+Create a hook named "security-scan" that fires after Kiro saves or edits a TypeScript, JavaScript, JSON, YAML, or .env file. Use the PostFileSave trigger. Match these files: **/*.ts, **/*.tsx, **/*.js, **/*.jsx, **/*.json, **/*.yaml, **/*.yml, **/.env, **/.env.*. Exclude node_modules, dist, build, and amplify_outputs.json. Make sure the hook is enabled.
 
-Action type: askAgent (Ask Kiro). The prompt to the agent should:
+The hook must run an agent prompt rather than a shell command. The prompt to the agent should:
 - Ask it to read the saved file and identify any hardcoded credentials, applying the rules in the security.md steering file.
 - Tell it to use file path and surrounding context to distinguish real credentials from test fixtures, documentation examples, and the allowlisted strings in security.md.
 - For each finding, report: file path, line number, what kind of credential, and the recommended fix (IAM role, Parameter Store, or Secrets Manager, per security.md).
@@ -137,125 +146,291 @@ Action type: askAgent (Ask Kiro). The prompt to the agent should:
 Save the hook to .kiro/hooks/security-scan.kiro.hook.
 ```
 
-Kiro generates a JSON hook file. Review it before saving:
+Kiro generates a JSON hook file under `.kiro/hooks/`. Review it before saving.
 
-- The `when` block uses `type: fileEdited` and the patterns listed above.
-- The `then` block uses `type: askAgent` (not `runCommand`).
-- The prompt references the steering file and asks for context-based judgment.
+> [!NOTE]
+> ℹ️ **Kiro writes hooks in more than one format, and the filename varies.** You may get `security-scan.json` or `security-scan.kiro.hook`, and the keys inside may be either of these shapes:
+>
+> | Current | Legacy |
+> | --- | --- |
+> | `"trigger": "PostFileSave"` | `"when": { "type": "fileEdited" }` |
+> | `"action": { "type": "agent" }` | `"then": { "type": "askAgent" }` |
+> | a single regex `matcher` | a `patterns` array |
+>
+> **Use the current form.** `fileEdited` is not a valid trigger in this build; the valid file triggers are `PostFileSave`, `PostFileCreate` and `PostFileDelete`. If Kiro produces the legacy shape, ask it to rewrite the hook using `PostFileSave`.
+>
+> Check the behaviour rather than the exact keys: it fires on save, and it prompts the agent.
 
-If anything is off, ask Kiro to fix it in chat (for example: "the include patterns are missing .env files, please add them"). Save when correct.
+Whichever shape you get, confirm three things:
+
+- It fires **when a file is saved**, not on a manual trigger or a chat prompt.
+- It sends a **prompt to the agent**, rather than running a shell command. Part C builds the shell-command kind.
+- The prompt references `security.md` and asks the agent to use context to tell real credentials from test values.
+
+If anything is off, ask Kiro to fix it in chat (for example: "the hook should also cover .env files, please add them"). Save when correct.
+
+> [!WARNING]
+> ⚠️ **Restart Kiro after saving the hook.** Kiro will tell you the hook "will be active on your next session start". It means it. A newly created hook does not fire until you reload.
+>
+> Use the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P) and run **Developer: Reload Window**.
+>
+> Skipping this is the most common reason Step 5 appears to do nothing. Your sandbox and dev server terminals survive the reload. Re-select **Haiku 4.5** afterwards, because the model choice is per window.
 
 ### Step 5: Test the hook with two strings, one safe and one not
 
-In the Explorer (files icon in the activity bar), create a new file in the `src/` directory named `scratch-credentials.ts`, and paste:
+> [!WARNING]
+> ⚠️ **File hooks fire on files Kiro writes, not on files you save yourself.**
+>
+> This is the single most important thing to understand about hooks, and it is easy to get wrong. From Kiro's documentation:
+>
+> > File triggers respond only to changes made by the agent. Saving, creating, or deleting a file manually in the editor does not trigger `PostFileSave`, `PostFileCreate`, or `PostFileDelete`.
+>
+> So creating this file by hand in the Explorer and saving it will do nothing, no matter how correct your hook is. You ask Kiro to write the file instead.
+>
+> That is also the realistic use. In Labs 2 and 4 Kiro writes backend code for you, and a credential scan on what the agent just wrote is exactly the guard you want.
 
-```typescript
+Open the chat panel (Cmd+L / CTRL+L) and send:
+
+```
+Create a file src/scratch-credentials.ts with exactly this content:
+
 // Two strings that match the AWS access key pattern.
 // One is the documented EXAMPLE value (allowlisted in security.md).
-// The other is fabricated but pattern-real.
+// The other is fabricated, but pattern-real.
 const exampleKey = "AKIAIOSFODNN7EXAMPLE";
-const fabricatedKey = "AKIA2QHFZ6PXVMK3WYJN";
+const fabricatedKey = "AKIA2QHFAKIA2QHFZ6PXVMK3WYJN";
 ```
 
-> [!NOTE]
-> ℹ️ **Read this before you save.** Saving this file is the test. The moment you save, the `security-scan` hook fires on its own, sends the file to the agent, and writes its findings into the **chat panel**. The findings do not appear in the editor, and no notification is raised.
->
-> Open the chat panel (Cmd+L / CTRL+L) and keep it visible **before** you save. If the panel is closed you will miss the result and may conclude the hook did not run.
->
-> Do not paste the file contents into chat, and do not ask Kiro to review the file. Neither is needed. The hook scans the file on save without any prompt from you.
+Accept the change. As soon as Kiro writes the file, the hook fires. Watch the chat panel for a block headed **Ask Kiro Hook** with `security-scan` beneath it.
 
-Now save the file and watch the chat panel.
+**Expected result:** the agent flags `fabricatedKey` as a credential that should not be in source, and explicitly identifies `AKIAIOSFODNN7EXAMPLE` as the documented test value from the allowlist in `security.md`, and does not flag it. It suggests IAM roles or Secrets Manager as the right home for real credentials. Exact wording varies between runs; judge the outcome, not the phrasing.
 
-**Expected result:** the agent flags `AKIA2QHFZ6PXVMK3WYJN` as a real-looking AWS access key ID, and explicitly identifies `AKIAIOSFODNN7EXAMPLE` as the documented test value from the allowlist (and does not flag it). It suggests IAM roles or Secrets Manager as the right home for real credentials. Exact wording varies between runs; judge the outcome, not the phrasing.
+This is the payoff of Parts A and B together. The hook says "scan this"; the steering file decides what counts. Neither would produce this result alone: without `security.md` the agent would flag both keys, and without the hook nothing would scan at all.
 
 ### Step 6: Clean up
 
-Delete `src/scratch-credentials.ts`.
+Delete `src/scratch-credentials.ts`. Deleting it by hand is fine; file hooks ignore manual changes, so this will not trigger another scan.
 
 > **Checkpoint. Validate before continuing:**
-> 1. The hook file exists at `.kiro/hooks/security-scan.kiro.hook` with the `fileEdited` trigger and `askAgent` action.
-> 2. The test flagged exactly one of the two keys.
+> 1. A hook file exists under `.kiro/hooks/`. The filename may be `security-scan.json` or `security-scan.kiro.hook`. It uses the `PostFileSave` trigger and sends a prompt to the agent.
+> 2. The scan ran on its own after Kiro wrote the file, and flagged exactly one of the two keys: the fabricated one, not the EXAMPLE one.
 > 3. The scratch file is deleted.
 
 ---
 
-## Part C: A File-Save Format Hook (Run Command action)
+## Part C: A Format Hook on Agent Writes (Run Command action)
 
 Now the deterministic counterpart: a hook that runs Biome's formatter on save. No model call, no tokens, just a shell command.
 
 ### Step 7: Create the format hook
 
-In the Kiro pane > Agent Hooks > plus button > "Ask Kiro to create a hook":
+This time use the other creation path. In the Kiro pane > Agent Hooks > plus button, the menu offers two options:
 
-```
-Create a hook named "format-on-save" that fires when a TypeScript or TypeScript-React file is saved. Trigger type: fileEdited. File patterns: **/*.ts, **/*.tsx. Exclude node_modules, dist, src/routeTree.gen.ts, and amplify_outputs.json.
+| Option | What it does |
+| --- | --- |
+| Manually create a hook | Fills in a form. No model call, no credits |
+| Ask Kiro to create a hook | Describes it in natural language. Spends credits |
 
-Action type: runCommand. Command: npx biome format --write src/ amplify/ scripts/
+You used **Ask Kiro** in Part B, where the hook needed judgment about what counts as a credential. This hook has a fixed trigger, two file patterns and one shell command, so there is nothing for a model to reason about. Choose **Manually create a hook**.
 
-Save to .kiro/hooks/format-on-save.kiro.hook.
-```
+Fill in the form:
 
-Review before saving: the generated file uses `type: runCommand` (not `askAgent`) and the command is the exact `npx biome format --write src/ amplify/ scripts/` line above. Save.
+- **Name**: `format-on-save`
+- **Trigger**: under **FILE HOOKS**, choose **File Saved**. The form groups triggers as File Hooks (File Created, File Saved, File Deleted), Tool Hooks (Pre Tool Use, Post Tool Use), and Prompt & Lifecycle Hooks (Prompt Submit, Session Start, Agent Stop). **File Saved** is written as `PostFileSave` in the JSON, and like every File Hook it fires on files Kiro writes, not on your own saves.
+- **File path pattern**: `\.(ts|tsx)$`
+
+  This field takes a **regular expression**, not glob patterns. Entering `**/*.ts, **/*.tsx` produces `Matcher must be a valid regular expression`. The expression above matches any path ending in `.ts` or `.tsx`. Leaving the field blank matches every file.
+- **Action type**: the run-a-shell-command option
+- **Command**: `npx biome format --write src/ amplify/ scripts/`
+
+Save it. Kiro writes it under `.kiro/hooks/`; the exact filename and the field names in the form may differ slightly by version, which is fine as long as it fires on save and runs a command.
+
+> [!WARNING]
+> ⚠️ **Reload Kiro before testing.** As in Part B, a newly created hook does not fire until the window reloads. Command palette (Cmd+SHIFT+P / CTRL+SHIFT+P), then **Developer: Reload Window**. Re-select **Haiku 4.5** afterwards.
+
+Building it by hand also shows you the JSON structure behind every hook, including the one Kiro generated for you in Part B. Open both files under `.kiro/hooks/` and compare them. They may not even use the same keys, because Kiro writes hooks in more than one format.
 
 ### Step 8: Test it
 
-Create a scratch file `src/scratch-format.ts` (a scratch file keeps test junk out of your real code) and paste this deliberately ugly line:
+This test has four moves, and the third one is the point. You will make a mess by hand, watch nothing happen, then have Kiro touch the file and watch the mess get cleaned up.
 
-```typescript
+**1. Have Kiro create the file, correctly formatted.**
+
+In chat:
+
+```
+Create a new file /src/scratch-format.ts with this exact file content:
+
+export const foo = "bar";
+
+Save the file.
+```
+
+Accept the change. If Kiro asks permission to run a command, click **Run**, not **Trust**.
+
+**2. Now break the formatting yourself.**
+
+Open `src/scratch-format.ts` in the editor and edit it by hand so the line is badly spaced, with single quotes and a space before the semicolon:
+
+```
 export const   foo  =      'bar'   ;
 ```
 
-Save. The Run Command hook fires Biome silently. Within a moment the line reformats to clean spacing and double quotes: `export const foo = "bar";`
+Save it.
+
+**Nothing happens.** The file stays exactly as you typed it.
+
+That is not a failure. You are a person, and file hooks only watch the agent. This is the rule from Part B, and now you have seen it rather than been told it: your own saves are invisible to the hook, however badly formatted the file is.
+
+**3. Ask Kiro to touch the same file.**
+
+In chat:
+
+```
+Add a comment at the top of src/scratch-format.ts saying that this is a temporary test file.
+```
+
+Accept the change.
+
+**4. Watch the formatting revert.**
+
+Open the file again. Kiro added your comment, and the line beneath it has been repaired:
+
+```
+export const foo = "bar";
+```
+
+You did not fix it. Kiro did not fix it either; it only added a comment. **Biome fixed it**, because Kiro's write fired the hook, and the hook ran the formatter across the whole file.
+
+That is the difference between the two hook action types you have now built. Part B sent a prompt to a model and got back a judgment that needed reading. This one ran a shell command and produced a deterministic result, with no tokens spent and no model involved.
 
 Then delete `src/scratch-format.ts`.
 
 > Note: both hook files now live under `.kiro/hooks/` and travel with the repo. A teammate who clones the project gets both hooks running automatically.
 
 > **Checkpoint. Validate before continuing:**
-> 1. `.kiro/hooks/format-on-save.kiro.hook` exists with the `runCommand` action.
+> 1. A `format-on-save` hook file exists under `.kiro/hooks/` and runs a shell command rather than prompting the agent.
 > 2. The ugly line auto-reformatted on save.
 > 3. The scratch file is deleted.
 
 ---
 
-## Part D: Study the Prebuilt Agent
+## Part D: Author the Agent's Behaviour
 
-The starter project ships a complete, working Bedrock Agent; it has been deployed in your sandbox since your first deploy in Lab 1. This is not an agent-authoring course, so you do not build it. Instead you read it end to end, because these four building blocks are what you would design in any real agent project, and the trace panel in Part F shows them working together.
+The starter project ships a working Amazon Bedrock Agent, deployed in your sandbox since Lab 1. The Lambda behind its tools is written for you, because plumbing a Lambda to DynamoDB is not what makes an agent good or bad.
 
-### Step 9: Read the agent's building blocks
+What makes an agent good or bad is what you write in two files: the instructions that govern it, and the tool descriptions it uses to decide what to call. In this part you write both, deploy them, and watch the agent's behaviour change.
 
-Open each file and find the things listed:
+### Step 9: Read the parts you are not writing
+
+Open these three files and find the things listed. You need to understand them to write the other two, but you will not change them.
 
 | File | What it is | What to notice |
 | --- | --- | --- |
 | `amplify/functions/meal-recommendations/handler.ts` | The Lambda behind both tools | Two operations keyed on `event.apiPath`; DynamoDB Scans with different FilterExpressions (`addedAt` vs `expirationDate`); every response echoes `actionGroup`, `apiPath`, and `httpMethod` from the incoming event, because Bedrock rejects mismatches |
-| `amplify/functions/meal-recommendations/agent-instructions.md` | The agent's system prompt | Names both tools, orders the agent to always ground answers in tool results, forbids inventing food items, and says what to do when a tool returns nothing |
-| `amplify/functions/meal-recommendations/openapi.json` | The action group schema | Each operation's `description` says WHEN to use it, not just what it returns; these descriptions are the agent's only signal for choosing a tool |
-| `amplify/custom/meal-agent.ts` | The deployment code (CDK) | Creates the agent's service role, the agent itself (reading the two files above), the FoodEntryTools action group, a `v1` alias, and the permission letting Bedrock invoke the Lambda |
-| `amplify/backend.ts` | The wiring | Registers the function, passes the table name as an env var, grants table read access, and instantiates `MealAgent` as the `mealAgent` variable (Lab 4 uses it) |
+| `amplify/custom/meal-agent.ts` | The deployment code (CDK) | Creates the agent's service role, the agent itself, the FoodEntryTools action group, a `v1` alias, and the permission letting Bedrock invoke the Lambda. Note that it reads `agent-instructions.md` and `openapi.json` at deploy time, so editing those files redeploys the agent |
+| `amplify/backend.ts` | The wiring | Registers the function, passes the table name as an env var, grants table read access, and instantiates `MealAgent` |
+
+So the agent has two tools available. Whether it calls the right one, and whether it tells the truth about your food, is decided entirely by the two files you are about to write.
+
+### Step 10: Write the agent's instructions
+
+Open `amplify/functions/meal-recommendations/agent-instructions.md`. Read what is there, then **replace it with your own version**.
+
+**Two things are fixed and must appear exactly, because they are facts about the system rather than choices:**
+
+| Tool name | What it returns |
+| --- | --- |
+| `getRecentEntries` | food items the user added recently |
+| `findExpiringSoon` | items whose expiration date is approaching |
+
+Those are the only two tools the agent has. They are defined in `openapi.json` and served by `handler.ts`. If you rename them, describe a third tool, or leave them out, the agent will either call nothing or try to call something that does not exist.
+
+**Everything else is yours.** Structure, tone, length and emphasis are choices. What you must cover:
+
+1. **Role.** What this agent is for.
+2. **Which tool, when.** Cooking and inventory questions go to `getRecentEntries`; freshness, waste and use-it-up questions go to `findExpiringSoon`.
+3. **Grounding.** Answer only from what the tools return. Models will otherwise invent plausible food items, and a confident wrong answer is worse than no answer.
+4. **Empty results.** What to say when a tool returns nothing. Without this the agent tends to apologise vaguely or invent something.
+
+The version that ships is one long paragraph. Here is a different take on the same requirements, to show the range available:
+
+```markdown
+# MealRecommendationAgent
+
+You help people cook with the food they already have, using their food tracker as
+the only source of truth.
+
+## Tools
+
+- `getRecentEntries` returns what the user has added recently. Use it for "what can
+  I cook", "what do I have", and anything about their current inventory.
+- `findExpiringSoon` returns items approaching their expiration date. Use it for
+  "what should I use up", "what is going off", and anything about waste or freshness.
+
+Call a tool before every answer. Never answer from memory.
+
+## Rules
+
+- Only mention food items a tool returned in this conversation. Do not add
+  ingredients the user did not tell you they have, even obvious ones like salt.
+- Name the items you are using, so the user can check you.
+- Prefer suggestions that use several items at once.
+- If a tool returns nothing, say so plainly and stop. Do not guess, and do not
+  suggest a shopping trip unless asked.
+
+## Style
+
+Two or three sentences. Practical, not chatty. No emoji.
+```
+
+Both versions satisfy the same four requirements. Yours does not need to look like either one, as long as it names the two real tools and covers the four points.
+
+Save the file. Watch the `sandbox` terminal and wait for `Deployment completed`.
 
 > **Checkpoint. Validate before continuing:**
-> This command prints exactly one agent name starting with MealRecommendationAgent:
->
-> ```bash
-> aws bedrock-agent list-agents --query "agentSummaries[?starts_with(agentName,'MealRecommendationAgent')].agentName" --output text --no-cli-pager
-> ```
->
-> If it prints nothing, check terminal 1 for a failed deployment and ask your instructor.
+> 1. Your instructions name `getRecentEntries` and `findExpiringSoon`, spelled exactly, and no other tool.
+> 2. They say when to use each one.
+> 3. They forbid inventing items and say what to do when a tool returns nothing.
+> 4. The `sandbox` terminal shows `Deployment completed` after your edit. If it does not, the agent still has the old instructions and the tests in Part F will not reflect your work.
+
+### Step 11: Write the tool descriptions
+
+Open `amplify/functions/meal-recommendations/openapi.json`. Find the `description` field on each of the two operations, `getRecentEntries` and `findExpiringSoon`.
+
+**These descriptions are the only information the agent has when choosing a tool.** It cannot read the Lambda. It cannot see your data. It sees two names and two sentences, and picks.
+
+Rewrite both descriptions. A useful description says **when to use this**, not what it returns. Compare:
+
+| Weak | Better |
+| --- | --- |
+| "Returns food items." | "Use this when the user asks what they have on hand, what they could cook, or anything about their current inventory." |
+| "Returns items with expiration dates." | "Use this when the user asks about freshness, spoilage, waste, or what they should use up soon." |
+
+The first pair describes the return value. The second pair describes the decision. Only the second helps an agent choose.
+
+Save the file and wait for `Deployment completed`.
+
+> **Checkpoint. Validate before continuing:**
+> 1. Both `description` fields are in your own words.
+> 2. Each one says when to use the tool, not only what it returns.
+> 3. The `sandbox` terminal shows `Deployment completed`.
+
+---
 
 ---
 
 ## Part E: Review the Deployed Agent in the Bedrock Console
 
-### Step 10: Walk through the deployed agent
+### Step 12: Walk through the deployed agent
 
 Open the AWS Console > Amazon Bedrock. Confirm the region (top-right selector) matches your `aws login` region. Left navigation > Agents. Click the agent whose name starts with `MealRecommendationAgent-`.
 
 Match each console section to the file it came from:
 
-1. Instructions for the Agent: the text of `agent-instructions.md`.
+1. Instructions for the Agent: the text you wrote in Step 10. Confirm the console shows your version, not the original.
 2. The model: Claude Sonnet 4.6, served through the global inference profile.
-3. Action groups > `FoodEntryTools`: open it and confirm the schema is your `openapi.json` and the Lambda is `meal-recommendations`.
+3. Action groups > `FoodEntryTools`: open it and confirm the schema carries the descriptions you wrote in Step 11, and the Lambda is `meal-recommendations`.
 4. Aliases: a `v1` alias exists.
 
 > Note: if you change `agent-instructions.md` or `openapi.json` and save, the sandbox redeploys the agent with the new content automatically. The console is a read-only window onto what the code deployed; there is nothing to configure here.
@@ -264,7 +439,7 @@ Match each console section to the file it came from:
 
 ## Part F: Smoke-Test the Agent with Trace On
 
-### Step 11: First prompt, inspect the trace
+### Step 13: First prompt, inspect the trace
 
 On the agent overview, find the Test agent panel on the right. Expand the panel so you can see the Trace. Enter this prompt and press ENTER:
 
@@ -282,7 +457,7 @@ Watch the trace as the agent responds. You should see, in order:
 
 The two signals that prove it worked: the trace shows a sensible tool picked (driven by the OpenAPI descriptions you read in Step 9), and the response names real items from your DynamoDB table (driven by the Lambda actually executing).
 
-### Step 12: Second prompt, different intent, different tool
+### Step 14: Second prompt, different intent, different tool
 
 Send a prompt designed to push the agent toward the other tool:
 
@@ -292,7 +467,32 @@ What's expiring soon that I should use this week?
 
 **Expected result:** the trace shows `findExpiringSoon` this time. The Lambda runs a Scan with a different FilterExpression (against `expirationDate` instead of `addedAt`), and the response calls out specific items by name, for example "your yogurt expires in 2 days".
 
-> Note: This is the connection to take away. The tool the agent picks is driven entirely by the `description` fields you read in `openapi.json`. If you ever build an agent whose tool selection misbehaves, those descriptions are the first place to look.
+### Step 15: Break it on purpose
+
+You have been told that tool descriptions drive tool selection. Now prove it.
+
+Open `openapi.json` and replace the `description` on **`findExpiringSoon`** with something deliberately useless:
+
+```
+Returns food data.
+```
+
+Save, and wait for `Deployment completed`.
+
+Now send the expiring-soon prompt again in the Test agent panel:
+
+```
+What's expiring soon that I should use this week?
+```
+
+**Expected result:** the trace shows the agent calling `getRecentEntries` instead, or hesitating between the two. Nothing else changed. The Lambda is identical, the data is identical, your instructions are identical. One vague sentence was enough to make the agent choose wrongly.
+
+Put your good description back, save, and wait for the redeploy.
+
+> **Checkpoint. Validate before continuing:**
+> You saw tool selection change as a direct result of editing one description, and you restored the working version.
+
+> Note: This is the lesson to take away, and you have now seen it rather than been told it. Tool descriptions are the agent's only basis for choosing. When an agent calls the wrong tool in production, those descriptions are the first place to look, before the model, the prompt, or the data.
 
 ---
 
@@ -301,17 +501,20 @@ What's expiring soon that I should use this week?
 Lab 4 depends on all of these. Confirm them before moving on:
 
 - [ ] The agent (name starting with `MealRecommendationAgent-`) is deployed, with the `FoodEntryTools` action group and a `v1` alias
+- [ ] `agent-instructions.md` and both `openapi.json` descriptions are in your own words
 - [ ] The trace showed tool calls returning real FoodItem data for both test prompts
-- [ ] Both terminals still running: the sandbox (terminal 1) and the dev server (terminal 2)
+- [ ] You saw tool selection change when you degraded a description, and restored it
+- [ ] Both terminals still running: `sandbox` and `dev`
 - [ ] AWS CLI session valid (`aws sts get-caller-identity` succeeds)
 
 ---
 
 ## Summary
 
-You did three distinct kinds of work. First, you turned the foundational steering files into a working security policy by adding `security.md` with rules and an allowlist, a file Kiro now loads on every interaction. Second, you built two hooks side by side: an Ask Kiro hook for context-sensitive credential detection (which leans on the steering allowlist to suppress false positives) and a Run Command hook for deterministic Biome formatting. Third, you studied a complete working Bedrock Agent from the inside out: the Lambda that serves its tools, the instructions that govern it, the OpenAPI descriptions that drive its tool selection, and the CDK construct that deploys all of it, then watched real, grounded tool calls flow through the trace panel. Infrastructure from code, reviewed in the console: the same division of labor you would use in production.
+You did three distinct kinds of work. First, you turned the foundational steering files into a working security policy by adding `security.md` with rules and an allowlist, a file Kiro now loads on every interaction. Second, you built two hooks side by side: an Ask Kiro hook for context-sensitive credential detection (which leans on the steering allowlist to suppress false positives) and a Run Command hook for deterministic Biome formatting. Third, you authored the behaviour of a working Bedrock Agent: you wrote its instructions and its tool descriptions, deployed them through the same CDK construct that ships with the project, watched real grounded tool calls flow through the trace panel, and then degraded one description to see tool selection fail. Infrastructure from code, behaviour from the two files you control: the same division of labor you would use in production.
 
 Two takeaways:
 
 - Hooks and steering work together. The security hook only does the right thing because the steering file tells it what counts and what to ignore. Both ship with the repo, so every teammate gets the same enforcement automatically.
-- Bedrock Agents pick tools based on what you tell them about those tools. The `description` fields in your OpenAPI schema are the agent's only signal for tool selection. Treat them as code, not marketing copy.
+- File hooks watch the agent, not you. `PostFileSave` fires when Kiro writes a file, and manual editor saves are ignored. That is the right boundary for an agentic IDE: the code you review yourself is already under your eye, and the code the agent writes is the code worth scanning automatically.
+- Bedrock Agents pick tools based on what you tell them about those tools. You proved this in Step 15 by making one description vague and watching the agent choose wrongly. The `description` fields in your OpenAPI schema are the agent's only signal for tool selection. Treat them as code.

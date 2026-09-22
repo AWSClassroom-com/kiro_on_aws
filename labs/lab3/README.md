@@ -1,6 +1,6 @@
 # Lab 3: Hooks, Steering, and a Meal Recommendation Agent
 
-**Objective:** This lab covers two distinct kinds of automation. First, workflow automation inside Kiro: you refine your steering files with a security policy and build two hooks, one Ask Kiro hook (AI judgment: "is this a real credential?") and one Run Command hook (deterministic: "format this file"), experiencing both action types and how hooks and steering work together. Second, AI automation on AWS: you study the working Amazon Bedrock Agent that ships with the starter project, reading each of its building blocks (the tool Lambda, the agent instructions, the OpenAPI schema that drives tool selection, and the CDK code that deploys it), reviewing the deployed result in the Bedrock Console, and smoke-testing it with the trace panel open.
+**Objective:** This lab covers two distinct kinds of automation. First, workflow automation inside Kiro: you refine your steering files with a security policy and build two hooks, one Ask Kiro hook (AI judgment: "is this a real credential?") and one Run Command hook (deterministic: "format this file"), experiencing both action types and how hooks and steering work together. Second, AI automation on AWS: you author the behaviour of the Amazon Bedrock Agent that ships with the starter project. The tool Lambda is written for you; you write the two files that decide whether the agent is any good, its instructions and its tool descriptions. Then you deploy them, review the result in the Bedrock Console, watch the trace, and deliberately break tool selection to prove what drives it.
 
 **Time:** 60 minutes<br>
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
@@ -240,44 +240,77 @@ Then delete `src/scratch-format.ts`.
 
 ---
 
-## Part D: Study the Prebuilt Agent
+## Part D: Author the Agent's Behaviour
 
-The starter project ships a complete, working Bedrock Agent; it has been deployed in your sandbox since your first deploy in Lab 1. This is not an agent-authoring course, so you do not build it. Instead you read it end to end, because these four building blocks are what you would design in any real agent project, and the trace panel in Part F shows them working together.
+The starter project ships a working Amazon Bedrock Agent, deployed in your sandbox since Lab 1. The Lambda behind its tools is written for you, because plumbing a Lambda to DynamoDB is not what makes an agent good or bad.
 
-### Step 9: Read the agent's building blocks
+What makes an agent good or bad is what you write in two files: the instructions that govern it, and the tool descriptions it uses to decide what to call. In this part you write both, deploy them, and watch the agent's behaviour change.
 
-Open each file and find the things listed:
+### Step 9: Read the parts you are not writing
+
+Open these three files and find the things listed. You need to understand them to write the other two, but you will not change them.
 
 | File | What it is | What to notice |
 | --- | --- | --- |
 | `amplify/functions/meal-recommendations/handler.ts` | The Lambda behind both tools | Two operations keyed on `event.apiPath`; DynamoDB Scans with different FilterExpressions (`addedAt` vs `expirationDate`); every response echoes `actionGroup`, `apiPath`, and `httpMethod` from the incoming event, because Bedrock rejects mismatches |
-| `amplify/functions/meal-recommendations/agent-instructions.md` | The agent's system prompt | Names both tools, orders the agent to always ground answers in tool results, forbids inventing food items, and says what to do when a tool returns nothing |
-| `amplify/functions/meal-recommendations/openapi.json` | The action group schema | Each operation's `description` says WHEN to use it, not just what it returns; these descriptions are the agent's only signal for choosing a tool |
-| `amplify/custom/meal-agent.ts` | The deployment code (CDK) | Creates the agent's service role, the agent itself (reading the two files above), the FoodEntryTools action group, a `v1` alias, and the permission letting Bedrock invoke the Lambda |
-| `amplify/backend.ts` | The wiring | Registers the function, passes the table name as an env var, grants table read access, and instantiates `MealAgent` as the `mealAgent` variable (Lab 4 uses it) |
+| `amplify/custom/meal-agent.ts` | The deployment code (CDK) | Creates the agent's service role, the agent itself, the FoodEntryTools action group, a `v1` alias, and the permission letting Bedrock invoke the Lambda. Note that it reads `agent-instructions.md` and `openapi.json` at deploy time, so editing those files redeploys the agent |
+| `amplify/backend.ts` | The wiring | Registers the function, passes the table name as an env var, grants table read access, and instantiates `MealAgent` |
+
+So the agent has two tools available. Whether it calls the right one, and whether it tells the truth about your food, is decided entirely by the two files you are about to write.
+
+### Step 10: Write the agent's instructions
+
+Open `amplify/functions/meal-recommendations/agent-instructions.md`. Read what is there, then **replace it with your own version**.
+
+Your instructions must cover four things. Decide the wording yourself:
+
+1. **Role.** What is this agent for, in one or two sentences.
+2. **Grounding.** It must answer only from what the tools return. Models will otherwise invent plausible food items, and a confident wrong answer is worse than no answer.
+3. **Empty results.** What it should say when a tool returns nothing. Without this it tends to apologise vaguely or invent something.
+4. **Tone and length.** Short and practical, or chatty. Your call, but state it.
+
+Save the file. Watch terminal 1 and wait for `Deployment completed`.
 
 > **Checkpoint. Validate before continuing:**
-> This command prints exactly one agent name starting with MealRecommendationAgent:
->
-> ```bash
-> aws bedrock-agent list-agents --query "agentSummaries[?starts_with(agentName,'MealRecommendationAgent')].agentName" --output text --no-cli-pager
-> ```
->
-> If it prints nothing, check terminal 1 for a failed deployment and ask your instructor.
+> Terminal 1 shows `Deployment completed` after your edit. If it does not, the agent still has the old instructions and the test in Part F will not reflect your work.
+
+### Step 11: Write the tool descriptions
+
+Open `amplify/functions/meal-recommendations/openapi.json`. Find the `description` field on each of the two operations, `getRecentEntries` and `findExpiringSoon`.
+
+**These descriptions are the only information the agent has when choosing a tool.** It cannot read the Lambda. It cannot see your data. It sees two names and two sentences, and picks.
+
+Rewrite both descriptions. A useful description says **when to use this**, not what it returns. Compare:
+
+| Weak | Better |
+| --- | --- |
+| "Returns food items." | "Use this when the user asks what they have on hand, what they could cook, or anything about their current inventory." |
+| "Returns items with expiration dates." | "Use this when the user asks about freshness, spoilage, waste, or what they should use up soon." |
+
+The first pair describes the return value. The second pair describes the decision. Only the second helps an agent choose.
+
+Save the file and wait for `Deployment completed`.
+
+> **Checkpoint. Validate before continuing:**
+> 1. Both `description` fields are in your own words.
+> 2. Each one says when to use the tool, not only what it returns.
+> 3. Terminal 1 shows `Deployment completed`.
+
+---
 
 ---
 
 ## Part E: Review the Deployed Agent in the Bedrock Console
 
-### Step 10: Walk through the deployed agent
+### Step 12: Walk through the deployed agent
 
 Open the AWS Console > Amazon Bedrock. Confirm the region (top-right selector) matches your `aws login` region. Left navigation > Agents. Click the agent whose name starts with `MealRecommendationAgent-`.
 
 Match each console section to the file it came from:
 
-1. Instructions for the Agent: the text of `agent-instructions.md`.
+1. Instructions for the Agent: the text you wrote in Step 10. Confirm the console shows your version, not the original.
 2. The model: Claude Sonnet 4.6, served through the global inference profile.
-3. Action groups > `FoodEntryTools`: open it and confirm the schema is your `openapi.json` and the Lambda is `meal-recommendations`.
+3. Action groups > `FoodEntryTools`: open it and confirm the schema carries the descriptions you wrote in Step 11, and the Lambda is `meal-recommendations`.
 4. Aliases: a `v1` alias exists.
 
 > Note: if you change `agent-instructions.md` or `openapi.json` and save, the sandbox redeploys the agent with the new content automatically. The console is a read-only window onto what the code deployed; there is nothing to configure here.
@@ -286,7 +319,7 @@ Match each console section to the file it came from:
 
 ## Part F: Smoke-Test the Agent with Trace On
 
-### Step 11: First prompt, inspect the trace
+### Step 13: First prompt, inspect the trace
 
 On the agent overview, find the Test agent panel on the right. Expand the panel so you can see the Trace. Enter this prompt and press ENTER:
 
@@ -304,7 +337,7 @@ Watch the trace as the agent responds. You should see, in order:
 
 The two signals that prove it worked: the trace shows a sensible tool picked (driven by the OpenAPI descriptions you read in Step 9), and the response names real items from your DynamoDB table (driven by the Lambda actually executing).
 
-### Step 12: Second prompt, different intent, different tool
+### Step 14: Second prompt, different intent, different tool
 
 Send a prompt designed to push the agent toward the other tool:
 
@@ -314,7 +347,32 @@ What's expiring soon that I should use this week?
 
 **Expected result:** the trace shows `findExpiringSoon` this time. The Lambda runs a Scan with a different FilterExpression (against `expirationDate` instead of `addedAt`), and the response calls out specific items by name, for example "your yogurt expires in 2 days".
 
-> Note: This is the connection to take away. The tool the agent picks is driven entirely by the `description` fields you read in `openapi.json`. If you ever build an agent whose tool selection misbehaves, those descriptions are the first place to look.
+### Step 15: Break it on purpose
+
+You have been told that tool descriptions drive tool selection. Now prove it.
+
+Open `openapi.json` and replace the `description` on **`findExpiringSoon`** with something deliberately useless:
+
+```
+Returns food data.
+```
+
+Save, and wait for `Deployment completed`.
+
+Now send the expiring-soon prompt again in the Test agent panel:
+
+```
+What's expiring soon that I should use this week?
+```
+
+**Expected result:** the trace shows the agent calling `getRecentEntries` instead, or hesitating between the two. Nothing else changed. The Lambda is identical, the data is identical, your instructions are identical. One vague sentence was enough to make the agent choose wrongly.
+
+Put your good description back, save, and wait for the redeploy.
+
+> **Checkpoint. Validate before continuing:**
+> You saw tool selection change as a direct result of editing one description, and you restored the working version.
+
+> Note: This is the lesson to take away, and you have now seen it rather than been told it. Tool descriptions are the agent's only basis for choosing. When an agent calls the wrong tool in production, those descriptions are the first place to look, before the model, the prompt, or the data.
 
 ---
 
@@ -323,7 +381,9 @@ What's expiring soon that I should use this week?
 Lab 4 depends on all of these. Confirm them before moving on:
 
 - [ ] The agent (name starting with `MealRecommendationAgent-`) is deployed, with the `FoodEntryTools` action group and a `v1` alias
+- [ ] `agent-instructions.md` and both `openapi.json` descriptions are in your own words
 - [ ] The trace showed tool calls returning real FoodItem data for both test prompts
+- [ ] You saw tool selection change when you degraded a description, and restored it
 - [ ] Both terminals still running: the sandbox (terminal 1) and the dev server (terminal 2)
 - [ ] AWS CLI session valid (`aws sts get-caller-identity` succeeds)
 
@@ -331,9 +391,9 @@ Lab 4 depends on all of these. Confirm them before moving on:
 
 ## Summary
 
-You did three distinct kinds of work. First, you turned the foundational steering files into a working security policy by adding `security.md` with rules and an allowlist, a file Kiro now loads on every interaction. Second, you built two hooks side by side: an Ask Kiro hook for context-sensitive credential detection (which leans on the steering allowlist to suppress false positives) and a Run Command hook for deterministic Biome formatting. Third, you studied a complete working Bedrock Agent from the inside out: the Lambda that serves its tools, the instructions that govern it, the OpenAPI descriptions that drive its tool selection, and the CDK construct that deploys all of it, then watched real, grounded tool calls flow through the trace panel. Infrastructure from code, reviewed in the console: the same division of labor you would use in production.
+You did three distinct kinds of work. First, you turned the foundational steering files into a working security policy by adding `security.md` with rules and an allowlist, a file Kiro now loads on every interaction. Second, you built two hooks side by side: an Ask Kiro hook for context-sensitive credential detection (which leans on the steering allowlist to suppress false positives) and a Run Command hook for deterministic Biome formatting. Third, you authored the behaviour of a working Bedrock Agent: you wrote its instructions and its tool descriptions, deployed them through the same CDK construct that ships with the project, watched real grounded tool calls flow through the trace panel, and then degraded one description to see tool selection fail. Infrastructure from code, behaviour from the two files you control: the same division of labor you would use in production.
 
 Two takeaways:
 
 - Hooks and steering work together. The security hook only does the right thing because the steering file tells it what counts and what to ignore. Both ship with the repo, so every teammate gets the same enforcement automatically.
-- Bedrock Agents pick tools based on what you tell them about those tools. The `description` fields in your OpenAPI schema are the agent's only signal for tool selection. Treat them as code, not marketing copy.
+- Bedrock Agents pick tools based on what you tell them about those tools. You proved this in Step 15 by making one description vague and watching the agent choose wrongly. The `description` fields in your OpenAPI schema are the agent's only signal for tool selection. Treat them as code.

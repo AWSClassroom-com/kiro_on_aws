@@ -409,6 +409,26 @@ Review and accept. Refresh the browser.
 
 **Expected result:** Typing in the filter box narrows the cards live; each sort option reorders them; items without an expiration date sink to the bottom when sorting by expiration.
 
+> [!NOTE]
+> ℹ️ **Kiro may ask for a pattern-based permission on this step. Accept it.**
+>
+> When Kiro builds a more complex command, for example piping build output through `Select-String` to find errors, the approval dialog looks different from the simple Allow prompt:
+>
+> ```
+> Your approval is required to continue: npm run build 2>&1 | Select-String ...
+>
+>   Pattern    [ Select-String *          ]
+>   Apply to   [ This workspace           ]
+>
+>   [Always allow]   [Cancel]
+> ```
+>
+> Leave both dropdowns as they are and click **Always allow**.
+>
+> This grants permission for a **class** of commands rather than one exact command. `Select-String *` means any `Select-String` command, and **This workspace** limits it to this project rather than everything you open in Kiro. Both defaults are the narrow, sensible choice here.
+>
+> You are seeing this because Kiro checks its own work after each change. It is not a sign that something went wrong.
+
 ### Step 15: Restyle the homepage palette
 
 Navigate to `http://localhost:3000` (the homepage) so you can see the change live. Start a new chat session, then send:

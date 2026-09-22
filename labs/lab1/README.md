@@ -16,7 +16,7 @@ The course repo has been pre-fetched and Node dependencies installed to prevent 
 - AWS Management Console credentials provided by your instructor (used in Part B)
 - An [AWS Builder ID](https://profile.aws.amazon.com/) (free, separate from your AWS account, used to sign in to Kiro)
 
-> Cost note: the Amplify sandbox you start in Part C provisions a small DynamoDB table, an AppSync API, two Lambda functions, and a Bedrock agent in the AWS account your instructor provided. Costs during this lab are typically a few cents at most, and you tear the sandbox down at the end.
+> Cost note: the Amplify sandbox you start in Part C provisions a small DynamoDB table, an AppSync API, two Lambda functions, and an Amazon Bedrock AgentCore runtime in the AWS account your instructor provided. Costs during this lab are typically a few cents at most, and you tear the sandbox down at the end.
 
 ---
 

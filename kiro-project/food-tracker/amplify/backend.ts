@@ -20,9 +20,7 @@ foodItemTable.grantReadData(backend.mealRecommendations.resources.lambda);
 // the data stack so every reference stays within one stack (a separate stack
 // creates a circular cross-stack dependency once Lab 4 wires agent IDs into a
 // data-schema Lambda). Lab 3 studies this construct; Lab 4 wires the chat to it.
-const mealAgent = new MealAgent(
-  Stack.of(backend.data.resources.graphqlApi),
-  "MealAgent",
-  { toolsFunction: backend.mealRecommendations.resources.lambda },
-);
+const mealAgent = new MealAgent(Stack.of(backend.data.resources.graphqlApi), "MealAgent", {
+  toolsFunction: backend.mealRecommendations.resources.lambda,
+});
 void mealAgent;

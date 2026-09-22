@@ -423,128 +423,84 @@ Save the file and wait for `Deployment completed`.
 
 ## Part E: Review the Deployed Agent
 
-### Step 12: Confirm what actually deployed
+### Step 12: Find your agent in the AgentCore console
 
-Your agent does not live in the Bedrock Agents console, because it is not a Bedrock Agent. It is an **AgentCore Runtime**: a small service, built from `amplify/custom/agent/app.ts`, running the code your construct bundled and uploaded.
+Your agent is not a Bedrock Agent, so it is not on the Bedrock Agents page. It is an **AgentCore Runtime**: a small service built from `amplify/custom/agent/app.ts`, which your construct bundled and uploaded.
 
-In the `dev` terminal, find it:
+Open the AWS Console and confirm the region selector (top right) matches your `aws login` region. Then go to **Amazon Bedrock AgentCore**, open the left navigation, and under **Build** choose **Runtime**.
 
-```
-aws bedrock-agentcore-control list-agent-runtimes --region us-east-1 --query "agentRuntimes[?starts_with(agentRuntimeName,'MealRecommendationAgent')].[agentRuntimeName,status]" --output table
-```
+You should see a runtime whose name starts with `MealRecommendationAgent_`, with status **Ready**. Open it.
 
-You should see one runtime with status `READY`. Now capture its ARN, because every later step needs it:
+Match what the page shows to the construct you read in Step 9:
 
-```
-$arn = aws bedrock-agentcore-control list-agent-runtimes --region us-east-1 --query "agentRuntimes[?starts_with(agentRuntimeName,'MealRecommendationAgent')].agentRuntimeArn" --output text
-```
-
-```
-$arn
-```
-
-Then look at what was deployed:
-
-```
-aws bedrock-agentcore-control get-agent-runtime --agent-runtime-id $arn.Split('/')[-1] --region us-east-1 --query "agentRuntimeArtifact.codeConfiguration"
-```
-
-Match each field to the construct you read in Step 9:
-
-| Field | What it tells you |
+| On the page | What it tells you |
 |---|---|
-| `runtime` | `NODE_22`. The agent is plain JavaScript, not a container |
-| `entryPoint` | `["app.js"]`, the esbuild bundle the construct produced at deploy time |
-| `code.s3` | The bundle in the CDK assets bucket. `agent-instructions.md` and `openapi.json` are inside it |
+| **Source type: S3** | The agent shipped as a code package, not a container. No Docker was involved anywhere in this course |
+| **Compute type: microVMs** | Each session gets its own isolated machine. That is why one student's conversation cannot see another's |
+| **Description** | The string in `meal-agent.ts`. Everything on this page came from code |
+| **Versions** | One per deploy. Version 1 was the first deploy; later versions appear each time you change the agent |
+| **Endpoints > DEFAULT** | Where invocations land, with **Logs** and **Dashboard** links into CloudWatch. You use the Logs link in Part F |
+| **Observability** | Sessions, invocations, error rate, and the actual **vCPU-hours and GB-hours** you have consumed. Worth a look: a whole lab costs a fraction of a cent of compute, and the model tokens dominate |
 
 > [!NOTE]
-> ℹ️ **There is nothing to configure here.** Your instructions and your tool descriptions were packaged into that zip at deploy time. Editing either file and saving makes the sandbox rebuild the bundle and update the runtime. The AWS side is a read-only window onto what your code deployed, which is the point of infrastructure from code.
+> ℹ️ **There is nothing to configure here.** Your instructions and tool descriptions were packaged into the deployment bundle. Editing either file and saving makes the sandbox rebuild and update the runtime, which produces a new version on this page. The console is a read-only window onto what your code deployed, which is the point of infrastructure from code.
 
 ---
 
 ## Part F: Smoke-Test the Agent and Watch It Choose
 
-Bedrock Agents had a trace panel. AgentCore does not. What it has instead is better for a real debugging habit: **every conversation gets its own CloudWatch log stream**, named after the session id you pass in. The agent logs which tool it chose and what arguments it passed, so you can read one conversation from start to finish.
+Bedrock Agents had a trace panel that showed reasoning and tool calls together. AgentCore splits those in two, and you use both:
 
-Set up the log group name once:
+- The **Test** panel on the runtime page shows you **what the agent said**.
+- **CloudWatch** shows you **which tool it chose**, because AgentCore gives every session its own log stream and the agent logs each tool call.
 
-```
-$logGroup = "/aws/bedrock-agentcore/runtimes/" + $arn.Split('/')[-1] + "-DEFAULT"
-```
+The second one is the one that matters for this part. A convincing answer proves nothing on its own; an agent that invents your groceries sounds exactly like one that read them.
 
-```
-$logGroup
-```
+### Step 13: First prompt
 
-### Step 13: First prompt, then read the trace
+On the runtime page, click **Test**.
 
-Write the prompt to a file. Use this exact command, because PowerShell's `Out-File` adds a byte order mark that breaks the JSON:
-
-```
-[IO.File]::WriteAllText("$PWD\prompt1.json", '{"prompt":"What should I make for dinner tonight based on what I have in the food tracker?"}')
-```
-
-Generate a session id. A GUID is 36 characters, which clears the minimum no matter what, and the prefix makes your stream easy to find in a class where everyone is running this lab:
+1. **Runtime agent** and **Endpoint** are already filled in. Leave them.
+2. **Leave Session ID blank.** The console generates one for you.
+3. In **Input**, replace the placeholder with:
 
 ```
-$session1 = "lab3-step13-" + [guid]::NewGuid().ToString()
+{"prompt": "What should I make for dinner tonight based on what I have in the food tracker?"}
 ```
 
-Now invoke the agent:
+4. Click **Run**.
+
+**Expected result:** after roughly ten seconds, the Output panel shows a `completion` naming actual items from your FoodItem table, the 30 items you seeded in Lab 1, and a `sessionId` the console generated.
+
+> [!NOTE]
+> ℹ️ **Note that generated session id.** You need it in a moment to find your conversation in the logs, and it is the same value Lab 4 will generate from the React panel. If you ever type one by hand, it must be **at least 33 characters**: `InvokeAgentRuntime` rejects anything shorter with `Invalid length for parameter runtimeSessionId`, an error that says nothing about why. Leaving the field blank avoids the problem entirely.
+
+Now find out which tool it used. Go back to the runtime page, and in the **Endpoints** table click **Logs** on the `DEFAULT` row. That opens the CloudWatch log group for this runtime.
+
+Find the log stream whose name contains the session id from your Output, and open it. You are looking for:
 
 ```
-aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn $arn --runtime-session-id $session1 --content-type "application/json" --payload fileb://prompt1.json --region us-east-1 answer1.json
+tool call: getRecentEntries {}
+tool result: getRecentEntries returned 7551 bytes
 ```
 
-> [!WARNING]
-> ⚠️ **The session id must be at least 33 characters.** `InvokeAgentRuntime` rejects anything shorter with `Invalid length for parameter runtimeSessionId, valid min length: 33`. Nothing in the agent is wrong when this happens, but it reads like a broken agent if you are not expecting it. Never hand-type a session id and never build one from something variable like a user name; generate it, as above. Lab 4 hits the same rule from the React panel, where `crypto.randomUUID()` does the same job.
-
-Read the answer:
-
-```
-Get-Content answer1.json -Raw -Encoding UTF8
-```
-
-The `-Encoding UTF8` matters. The agent's replies contain emoji and dashes, and without it PowerShell reads the file in the Windows ANSI codepage and you get `ðŸŸ` instead of a fish.
-
-**Expected result:** a `completion` naming actual items from your FoodItem table, the 30 items you seeded in Lab 1.
-
-Now read what the agent did to produce it:
-
-```
-aws logs tail $logGroup --since 10m --format short --region us-east-1
-```
-
-You are looking for a line like:
-
-```
-tool call: getRecentEntries {"days":7}
-tool result: getRecentEntries returned 4812 bytes
-```
-
-Two signals prove it worked. The agent **picked a sensible tool**, which is driven by the OpenAPI descriptions you wrote in Step 11. And the response **names real items**, which is driven by the Lambda actually executing against DynamoDB. A convincing answer with no `tool call` line in the log would mean the model invented your groceries.
+Two signals prove it worked. The agent **picked a sensible tool**, which is driven by the OpenAPI descriptions you wrote in Step 11. And the answer **names real items**, which is driven by the Lambda actually executing against DynamoDB. An answer with no `tool call` line above it would mean the model made your groceries up.
 
 ### Step 14: Second prompt, different intent, different tool
 
-```
-[IO.File]::WriteAllText("$PWD\prompt2.json", '{"prompt":"What is expiring soon that I should use this week?"}')
-```
+Back in the **Test** panel, clear the Input and run:
 
 ```
-$session2 = "lab3-step14-" + [guid]::NewGuid().ToString()
+{"prompt": "What is expiring soon that I should use this week?"}
 ```
 
-```
-aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn $arn --runtime-session-id $session2 --content-type "application/json" --payload fileb://prompt2.json --region us-east-1 answer2.json
-```
+**Expected result:** the answer calls out specific items by name with their dates, for example "your yogurt expires in 2 days". Open the new session's log stream and you should see:
 
 ```
-aws logs tail $logGroup --since 5m --format short --region us-east-1
+tool call: findExpiringSoon {"days":7}
 ```
 
-**Expected result:** `tool call: findExpiringSoon` this time. The same Lambda runs a Scan with a different FilterExpression, against `expirationDate` rather than `addedAt`, and the answer calls out specific items, for example "your yogurt expires in 2 days".
-
-Nothing about the agent changed between Step 13 and Step 14. The same two tools were offered. The question was different, and the descriptions you wrote were enough for the model to route it correctly.
+Nothing about the agent changed between Step 13 and Step 14. The same two tools were offered, the same instructions applied. The question was different, and the descriptions you wrote were enough for the model to route it correctly.
 
 ### Step 15: Break it on purpose
 
@@ -556,23 +512,13 @@ Open `openapi.json` and replace the `description` on **`findExpiringSoon`** with
 Returns food data.
 ```
 
-Save, and wait for `Deployment completed` in the `sandbox` terminal. The bundle is rebuilt and the runtime updated, so give it a moment longer than a code-only change.
+Save, and wait for `Deployment completed` in the `sandbox` terminal. This one takes a little longer than a code-only change, because the bundle is rebuilt and the runtime updated.
 
-Send the expiring-soon prompt again, with a new session id so you get a clean log stream:
+Refresh the runtime page. **A new version appears in the Versions table.** That is your edit, deployed.
 
-```
-$session3 = "lab3-step15-" + [guid]::NewGuid().ToString()
-```
+Run the expiring-soon prompt from Step 14 again in the **Test** panel, then open the new session's log stream.
 
-```
-aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn $arn --runtime-session-id $session3 --content-type "application/json" --payload fileb://prompt2.json --region us-east-1 answer3.json
-```
-
-```
-aws logs tail $logGroup --since 5m --format short --region us-east-1
-```
-
-**Expected result:** `tool call: getRecentEntries`, or the agent calling both and hedging. Nothing else changed. The Lambda is identical, the data is identical, your instructions are identical. One vague sentence was enough to make the agent choose wrongly.
+**Expected result:** `tool call: getRecentEntries`, or the agent calling both tools and hedging. Nothing else changed. The Lambda is identical, the data is identical, your instructions are identical. One vague sentence was enough to make the agent choose wrongly.
 
 Put your good description back, save, and wait for the redeploy.
 
@@ -580,6 +526,47 @@ Put your good description back, save, and wait for the redeploy.
 > You saw the tool call change in the log as a direct result of editing one description, and you restored the working version.
 
 > Note: This is the lesson to take away, and you have now seen it rather than been told it. Tool descriptions are the agent's only basis for choosing. When an agent calls the wrong tool in production, those descriptions are the first place to look, before the model, the prompt, or the data.
+
+<details>
+<summary><strong>Optional: doing Part F from the command line instead</strong></summary>
+
+If you would rather not use the console, or you want to see what the Test panel is doing underneath, the same three steps work from the `dev` terminal.
+
+```
+$arn = aws bedrock-agentcore-control list-agent-runtimes --region us-east-1 --query "agentRuntimes[?starts_with(agentRuntimeName,'MealRecommendationAgent')].agentRuntimeArn" --output text
+```
+
+```
+$logGroup = "/aws/bedrock-agentcore/runtimes/" + $arn.Split('/')[-1] + "-DEFAULT"
+```
+
+Write the prompt with this exact command. PowerShell's `Out-File` adds a byte order mark that breaks the JSON:
+
+```
+[IO.File]::WriteAllText("$PWD\prompt1.json", '{"prompt":"What should I make for dinner tonight based on what I have in the food tracker?"}')
+```
+
+Generate a session id. A GUID is 36 characters, which clears the 33 character minimum whatever your name is:
+
+```
+$session1 = "lab3-step13-" + [guid]::NewGuid().ToString()
+```
+
+```
+aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn $arn --runtime-session-id $session1 --content-type "application/json" --payload fileb://prompt1.json --region us-east-1 answer1.json
+```
+
+```
+Get-Content answer1.json -Raw -Encoding UTF8
+```
+
+The `-Encoding UTF8` matters. Without it PowerShell 5.1 reads the file in the Windows ANSI codepage and the agent's emoji come out as `ðŸŸ`.
+
+```
+aws logs tail $logGroup --since 10m --format short --region us-east-1
+```
+
+</details>
 
 ---
 

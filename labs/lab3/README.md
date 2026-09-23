@@ -10,7 +10,7 @@
 ## Prerequisites
 
 > [!NOTE]
-> ℹ️ **Parts A, B and C need only Kiro and this project open.** They make no AWS calls. If you fell behind in Lab 2, you can still do them.
+> **Parts A, B and C need only Kiro and this project open.** They make no AWS calls. If you fell behind in Lab 2, you can still do them.
 >
 > Prerequisites 2, 3 and 4 below are required only for Parts D, E and F, which use the deployed agent.
 
@@ -45,7 +45,7 @@ You should see the profile with status `ACTIVE`. If the result is empty, model a
 ### 5. Chat model set to Haiku 4.5
 
 > [!WARNING]
-> ⚠️ **Confirm the chat model is Haiku 4.5, not Auto, before building the hooks.**
+> **Confirm the chat model is Haiku 4.5, not Auto, before building the hooks.**
 >
 > In the chat panel (Cmd+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
 >
@@ -149,7 +149,7 @@ Save the hook to .kiro/hooks/security-scan.kiro.hook.
 Kiro generates a JSON hook file under `.kiro/hooks/`. Review it before saving.
 
 > [!NOTE]
-> ℹ️ **Kiro writes hooks in more than one format, and the filename varies.** You may get `security-scan.json` or `security-scan.kiro.hook`, and the keys inside may be either of these shapes:
+> **Kiro writes hooks in more than one format, and the filename varies.** You may get `security-scan.json` or `security-scan.kiro.hook`, and the keys inside may be either of these shapes:
 >
 > | Current | Legacy |
 > | --- | --- |
@@ -170,7 +170,7 @@ Whichever shape you get, confirm three things:
 If anything is off, ask Kiro to fix it in chat (for example: "the hook should also cover .env files, please add them"). Save when correct.
 
 > [!WARNING]
-> ⚠️ **Restart Kiro after saving the hook.** Kiro will tell you the hook "will be active on your next session start". It means it. A newly created hook does not fire until you reload.
+> **Restart Kiro after saving the hook.** Kiro will tell you the hook "will be active on your next session start". It means it. A newly created hook does not fire until you reload.
 >
 > Use the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P) and run **Developer: Reload Window**.
 >
@@ -179,7 +179,7 @@ If anything is off, ask Kiro to fix it in chat (for example: "the hook should al
 ### Step 5: Test the hook with two strings, one safe and one not
 
 > [!WARNING]
-> ⚠️ **File hooks fire on files Kiro writes, not on files you save yourself.**
+> **File hooks fire on files Kiro writes, not on files you save yourself.**
 >
 > This is the single most important thing to understand about hooks, and it is easy to get wrong. From Kiro's documentation:
 >
@@ -246,7 +246,7 @@ Fill in the form:
 Save it. Kiro writes it under `.kiro/hooks/`; the exact filename and the field names in the form may differ slightly by version, which is fine as long as it fires on save and runs a command.
 
 > [!WARNING]
-> ⚠️ **Reload Kiro before testing.** As in Part B, a newly created hook does not fire until the window reloads. Command palette (Cmd+SHIFT+P / CTRL+SHIFT+P), then **Developer: Reload Window**. Re-select **Haiku 4.5** afterwards.
+> **Reload Kiro before testing.** As in Part B, a newly created hook does not fire until the window reloads. Command palette (Cmd+SHIFT+P / CTRL+SHIFT+P), then **Developer: Reload Window**. Re-select **Haiku 4.5** afterwards.
 
 Building it by hand also shows you the JSON structure behind every hook, including the one Kiro generated for you in Part B. Open both files under `.kiro/hooks/` and compare them. They may not even use the same keys, because Kiro writes hooks in more than one format.
 
@@ -317,7 +317,7 @@ Then delete `src/scratch-format.ts`.
 
 ## Part D: Author the Agent's Behaviour
 
-The starter project ships a working Amazon Bedrock Agent, deployed in your sandbox since Lab 1. The Lambda behind its tools is written for you, because plumbing a Lambda to DynamoDB is not what makes an agent good or bad.
+The starter project ships a working agent on Amazon Bedrock AgentCore, deployed in your sandbox since Lab 1. The Lambda behind its tools is written for you, because plumbing a Lambda to DynamoDB is not what makes an agent good or bad.
 
 What makes an agent good or bad is what you write in two files: the instructions that govern it, and the tool descriptions it uses to decide what to call. In this part you write both, deploy them, and watch the agent's behaviour change.
 
@@ -443,7 +443,7 @@ Match what the page shows to the construct you read in Step 9:
 | **Observability** | Sessions, invocations, error rate, and the actual **vCPU-hours and GB-hours** you have consumed. Worth a look: a whole lab costs a fraction of a cent of compute, and the model tokens dominate |
 
 > [!NOTE]
-> ℹ️ **There is nothing to configure here.** Your instructions and tool descriptions were packaged into the deployment bundle. Editing either file and saving makes the sandbox rebuild and update the runtime, which produces a new version on this page. The console is a read-only window onto what your code deployed, which is the point of infrastructure from code.
+> **There is nothing to configure here.** Your instructions and tool descriptions were packaged into the deployment bundle. Editing either file and saving makes the sandbox rebuild and update the runtime, which produces a new version on this page. The console is a read-only window onto what your code deployed, which is the point of infrastructure from code.
 
 ---
 
@@ -473,7 +473,7 @@ On the runtime page, click **Test**.
 **Expected result:** after roughly ten seconds, the Output panel shows a `completion` naming actual items from your FoodItem table, the 30 items you seeded in Lab 1, and a `sessionId` the console generated.
 
 > [!NOTE]
-> ℹ️ **Note that generated session id.** You need it in a moment to find your conversation in the logs, and it is the same value Lab 4 will generate from the React panel. If you ever type one by hand, it must be **at least 33 characters**: `InvokeAgentRuntime` rejects anything shorter with `Invalid length for parameter runtimeSessionId`, an error that says nothing about why. Leaving the field blank avoids the problem entirely.
+> **Note that generated session id.** You need it in a moment to find your conversation in the logs, and it is the same value Lab 4 will generate from the React panel. If you ever type one by hand, it must be **at least 33 characters**: `InvokeAgentRuntime` rejects anything shorter with `Invalid length for parameter runtimeSessionId`, an error that says nothing about why. Leaving the field blank avoids the problem entirely.
 
 Now find out which tool it used. Go back to the runtime page, and in the **Endpoints** table click **Logs** on the `DEFAULT` row. That opens the CloudWatch log group for this runtime.
 
@@ -591,4 +591,4 @@ Two takeaways:
 
 - Hooks and steering work together. The security hook only does the right thing because the steering file tells it what counts and what to ignore. Both ship with the repo, so every teammate gets the same enforcement automatically.
 - File hooks watch the agent, not you. `PostFileSave` fires when Kiro writes a file, and manual editor saves are ignored. That is the right boundary for an agentic IDE: the code you review yourself is already under your eye, and the code the agent writes is the code worth scanning automatically.
-- Bedrock Agents pick tools based on what you tell them about those tools. You proved this in Step 15 by making one description vague and watching the agent choose wrongly. The `description` fields in your OpenAPI schema are the agent's only signal for tool selection. Treat them as code.
+- Agents pick tools based on what you tell them about those tools. You proved this in Step 15 by making one description vague and watching the agent choose wrongly. The `description` fields in your OpenAPI schema are the agent's only signal for tool selection. Treat them as code.

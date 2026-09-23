@@ -1,6 +1,6 @@
 # Lab 4: Chat Panel and Production Deployment
 
-**Objective:** Two goals. First, use Kiro's spec-driven workflow (the same one from Lab 2) to build an in-app chat panel that calls `InvokeAgent` against the `MealRecommendationAgent` from Lab 3, proving the spec process works just as well for an integration feature as for a UI feature. Second, promote the app off your developer-tied sandbox: push the code to GitHub and connect the repo to AWS Amplify Hosting, so every push to `trunk` automatically redeploys both backend and frontend.
+**Objective:** Two goals. First, use Kiro's spec-driven workflow (the same one from Lab 2) to build an in-app chat panel that calls `InvokeAgentRuntime` against the `MealRecommendationAgent` from Lab 3, proving the spec process works just as well for an integration feature as for a UI feature. Second, promote the app off your developer-tied sandbox: push the code to GitHub and connect the repo to AWS Amplify Hosting, so every push to `trunk` automatically redeploys both backend and frontend.
 
 **Time:** 90 minutes<BR>
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
@@ -34,7 +34,7 @@ You need a GitHub account to host the repo Amplify deploys from. If you do not h
 ### 5. Chat model set to Haiku 4.5
 
 > [!WARNING]
-> ⚠️ **Confirm the chat model is Haiku 4.5, not Auto, before starting the spec session.**
+> **Confirm the chat model is Haiku 4.5, not Auto, before starting the spec session.**
 >
 > In the chat panel (Cmd+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
 >
@@ -57,7 +57,7 @@ The new session screen offers two cards, **Vibe** and **Spec**. Choose **Spec**.
 Paste as your initial prompt:
 
 ```
-Create a new spec "meal-agent-chat" for a chat panel feature on the food-tracker page that lets the user converse with the MealRecommendationAgent (Bedrock Agent) deployed in Lab 3.
+Create a new spec "meal-agent-chat" for a chat panel feature on the food-tracker page that lets the user converse with the MealRecommendationAgent, which runs on Amazon Bedrock AgentCore and was deployed in Lab 3.
 
 Requirements:
 - A floating "Ask the meal assistant" button in the bottom right of the food-tracker page that opens a panel fixed to the right side of the screen.
@@ -68,13 +68,13 @@ Requirements:
   - A simple "thinking..." indicator while waiting for a response.
 - Keep the styling simple and consistent with the page's dark slate theme. No animations required. No emojis anywhere in the UI.
 - Each message exchange calls a new AppSync custom query invokeMealAgent(prompt, sessionId) that returns { sessionId, completion }.
-- The query is handled by a new Amplify Function invoke-meal-agent that calls Bedrock InvokeAgent for the MealRecommendationAgent.
+- The query is handled by a new Amplify Function invoke-meal-agent that calls InvokeAgentRuntime against the MealRecommendationAgent runtime. This is AgentCore, not Bedrock Agents Classic: there is no agent ID, no alias, and no InvokeAgent call anywhere in this feature.
 - sessionId is generated client-side with crypto.randomUUID() on first use and persists across messages until "New conversation" is clicked.
 - The query is authorized with allow.publicApiKey() to match the existing schema.
 - On error the chat shows a friendly fallback message; it does NOT throw.
 - Keep the requirements focused on user-facing behavior. Do NOT add IAM policy or permission-scoping requirements; permissions are decided in the design phase.
 
-Bedrock specifics:
+AgentCore specifics:
 - The agent runtime already exists: it is deployed by the MealAgent construct, instantiated in amplify/backend.ts as the mealAgent variable (you studied it in Lab 3).
 - Do NOT hardcode the runtime ARN anywhere. The backend wires it into the Lambda at deploy time from mealAgent.agentRuntimeArn.
 - Use @aws-sdk/client-bedrock-agentcore (BedrockAgentCoreClient + InvokeAgentRuntimeCommand).
@@ -96,7 +96,7 @@ Open `requirements.md`. Confirm it covers user stories, acceptance criteria for 
 
 Then run these critical review checks with Find (Cmd+F / CTRL+F):
 
-1. Search for `Agent ID` and scan any code-like strings. There must be NO hardcoded or invented agent/alias ID values anywhere; the backend wires real IDs from the `mealAgent` construct at deploy time, and an invented ID fails at runtime with AccessDeniedException.
+1. Search for `arn:` and for `Agent ID`. There must be NO hardcoded or invented ARNs or ID values anywhere. The backend wires the real runtime ARN from the `mealAgent` construct at deploy time, and an invented one fails at runtime with AccessDeniedException. Any mention of an agent alias is a sign the requirements were written against Bedrock Agents Classic rather than AgentCore.
 2. Search for `IAM` and `policy`. The requirements must not contain IAM or permission-scoping criteria; those belong to the design phase.
 
 Approve through the spec workflow when satisfied.
@@ -104,7 +104,7 @@ Approve through the spec workflow when satisfied.
 > Note: Agent output varies between runs. Review what Kiro actually wrote.
 
 > **Checkpoint. Validate before continuing:**
-> `requirements.md` is approved and contains **no** agent or alias ID values at all. The backend supplies them at deploy time from the `mealAgent` construct, so any ID written into the requirements is invented and will fail at runtime.
+> `requirements.md` is approved, contains **no** ARNs or ID values at all, and describes the agent as running on Amazon Bedrock AgentCore rather than as a Bedrock Agent. The backend supplies the runtime ARN at deploy time from the `mealAgent` construct, so anything written into the requirements is invented and will fail at runtime.
 
 ---
 
@@ -142,10 +142,10 @@ Then run these critical review checks with Find (Cmd+F / CTRL+F):
 2. Search for `timeoutSeconds` and `resourceGroupName`. The function resource example must set `timeoutSeconds: 60` and `resourceGroupName: "data"`; the wrong stack placement fails the whole deploy with a circular dependency.
 3. Search for `AWS_ACCESS_KEY_ID`. It may only appear in a clearly marked incorrect-pattern example. SDK clients are constructed with no arguments.
 4. Search for `publicApiKey`. The custom query must be authorized with `allow.publicApiKey()`.
-5. Search for `console.error`. InvokeAgent failures must be logged before returning the fallback, or you cannot debug them from the Lambda logs.
+5. Search for `console.error`. Failures from `InvokeAgentRuntime` must be logged before returning the fallback, or you cannot debug them from the Lambda logs.
 
 > [!WARNING]
-> ⚠️ **Before approving, confirm the design can actually be built.**
+> **Before approving, confirm the design can actually be built.**
 >
 > The five checks above confirm the design says the right things. They do not confirm it compiles. A design can pass every one of them and still fail to deploy, because the model can invent APIs that do not exist in the installed version of Amplify.
 >
@@ -155,64 +155,92 @@ Then run these critical review checks with Find (Cmd+F / CTRL+F):
 > 2. **Custom query arguments cannot reference a model.** `a.ref("FoodItem")` as an argument fails at deploy time, because AppSync accepts only custom types and enums there. Arguments here should be plain scalars: `prompt` and `sessionId` are both strings.
 > 3. **The return type must be a named custom type.** `{ sessionId, completion }` are two strings, and the query has to hand them back as an object the frontend can read. Do not accept a design that nests `a.customType()` inside `.returns()`; that produces a generated type the Lambda handler cannot satisfy, and the deploy fails type checking. Do not accept `.returns(a.json())` either. It compiles, but AppSync exposes it as `AWSJSON` and sends the result as one JSON-encoded string, and the chat panel in Part D then displays raw JSON instead of the answer. The shape that works is a custom type declared at the top level of the schema and referenced with `a.ref()`.
 >
-> **Two specific faults have been seen in real runs of this step.** Check for both, and if you find either, paste the correction below rather than trying to work out the wording yourself.
+> **Six faults appeared in a single real run of this step.** They share one shape, and it is worth naming: Kiro reaches for the correct AgentCore **client** and the correct **command name**, then fills them with Bedrock Agents Classic **contents**. That hybrid survives a skim, because anyone scanning for `InvokeAgentRuntimeCommand` finds it and moves on.
 >
-> **Fault A: `resourceGroupName` present but commented out.** The code example reads:
+> Check all six. If you find any of them, paste the single correction below rather than working out the wording yourself.
+>
+> **1. Classic parameters on the AgentCore command.** The most common fault by far:
 >
 > ```ts
-> timeoutSeconds: 60,
-> memory: 512,
-> // resourceGroupName: "data" - scoped to data stack to avoid circular dependency
+> const command = new InvokeAgentRuntimeCommand({
+>   agentId: process.env.AGENT_ID,          // does not exist
+>   agentAliasId: process.env.AGENT_ALIAS_ID, // does not exist
+>   sessionId: sessionId,                    // wrong name
+>   requestPayload: requestBytes,            // wrong name
+> });
 > ```
 >
-> The prose underneath still claims the function is scoped to the data stack, so the design contradicts itself and review check 2 passes anyway, because searching for `resourceGroupName` finds the commented line. A commented property does nothing, the function lands in the wrong stack, and the deploy fails with a circular dependency.
+> The command takes `agentRuntimeArn`, `runtimeSessionId`, `contentType` and `payload`. Nothing else.
 >
-> **Fault B: the return type wrapped in `a.customType()`.** The code example reads:
+> **2. The same wrong shape restated in prose.** Check the Data Shapes or boundaries section for `{ agentId, agentAliasId, sessionId, requestPayload }`. Fixing the code sample and leaving the prose means the next step reads the prose.
+>
+> **3. `.returns(a.object({ ... }))`.** `a.object` **does not exist** in `@aws-amplify/data-schema`. It is invented, it will not compile, and it is the same class of fault Lab 2 hits.
+>
+> **4. The authorization call written as `.authorization(allow.publicApiKey())`.** The correct form takes a callback returning an array: `.authorization((allow) => [allow.publicApiKey()])`. Compare with the `FoodItem` model already in `amplify/data/resource.ts`.
+>
+> **5. A fully Classic IAM section.** Look for `bedrock:InvokeAgent` on an `agent-alias` ARN, granted with `invokeMealAgent.grantAccess({ resources: [mealAgent.alias.attrAgentAliasArn] })`. Every part of that is wrong: the action, the resource, the method, and `mealAgent.alias`, which does not exist on an AgentCore runtime.
+>
+> **6. The environment variable set inside `defineFunction`.** Look for:
 >
 > ```ts
-> .returns(
->   a.customType({
->     sessionId: a.string().required(),
->     completion: a.string().required(),
->   })
-> )
+> export const invokeMealAgent = defineFunction({
+>   ...
+>   environment: { AGENT_RUNTIME_ARN: mealAgent.agentRuntimeArn },
+> });
 > ```
 >
-> A nested custom type inside `.returns()` generates a `Schema` type the Lambda handler cannot satisfy, and the deploy fails type checking.
+> `resource.ts` cannot see `mealAgent`. The construct is created in `backend.ts`, and importing `backend.ts` from a resource file is circular. This does not compile.
 >
-> **The shape that works declares the type at the top level of the schema and references it:**
+> **If you find any of them, send this in chat:**
 >
-> ```ts
+> ```
+> Corrections to design.md before I approve it. Apply only the ones that are present.
+>
+> 1. The InvokeAgentRuntimeCommand parameters are Bedrock Agents Classic parameters on an AgentCore command. There is no agentId, agentAliasId, sessionId or requestPayload on this command. The correct shape is:
+>
+> const command = new InvokeAgentRuntimeCommand({
+>   agentRuntimeArn: process.env.AGENT_RUNTIME_ARN,
+>   runtimeSessionId: sessionId,
+>   contentType: "application/json",
+>   payload: new TextEncoder().encode(JSON.stringify({ prompt })),
+> });
+>
+> 2. Wherever the boundary is described in prose as { agentId, agentAliasId, sessionId, requestPayload }, correct it to { agentRuntimeArn, runtimeSessionId, contentType, payload }.
+>
+> 3. a.object() does not exist in @aws-amplify/data-schema. Declare a top-level custom type and reference it:
+>
 > const schema = a.schema({
 >   MealAgentResponse: a.customType({
 >     sessionId: a.string().required(),
 >     completion: a.string().required(),
 >   }),
->
->   invokeMealAgent: a
->     .query()
+>   invokeMealAgent: a.query()
 >     .arguments({ prompt: a.string().required(), sessionId: a.string().required() })
 >     .returns(a.ref("MealAgentResponse"))
 >     .authorization((allow) => [allow.publicApiKey()])
 >     .handler(a.handler.function(invokeMealAgent)),
 > });
-> ```
 >
-> ⚠️ **`.returns(a.json())` is the trap here.** It is a real API and it compiles, so it survives every check in this step and every check in Part D. AppSync then serialises the whole object into a single string, and in Step 8 the chat panel renders `{"sessionId":"...","completion":"..."}` with escaped newlines instead of the answer. This was observed in a real run, after everything else had passed.
+> Do not use a.json() here; AppSync serialises it to a single string.
 >
-> **If you find either, send this in chat:**
+> 4. The authorization call must be .authorization((allow) => [allow.publicApiKey()]), matching the existing FoodItem model.
 >
-> ```
-> Two corrections to design.md before I approve it.
+> 5. The IAM section must not use bedrock:InvokeAgent, an agent-alias ARN, grantAccess, or mealAgent.alias. In amplify/backend.ts the grant is:
 >
-> 1. In the resource.ts example, resourceGroupName: "data" is commented out. It must be an active property, not a comment. The prose below the example already says the function is scoped to the data stack, so the code and the prose currently disagree.
+> mealAgent.runtime.grantInvokeRuntime(backend.invokeMealAgent.resources.lambda);
 >
-> 2. The custom query wraps its return in a.customType({ sessionId, completion }) inside .returns(). A nested custom type there produces a generated Schema type that the Lambda handler cannot satisfy, and the deploy fails type checking. Do not replace it with a.json(), because AppSync serialises that into a single JSON string that the chat UI cannot read. Instead declare MealAgentResponse as a top-level custom type in the schema, with sessionId and completion as required strings, and have the query use .returns(a.ref("MealAgentResponse")).
+> 6. Remove any environment block from defineFunction. resource.ts cannot reference mealAgent. Set it in amplify/backend.ts instead:
+>
+> backend.invokeMealAgent.addEnvironment("AGENT_RUNTIME_ARN", mealAgent.agentRuntimeArn);
 >
 > Do not change anything else.
 > ```
 >
-> Then confirm `design.md` shows `resourceGroupName: "data",` with no leading `//`, a top-level `MealAgentResponse: a.customType({ ... })` in the schema, and `.returns(a.ref("MealAgentResponse"))` on the query, with no `a.customType(` inside `.returns()` and no `a.json()`.
+> **Then re-read the whole design, not just the parts you asked about.** In a real run, correcting the IAM section left the *earlier* backend snippet untouched, so the document contained two contradictory grants. A half-corrected design is worse than an uncorrected one, because whichever snippet Step 7 reads first is the one that gets built. Search for `grantAccess` and `mealAgent.alias` again after the correction lands and confirm both are gone.
+>
+> **Two older faults, seen against the previous agent platform and still possible.** `resourceGroupName: "data"` present but commented out, which passes a naive search for the property name while doing nothing. And a nested `a.customType()` inside `.returns()`, which produces a generated type the Lambda handler cannot satisfy.
+>
+> Finally, confirm `design.md` shows `resourceGroupName: "data"` with no leading `//`, a top-level `MealAgentResponse: a.customType({ ... })`, `.returns(a.ref("MealAgentResponse"))`, and no `a.json()` or `a.object()` anywhere.
 >
 > Correcting these now takes one message. Finding them in Part D costs several failed deploys, and Part D runs every task at once rather than one at a time.
 
@@ -229,6 +257,17 @@ Send in chat:
 ```
 The design for the meal-agent-chat spec is approved. Please generate tasks.md now. This is a time-boxed lab; keep the plan to the smallest scope that delivers the feature.
 
+PLATFORM. This feature targets Amazon Bedrock AgentCore. It is NOT Bedrock Agents Classic. Nothing in this implementation may reference an agent ID, an agent alias, InvokeAgent, InvokeAgentCommand, BedrockAgentRuntimeClient, the bedrock:InvokeAgent IAM action, an agent-alias ARN, or @aws-sdk/client-bedrock-agent-runtime. If any of those appear in a task, the task is wrong.
+
+The implementation must match design.md exactly on these six points. Restate each one in the task that implements it, so there is no ambiguity later:
+1. The client is BedrockAgentCoreClient from @aws-sdk/client-bedrock-agentcore, and the command is InvokeAgentRuntimeCommand.
+2. The command takes agentRuntimeArn, runtimeSessionId, contentType and payload. payload is bytes: new TextEncoder().encode(JSON.stringify({ prompt })).
+3. The response body is a streaming blob: await response.response.transformToString(), then JSON.parse. The agent returns { sessionId, completion }.
+4. The custom query returns a.ref("MealAgentResponse"), where MealAgentResponse is a top-level a.customType in the schema. Not a.json(), not a.object(), not a nested a.customType inside .returns().
+5. Authorization is written .authorization((allow) => [allow.publicApiKey()]).
+6. In amplify/backend.ts, the env var is set with backend.invokeMealAgent.addEnvironment("AGENT_RUNTIME_ARN", mealAgent.agentRuntimeArn), and the IAM grant is mealAgent.runtime.grantInvokeRuntime(backend.invokeMealAgent.resources.lambda). No hand-written policy, no constructed ARN, and no environment block inside defineFunction.
+7. The Lambda handler is typed from the schema: import type { Schema } from "../../data/resource" and export const handler: Schema["invokeMealAgent"]["functionHandler"]. No hand-rolled event interface and no hand-written Promise return type; both come from the Schema type.
+
 Rules:
 - Tasks ordered by dependency. Each task is one diff.
 - Each task lists the files it touches and the design section it implements.
@@ -244,7 +283,8 @@ The implementation may create or edit ONLY these files:
 6. src/routes/food-tracker.tsx (edit only to integrate the panel and floating button)
 
 Behavioral constraints:
-- The Lambda buffers the full Bedrock response into one string before returning. No streaming.
+- The Lambda buffers the full agent response into one string before returning. No streaming to the client.
+- The sessionId is generated in the React panel with crypto.randomUUID() and passed through unchanged. runtimeSessionId must be at least 33 characters; never shorten, truncate or invent one.
 - Validation, if any, happens inline in the handler; no separate schema modules.
 - The Lambda accepts the agent's response as-is. No post-processing.
 - Keep MealAgentChat simple: plain React state, no external state libraries, no animation libraries.
@@ -273,7 +313,7 @@ In Lab 2, you implemented tasks one at a time to practice the review protocol. H
 **Run all tasks opens a menu with two choices.** Pick **Run required and optional tasks**. Your task list has no optional tasks, so both choices run the same six, but this is the one that matches what the step is asking for and it stays correct if a task list ever does include optional work.
 
 > [!NOTE]
-> ℹ️ **Use the Specs panel, not the file tree.** The underlying file is `.kiro/specs/meal-agent-chat/tasks.md`, but opening it from the Explorer gives you plain markdown with no buttons. The Run all tasks control only appears in the Specs panel view.
+> **Use the Specs panel, not the file tree.** The underlying file is `.kiro/specs/meal-agent-chat/tasks.md`, but opening it from the Explorer gives you plain markdown with no buttons. The Run all tasks control only appears in the Specs panel view.
 >
 > `.kiro` is a hidden-style folder, so in the Explorer it sorts above `amplify` and `src` and is easy to scroll past. The Specs panel avoids the problem entirely.
 
@@ -311,7 +351,7 @@ Open the files and check each item:
 | `amplify/functions/invoke-meal-agent/handler.ts` | `runtimeSessionId` | present, and at least 33 characters |
 
 > [!WARNING]
-> ⚠️ **Two faults have appeared in real runs of this step. Check for both.** Neither stops the deploy, and both break Step 8.
+> **Two faults have appeared in real runs of this step. Check for both.** Fault B was seen in the most recent run, on a task list that named every other constraint explicitly. Neither stops the deploy, and both break Step 8.
 >
 > **Fault A: the IAM grant is written by hand instead of using the construct.** In `amplify/backend.ts`, look for a `PolicyStatement` with a template-literal ARN, something like:
 >
@@ -347,7 +387,7 @@ Open the files and check each item:
 > Wait for `Deployment completed` in the `sandbox` terminal after the corrections land.
 
 > [!NOTE]
-> ℹ️ **Kiro will tell you the code is ready before it is. Check for yourself.**
+> **Kiro will tell you the code is ready before it is. Check for yourself.**
 >
 > After making corrections Kiro commonly reports something like "The handler is now fully type-safe. Ready for deployment." That statement is a prediction, not a verification. In real runs of this step it has been wrong more than once, with type errors still present.
 >
@@ -422,7 +462,7 @@ Open the files and check each item:
 **Expected result:** The agent has no context now (fresh session) and asks what you mean or answers generically.
 
 > [!WARNING]
-> ⚠️ **If the reply arrives as raw JSON, the backend is fine and the return type is wrong.**
+> **If the reply arrives as raw JSON, the backend is fine and the return type is wrong.** This only happens if the query ended up returning `a.json()`. With the `a.ref("MealAgentResponse")` shape from Step 5, and a panel that calls `client.queries.invokeMealAgent(...)` rather than a raw GraphQL string, the result arrives already typed and this cannot occur.
 >
 > A bubble that begins like this:
 >
@@ -430,7 +470,7 @@ Open the files and check each item:
 > {"sessionId":"06f6307f-64db-4bd9-95d8-46c2e305a4bf","completion":"You've got a great variety of ingredients to work with!\n\n---\n\n
 > ```
 >
-> means the whole chain worked, AppSync to Lambda to Bedrock Agent to DynamoDB, and only the presentation failed. The query returned `a.json()`, so AppSync sent one JSON-encoded string, and `MealAgentChat.tsx` assigned that string straight into the message body. The session ID leaks into the chat, newlines show as `\n`, and the markdown never renders.
+> means the whole chain worked, AppSync to Lambda to the AgentCore runtime to DynamoDB, and only the presentation failed. The query returned `a.json()`, so AppSync sent one JSON-encoded string, and `MealAgentChat.tsx` assigned that string straight into the message body. The session ID leaks into the chat, newlines show as `\n`, and the markdown never renders.
 >
 > **The proper fix is the schema change from Step 5:** a top-level `MealAgentResponse` custom type returned with `a.ref("MealAgentResponse")`. That is the shape the design asked for, and it costs another sandbox deploy of two to four minutes.
 >
@@ -454,7 +494,7 @@ Open the files and check each item:
 ## Part E: Deploy via GitHub-Connected Amplify Hosting
 
 > [!NOTE]
-> ℹ️ **Optional homework. Everything from here on is bonus work.**
+> **Optional homework. Everything from here on is bonus work.**
 >
 > The course objectives are met at the end of Part D. You have used Kiro to author a spec, review a design, generate an implementation, correct it, and verify it against a running backend.
 >
@@ -464,7 +504,7 @@ Open the files and check each item:
 
 The sandbox is tied to your developer machine. Now push your work to GitHub and connect the repo to AWS Amplify Hosting; every push to `trunk` will redeploy both backend and frontend automatically.
 
-> Region rule: Do everything in this part in the same region you have used all class (your `aws login` region). The Bedrock agent, its Lambda, and your data all live there; deploying the app to a different region would break the chat feature.
+> Region rule: Do everything in this part in the same region you have used all class (your `aws login` region). The AgentCore runtime, its tools Lambda, and your data all live there; deploying the app to a different region would break the chat feature.
 
 ### Step 9: Stop the sandbox watcher
 
@@ -536,7 +576,7 @@ The first build provisions the backend (AppSync, DynamoDB, Cognito, the `meal-re
 > **Checkpoint. Validate before continuing:**
 > Provision, Build, Deploy, and Verify all show green on the `trunk` branch page.
 
-> Note: the production build deployed its own complete Bedrock agent (the MealAgent construct is part of the backend), pointing at the production Lambda, with its own `v1` alias, and the chat Lambda's env vars already reference it. There is nothing to re-point or re-configure. Your sandbox agent and the production agent coexist under different name suffixes.
+> Note: the production build deployed its own complete AgentCore runtime (the MealAgent construct is part of the backend), pointing at the production tools Lambda, and the chat Lambda's `AGENT_RUNTIME_ARN` already references it. There is nothing to re-point or re-configure. Your sandbox agent and the production agent coexist under different name suffixes.
 
 ### Step 14: Test the public URL
 
@@ -545,7 +585,7 @@ The `trunk` branch page shows a URL like `https://trunk.d1a2b3c4d5e6f7.amplifyap
 1. The homepage and food-tracker page load. The production database starts empty (it is a separate backend from your sandbox); add a few food items on the food-tracker page.
 2. Open the chat panel and ask what to make for dinner.
 
-**Expected result:** The response names the items you just added. The chat is now flowing through the agent's `v1` alias, backed by your production Lambda and production DynamoDB table.
+**Expected result:** The response names the items you just added. The chat is now flowing through the production agent runtime's `DEFAULT` endpoint, backed by your production Lambda and production DynamoDB table.
 
 From here, every `git push fork trunk` triggers an automatic redeploy of both backend and frontend.
 
@@ -564,19 +604,19 @@ aws logout
 ```
 
 > [!WARNING]
-> ⚠️ **Use the same sandbox name you chose in Lab 1 Step 7.** Deleting without it, or with a different name, targets a sandbox that does not exist and leaves yours running and billing in the shared class account.
+> **Use the same sandbox name you chose in Lab 1 Step 7.** Deleting without it, or with a different name, targets a sandbox that does not exist and leaves yours running and billing in the shared class account.
 
-The first command asks for confirmation; type `y`. It removes everything the sandbox created, including the sandbox's Bedrock agent. To remove the production deployment too: AWS Console > Amplify > your app > App settings > Delete app (the production agent is part of that backend and is removed with it).
+The first command asks for confirmation; type `y`. It removes everything the sandbox created, including the sandbox's AgentCore runtime. To remove the production deployment too: AWS Console > Amplify > your app > App settings > Delete app (the production agent is part of that backend and is removed with it).
 
 ---
 
 ## Summary
 
-You used Kiro's spec workflow to add a chat panel to the food-tracker (a Lambda + AppSync custom query + React panel) calling the Bedrock Agent from Lab 3, with session IDs threading multi-turn conversations. Then you promoted the backend off the developer-tied sandbox by pushing to GitHub and connecting the repo to AWS Amplify Hosting, which now redeploys both backend and frontend automatically on every push to `trunk`.
+You used Kiro's spec workflow to add a chat panel to the food-tracker (a Lambda + AppSync custom query + React panel) calling the AgentCore runtime from Lab 3, with session IDs threading multi-turn conversations. Then you promoted the backend off the developer-tied sandbox by pushing to GitHub and connecting the repo to AWS Amplify Hosting, which now redeploys both backend and frontend automatically on every push to `trunk`.
 
 Take-homes:
 
 - Spec-driven development works the same for an integration feature (calling another AWS service via Lambda) as for a UI feature.
-- A versioned alias on a Bedrock Agent gives you the rollback boundary you want the first time something goes wrong in production.
+- AgentCore versions every deploy automatically, and an endpoint points at one of them. That pairing gives you the rollback boundary you want the first time something goes wrong in production.
 - Connecting Amplify Hosting to a Git repo gives you a CI/CD pipeline for free. Amplify auto-detects Gen 2 build settings, runs `ampx pipeline-deploy` for you, and stores no AWS credentials outside its managed service role.
 - This lab authorized the chat query with the public API key to match the class schema. In a real product you would put Cognito authentication in front of it (`allow.authenticated()`) so only signed-in users can invoke the agent; the wiring is identical, only the authorization rule changes.

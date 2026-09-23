@@ -64,7 +64,7 @@ npx tsx scripts/test-bedrock.ts
 ### 5. Chat model set to Haiku 4.5
 
 > [!WARNING]
-> ⚠️ **Confirm the chat model is Haiku 4.5, not Auto, before starting the spec session.**
+> **Confirm the chat model is Haiku 4.5, not Auto, before starting the spec session.**
 >
 > In the chat panel (Cmd+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
 >
@@ -120,7 +120,7 @@ Open `requirements.md`. Confirm it covers:
 - A note that results are not persisted
 
 > [!NOTE]
-> ℹ️ **Kiro's Problems panel may flag the generated document**, for example `Missing required heading: # Requirements Document`. Kiro's spec format checker and its document generator do not always agree. Correct the heading if it is flagged, then continue. The spec workflow works either way.
+> **Kiro's Problems panel may flag the generated document**, for example `Missing required heading: # Requirements Document`. Kiro's spec format checker and its document generator do not always agree. Correct the heading if it is flagged, then continue. The spec workflow works either way.
 
 Then run these review checks. Use Find (Cmd+F / CTRL+F) in the file:
 
@@ -170,7 +170,7 @@ Scope constraint: this is a time-boxed lab. Do NOT include a testing strategy, c
 Open `design.md` and confirm all four sections are present. In the TypeScript interfaces section, a reasonable summary shape includes the calorie totals, the three macro percentages, the narrative text, a suggestions list, and metadata such as an entry count and a generated-at timestamp. Field names will vary; that is fine.
 
 > [!NOTE]
-> ℹ️ **Kiro's Problems panel may flag the generated document**, for example `Missing required heading: # Requirements Document`. Kiro's spec format checker and its document generator do not always agree. Correct the heading if it is flagged, then continue. The spec workflow works either way.
+> **Kiro's Problems panel may flag the generated document**, for example `Missing required heading: # Requirements Document`. Kiro's spec format checker and its document generator do not always agree. Correct the heading if it is flagged, then continue. The spec workflow works either way.
 
 Then run these review checks. Use Find (Cmd+F / CTRL+F) in the file:
 
@@ -182,7 +182,7 @@ Then run these review checks. Use Find (Cmd+F / CTRL+F) in the file:
 6. Search for `console.error`. Bedrock failures must be logged before returning the error response, or you cannot debug them from the Lambda logs.
 
 > [!WARNING]
-> ⚠️ **Before approving, confirm the design can actually be built.**
+> **Before approving, confirm the design can actually be built.**
 >
 > The six checks above confirm the design says the right things. They do not confirm it compiles. A design can pass every one of them and still fail to deploy, because the model can invent APIs that do not exist in the installed version of Amplify.
 >
@@ -258,7 +258,7 @@ Implement only that one task. Do not bundle multiple tasks together. Do not add 
 ```
 
 > [!WARNING]
-> ⚠️ **Type the word `Approve` into the chat box and press ENTER. Do not look for a button.**
+> **Type the word `Approve` into the chat box and press ENTER. Do not look for a button.**
 >
 > This is the first point in the course where approval is a message you send rather than a control you click. Up to now, Kiro has asked for permission with **Run**, **Trust**, or **Accept** buttons, and those are still used for running commands and accepting diffs. Approving a task recap is different: Kiro is waiting for you to reply in the conversation.
 >
@@ -277,7 +277,7 @@ Implement only that one task. Do not bundle multiple tasks together. Do not add 
 > | *(type `Approve`)* | Kiro has posted a task recap | Starts that task |
 
 > [!NOTE]
-> ℹ️ **Kiro may offer to start a dedicated spec session at this point.** Accept it. Your requirements, design and tasks are stored in `.kiro/specs/weekly-nutrition-summary/` on disk, so nothing is lost. The chat conversation does not carry over, so send the prompt above again in the new session.
+> **Kiro may offer to start a dedicated spec session at this point.** Accept it. Your requirements, design and tasks are stored in `.kiro/specs/weekly-nutrition-summary/` on disk, so nothing is lost. The chat conversation does not carry over, so send the prompt above again in the new session.
 
 Once Kiro produces its recap, type **Approve** in chat to begin the task.
 

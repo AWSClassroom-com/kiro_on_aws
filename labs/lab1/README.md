@@ -84,7 +84,7 @@ On the Kiro start screen, press **Open a project** and select the `class-project
 The status bar shows an indexing indicator while Kiro analyzes the codebase.
 
 > [!WARNING]
-> ⚠️ **Open the `/food-tracker/` folder, which is located inside of the `/kiro-project` folder within the repo you just cloned to your machine.**
+> **Open the `/food-tracker/` folder, which is located inside of the `/kiro-project` folder within the repo you just cloned to your machine.**
 >
 > The repository contains several folders. The application lives in `kiro-project/food-tracker`, and that is the folder Kiro must have open. Opening the repository root instead looks correct and breaks the rest of the course in two ways.
 >
@@ -175,7 +175,7 @@ The food-tracker is an AWS Amplify Gen 2 app: a React + Vite frontend talking to
 ### Step 7: Start the Amplify sandbox
 
 > [!WARNING]
-> ⚠️ **Choose your own sandbox name before you run anything, and write it down.**
+> **Choose your own sandbox name before you run anything, and write it down.**
 >
 > Everyone in this class shares one AWS account. Your sandbox is told apart from everyone else's by a single name, and **by default that name is the Windows username of the machine you are on**. On a classroom VM image every student has the same username, so without a name of your own you would all deploy on top of each other.
 >
@@ -208,7 +208,7 @@ This provisions a per-developer cloud backend (AppSync API, DynamoDB, Cognito) u
 The first deploy takes roughly 3-5 minutes. Leave this terminal running afterward; it watches the `amplify/` folder and automatically redeploys when backend files change.
 
 > [!NOTE]
-> ℹ️ **Name this terminal now.** Kiro labels a terminal tab after whatever process is in the foreground, so this one will read `node`, then `esbuild`, then `Kiro` as the work changes. By Lab 4 you will have five tabs and no reliable way to tell them apart. Right click the tab, choose **Rename**, and call it `sandbox`. Every later step in every lab refers to it by that name.
+> **Name this terminal now.** Kiro labels a terminal tab after whatever process is in the foreground, so this one will read `node`, then `esbuild`, then `Kiro` as the work changes. By Lab 4 you will have five tabs and no reliable way to tell them apart. Right click the tab, choose **Rename**, and call it `sandbox`. Every later step in every lab refers to it by that name.
 
 > If the command fails with a credentials error, your `aws login` session may have expired. Rerun `aws login --region <your-region>` from Part B and try again.
 
@@ -263,7 +263,7 @@ The seed script loads 30 sample food items (with realistic added and expiration 
 ## Part D: Explore Kiro
 
 > [!WARNING]
-> ⚠️ **Set two things in the chat panel before you send a single prompt.** Open it with Cmd+L (macOS) / CTRL+L (Windows/Linux).
+> **Set two things in the chat panel before you send a single prompt.** Open it with Cmd+L (macOS) / CTRL+L (Windows/Linux).
 >
 > **1. Model: choose Haiku 4.5.** Click the model selector at the bottom of the input box. Do not leave it on **Auto**.
 >
@@ -320,7 +320,7 @@ Kiro explores key files (`README.md`, `package.json`, `amplify/`, `src/`) and pr
 - `structure.md`: key folders and files. Helps Kiro find the right place to make a change.
 
 > [!WARNING]
-> ⚠️ **Click Accept all. The files do not exist until you do.**
+> **Click Accept all. The files do not exist until you do.**
 >
 > Kiro does not write the files straight to disk. It shows a **Review changes (3 of 3 pending)** panel listing one change each to `product.md`, `tech.md` and `structure.md`, with a tick and a cross beside each, and **Accept all** and **Reject all** at the bottom.
 >
@@ -355,7 +355,7 @@ The loop for every step below is the same: prompt, read the diff, push back if n
 > Note: Agent output varies between runs. The expected results below describe outcomes, not exact code or text. Always read the full diff before accepting. If anything looks wrong, say so in chat and let Kiro fix it before you accept.
 
 > [!WARNING]
-> ⚠️ **Kiro will ask permission to run commands. Click "Always allow" the first time.**
+> **Kiro will ask permission to run commands. Click "Always allow" the first time.**
 >
 > While working on these steps Kiro checks its own work, usually by running `npm run build`. Each time it does, it stops and shows:
 >
@@ -373,7 +373,7 @@ Always allow applies to that exact command. Kiro may choose a different command 
 > This dialog is not the same as the **Run / Trust / Reject** dialog you may see elsewhere. Kiro has more than one way of asking.
 
 > [!NOTE]
-> ℹ️ **If a prompt appears to do nothing, look for a pending approval before assuming it failed.**
+> **If a prompt appears to do nothing, look for a pending approval before assuming it failed.**
 >
 > Kiro pauses and waits for you at several points. It may show a **Run** button to execute a command, or an **Accept** button to apply a diff. Until you click, nothing happens and no error is shown.
 >
@@ -421,7 +421,7 @@ Review and accept. Refresh the browser.
 **Expected result:** Typing in the filter box narrows the cards live; each sort option reorders them; items without an expiration date sink to the bottom when sorting by expiration.
 
 > [!NOTE]
-> ℹ️ **Kiro may ask for a pattern-based permission on this step. Accept it.**
+> **Kiro may ask for a pattern-based permission on this step. Accept it.**
 >
 > When Kiro builds a more complex command, for example piping build output through `Select-String` to find errors, the approval dialog looks different from the simple Allow prompt:
 >

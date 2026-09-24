@@ -306,7 +306,7 @@ That is the difference between the two hook action types you have now built. Par
 
 Then delete `src/scratch-format.ts`.
 
-[!NOTE]
+> [!NOTE] 
 > ℹ️ Note: both hook files now live under `.kiro/hooks/` and travel with the repo. A teammate who clones the project gets both hooks running automatically.
 
 > **Checkpoint. Validate before continuing:**

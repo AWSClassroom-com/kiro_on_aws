@@ -149,7 +149,7 @@ Then run these critical review checks with Find (CMD+F/CTRL+F):
 >
 > Three things to look for in the code examples:
 >
-> 1. **Every Amplify schema call must be real.** `a.customType()`, `a.ref()`, `a.json()`, `a.enum()`, `a.string()` and `a.integer()` exist. `a.object()` does not. If you see a call you do not recognise, ask Kiro to confirm it exists in `@aws-amplify/data-schema` before approving.
+> 1. **Every Amplify schema call must be real.** `a.customType()`, `a.ref()`, `a.json()`, `a.enum()`, `a.string()` and `a.integer()` exist. `a.object()` does not. If you see a call you do not recognize, ask Kiro to confirm it exists in `@aws-amplify/data-schema` before approving.
 > 2. **Custom query arguments cannot reference a model.** `a.ref("FoodItem")` as an argument fails at deploy time, because AppSync accepts only custom types and enums there. Arguments here should be plain scalars: `prompt` and `sessionId` are both strings.
 > 3. **The return type must be a named custom type.** `{ sessionId, completion }` are two strings, and the query has to hand them back as an object the frontend can read. Do not accept a design that nests `a.customType()` inside `.returns()`; that produces a generated type the Lambda handler cannot satisfy, and the deploy fails type checking. Do not accept `.returns(a.json())` either. It compiles, but AppSync exposes it as `AWSJSON` and sends the result as one JSON-encoded string, and the chat panel in Part D then displays raw JSON instead of the answer. The shape that works is a custom type declared at the top level of the schema and referenced with `a.ref()`.
 >
@@ -196,7 +196,7 @@ Then run these critical review checks with Find (CMD+F/CTRL+F):
 > });
 > ```
 >
-> ⚠️ **`.returns(a.json())` is the trap here.** It is a real API and it compiles, so it survives every check in this step and every check in Part D. AppSync then serialises the whole object into a single string, and in Step 8 the chat panel renders `{"sessionId":"...","completion":"..."}` with escaped newlines instead of the answer. This was observed in a real run, after everything else had passed.
+> ⚠️ **`.returns(a.json())` is the trap here.** It is a real API and it compiles, so it survives every check in this step and every check in Part D. AppSync then serializes the whole object into a single string, and in Step 8 the chat panel renders `{"sessionId":"...","completion":"..."}` with escaped newlines instead of the answer. This was observed in a real run, after everything else had passed.
 >
 > **If you find either, send this in chat:**
 >
@@ -205,7 +205,7 @@ Then run these critical review checks with Find (CMD+F/CTRL+F):
 >
 > 1. In the resource.ts example, resourceGroupName: "data" is commented out. It must be an active property, not a comment. The prose below the example already says the function is scoped to the data stack, so the code and the prose currently disagree.
 >
-> 2. The custom query wraps its return in a.customType({ sessionId, completion }) inside .returns(). A nested custom type there produces a generated Schema type that the Lambda handler cannot satisfy, and the deploy fails type checking. Do not replace it with a.json(), because AppSync serialises that into a single JSON string that the chat UI cannot read. Instead declare MealAgentResponse as a top-level custom type in the schema, with sessionId and completion as required strings, and have the query use .returns(a.ref("MealAgentResponse")).
+> 2. The custom query wraps its return in a.customType({ sessionId, completion }) inside .returns(). A nested custom type there produces a generated Schema type that the Lambda handler cannot satisfy, and the deploy fails type checking. Do not replace it with a.json(), because AppSync serializes that into a single JSON string that the chat UI cannot read. Instead declare MealAgentResponse as a top-level custom type in the schema, with sessionId and completion as required strings, and have the query use .returns(a.ref("MealAgentResponse")).
 >
 > Do not change anything else.
 > ```

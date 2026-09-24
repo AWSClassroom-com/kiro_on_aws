@@ -306,7 +306,8 @@ That is the difference between the two hook action types you have now built. Par
 
 Then delete `src/scratch-format.ts`.
 
-> Note: both hook files now live under `.kiro/hooks/` and travel with the repo. A teammate who clones the project gets both hooks running automatically.
+[!NOTE]
+> ℹ️ Note: both hook files now live under `.kiro/hooks/` and travel with the repo. A teammate who clones the project gets both hooks running automatically.
 
 > **Checkpoint. Validate before continuing:**
 > 1. A `format-on-save` hook file exists under `.kiro/hooks/` and runs a shell command rather than prompting the agent.

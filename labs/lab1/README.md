@@ -4,7 +4,7 @@
 
 **Time:** 60 minutes<br>
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
-The course repo has been pre-fetched and Node dependencies installed to prevent class day-of network errors blocking lab progress.
+The course repo has been prefetched and Node dependencies installed to prevent class day-of network errors blocking lab progress.
 
 ---
 

@@ -225,7 +225,7 @@ The first deploy takes roughly 3-5 minutes. Leave this terminal running afterwar
 > ```
 > Remove-Item ".amplify\artifacts\cdk.out\read.*.lock" -Force -ErrorAction SilentlyContinue
 > ```
->
+> [!WARNING]
 > ⚠️ **This failure is quiet.** After the error the sandbox prints `Watching for file changes...` and looks perfectly healthy, while nothing you save reaches AWS. In a real run it went unnoticed for hours. If a deploy you are expecting never appears, check here first.
 >
 > Your cloud resources are unaffected by either fix.

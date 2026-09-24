@@ -172,7 +172,7 @@ Open `design.md` and confirm all four sections are present. In the TypeScript in
 > [!NOTE]
 > ℹ️ **Kiro's Problems panel may flag the generated document**, for example `Missing required heading: # Requirements Document`. Kiro's spec format checker and its document generator do not always agree. Correct the heading if it is flagged, then continue. The spec workflow works either way.
 
-Then run these review checks. Use Find (Cmd+F / CTRL+F) in the file:
+Then run these review checks. Use Find (CMD+F/CTRL+F) in the file:
 
 1. Search for `us.anthropic` and `au.anthropic`. Both must return zero results in every code example. This drift has happened even when the requirements carried the correct ID.
 2. Search for `timeoutSeconds`. The function resource example must set `timeoutSeconds: 30`; the 3-second default guarantees a timeout on Bedrock calls.

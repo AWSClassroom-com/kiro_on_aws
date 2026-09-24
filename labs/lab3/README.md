@@ -1,6 +1,6 @@
 # Lab 3: Hooks, Steering, and a Meal Recommendation Agent
 
-**Objective:** This lab covers two distinct kinds of automation. First, workflow automation inside Kiro: you refine your steering files with a security policy and build two hooks, one Ask Kiro hook (AI judgment: "is this a real credential?") and one Run Command hook (deterministic: "format this file"), experiencing both action types and how hooks and steering work together. Second, AI automation on AWS: you author the behaviour of the Amazon Bedrock Agent that ships with the starter project. The tool Lambda is written for you; you write the two files that decide whether the agent is any good, its instructions and its tool descriptions. Then you deploy them, review the result in the Bedrock Console, watch the trace, and deliberately break tool selection to prove what drives it.
+**Objective:** This lab covers two distinct kinds of automation. First, workflow automation inside Kiro: you refine your steering files with a security policy and build two hooks, one Ask Kiro hook (AI judgment: "is this a real credential?") and one Run Command hook (deterministic: "format this file"), experiencing both action types and how hooks and steering work together. Second, AI automation on AWS: you author the behavior of the Amazon Bedrock Agent that ships with the starter project. The tool Lambda is written for you; you write the two files that decide whether the agent is any good, its instructions and its tool descriptions. Then you deploy them, review the result in the Bedrock Console, watch the trace, and deliberately break tool selection to prove what drives it.
 
 **Time:** 60 minutes<br>
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
@@ -47,7 +47,7 @@ You should see the profile with status `ACTIVE`. If the result is empty, model a
 > [!WARNING]
 > ⚠️ **Confirm the chat model is Haiku 4.5, not Auto, before building the hooks.**
 >
-> In the chat panel (Cmd+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
+> In the chat panel (CMD+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
 >
 > This matters more in this lab than anywhere else. The security hook you build in Part B is an **Ask Kiro** hook, which sends a prompt to the agent on **every file save** for the rest of the course. On Auto, ordinary editing burns credits in the background without you noticing.
 
@@ -159,7 +159,7 @@ Kiro generates a JSON hook file under `.kiro/hooks/`. Review it before saving.
 >
 > **Use the current form.** `fileEdited` is not a valid trigger in this build; the valid file triggers are `PostFileSave`, `PostFileCreate` and `PostFileDelete`. If Kiro produces the legacy shape, ask it to rewrite the hook using `PostFileSave`.
 >
-> Check the behaviour rather than the exact keys: it fires on save, and it prompts the agent.
+> Check the behavior rather than the exact keys: it fires on save, and it prompts the agent.
 
 Whichever shape you get, confirm three things:
 
@@ -172,7 +172,7 @@ If anything is off, ask Kiro to fix it in chat (for example: "the hook should al
 > [!WARNING]
 > ⚠️ **Restart Kiro after saving the hook.** Kiro will tell you the hook "will be active on your next session start". It means it. A newly created hook does not fire until you reload.
 >
-> Use the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P) and run **Developer: Reload Window**.
+> Use the command palette (CMD+SHIFT+P/CTRL+SHIFT+P) and run **Developer: Reload Window**.
 >
 > Skipping this is the most common reason Step 5 appears to do nothing. Your sandbox and dev server terminals survive the reload. Re-select **Haiku 4.5** afterwards, because the model choice is per window.
 
@@ -189,7 +189,7 @@ If anything is off, ask Kiro to fix it in chat (for example: "the hook should al
 >
 > That is also the realistic use. In Labs 2 and 4 Kiro writes backend code for you, and a credential scan on what the agent just wrote is exactly the guard you want.
 
-Open the chat panel (Cmd+L / CTRL+L) and send:
+Open the chat panel (CMD+L / CTRL+L) and send:
 
 ```
 Create a file src/scratch-credentials.ts with exactly this content:
@@ -246,7 +246,7 @@ Fill in the form:
 Save it. Kiro writes it under `.kiro/hooks/`; the exact filename and the field names in the form may differ slightly by version, which is fine as long as it fires on save and runs a command.
 
 > [!WARNING]
-> ⚠️ **Reload Kiro before testing.** As in Part B, a newly created hook does not fire until the window reloads. Command palette (Cmd+SHIFT+P / CTRL+SHIFT+P), then **Developer: Reload Window**. Re-select **Haiku 4.5** afterwards.
+> ⚠️ **Reload Kiro before testing.** As in Part B, a newly created hook does not fire until the window reloads. Command palette (CMD+SHIFT+P/CTRL+SHIFT+P), then **Developer: Reload Window**. Re-select **Haiku 4.5** afterwards.
 
 Building it by hand also shows you the JSON structure behind every hook, including the one Kiro generated for you in Part B. Open both files under `.kiro/hooks/` and compare them. They may not even use the same keys, because Kiro writes hooks in more than one format.
 
@@ -315,11 +315,11 @@ Then delete `src/scratch-format.ts`.
 
 ---
 
-## Part D: Author the Agent's Behaviour
+## Part D: Author the Agent's Behavior
 
 The starter project ships a working Amazon Bedrock Agent, deployed in your sandbox since Lab 1. The Lambda behind its tools is written for you, because plumbing a Lambda to DynamoDB is not what makes an agent good or bad.
 
-What makes an agent good or bad is what you write in two files: the instructions that govern it, and the tool descriptions it uses to decide what to call. In this part you write both, deploy them, and watch the agent's behaviour change.
+What makes an agent good or bad is what you write in two files: the instructions that govern it, and the tool descriptions it uses to decide what to call. In this part you write both, deploy them, and watch the agent's behavior change.
 
 ### Step 9: Read the parts you are not writing
 
@@ -351,7 +351,7 @@ Those are the only two tools the agent has. They are defined in `openapi.json` a
 1. **Role.** What this agent is for.
 2. **Which tool, when.** Cooking and inventory questions go to `getRecentEntries`; freshness, waste and use-it-up questions go to `findExpiringSoon`.
 3. **Grounding.** Answer only from what the tools return. Models will otherwise invent plausible food items, and a confident wrong answer is worse than no answer.
-4. **Empty results.** What to say when a tool returns nothing. Without this the agent tends to apologise vaguely or invent something.
+4. **Empty results.** What to say when a tool returns nothing. Without this the agent tends to apologize vaguely or invent something.
 
 The version that ships is one long paragraph. Here is a different take on the same requirements, to show the range available:
 

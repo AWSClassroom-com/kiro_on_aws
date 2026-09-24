@@ -128,7 +128,7 @@ In Kiro, open the integrated terminal: CTRL+` (backtick), or Terminal > New Term
 aws --version
 ```
 
-If the version is too old (or the CLI is not installed), follow the [AWS CLI install/upgrade guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), then re-check.
+If the version is too old (or the CLI is not installed), follow the [AWS CLI install/upgrade guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), then recheck.
 
 2. Log in. Replace `<your-region>` with the region from Step 5 (for example `us-east-1` or `ap-southeast-2`):
 
@@ -263,7 +263,7 @@ The seed script loads 30 sample food items (with realistic added and expiration 
 ## Part D: Explore Kiro
 
 > [!WARNING]
-> ⚠️ **Set two things in the chat panel before you send a single prompt.** Open it with Cmd+L (macOS) / CTRL+L (Windows/Linux).
+> ⚠️ **Set two things in the chat panel before you send a single prompt.** Open it with CMD+L (macOS) / CTRL+L (Windows/Linux).
 >
 > **1. Model: choose Haiku 4.5.** Click the model selector at the bottom of the input box. Do not leave it on **Auto**.
 >
@@ -285,11 +285,11 @@ Open each panel once so you know where things live:
   - Expand `amplify/`. You should see `backend.ts`, plus `auth/` and `data/` folders.
   - Expand `amplify/data/`. You should see `resource.ts` (the FoodItem schema).
 - Kiro Panel (ghost icon in the activity bar). You should see four sections: **Specs**, **Agent Hooks**, **Agent Steering & Skills**, and **MCP Servers**. Steering and Skills share one section; they are not listed separately.
-- Chat Panel: Cmd+L (macOS) / CTRL+L (Windows/Linux), or via command palette "Kiro: Open Chat".
+- Chat Panel: CMD+L (macOS) / CTRL+L (Windows/Linux), or via command palette "Kiro: Open Chat".
 
 Now install the Biome extension. This is required: Biome is the formatter and linter this project uses, and the format-on-save hook you build in Lab 3 depends on this tooling.
 
-1. Open the Extensions panel: Cmd+SHIFT+X (macOS) / CTRL+SHIFT+X (Windows/Linux).
+1. Open the Extensions panel: CMD+SHIFT+X (macOS) / CTRL+SHIFT+X (Windows/Linux).
 2. Search for "Biome" (publisher: biomejs).
 3. Click **Install**.
 
@@ -309,9 +309,9 @@ Now install the Biome extension. This is required: Biome is the formatter and li
 
 Steering files are project-level markdown that Kiro loads on every interaction so it knows what your project is, what tech stack to stick to, and how the code is organized, without you having to explain it each time.
 
-Open the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P), search for "Steering", and select **Kiro: Generate project steering documents**.
+Open the command palette (CMD+SHIFT+P / CTRL+SHIFT+P), search for "Steering", and select **Kiro: Generate project steering documents**.
 
-> Note: Throughout these labs, prefer the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P) over clicking buttons. Button labels change between Kiro versions; palette command names are stable.
+> Note: Throughout these labs, prefer the command palette (CMD+SHIFT+P / CTRL+SHIFT+P) over clicking buttons. Button labels change between Kiro versions; palette command names are stable.
 
 Kiro explores key files (`README.md`, `package.json`, `amplify/`, `src/`) and proposes a `.kiro/steering/` folder with three files:
 
@@ -330,7 +330,7 @@ Kiro explores key files (`README.md`, `package.json`, `amplify/`, `src/`) and pr
 
 Once the files are written, open each one and skim it. If something is wrong (for example it lists a library you do not use), edit the file directly. These are plain markdown and your edits stick.
 
-Now add one more instruction via the chat panel (Cmd+L / CTRL+L). Paste this prompt and press ENTER:
+Now add one more instruction via the chat panel (CMD+L / CTRL+L). Paste this prompt and press ENTER:
 
 ```
 Add an instruction to the steering files: whenever you create or edit files under amplify/, remind the user to watch the Amplify sandbox terminal and wait for it to print "Deployment completed" before testing the change or moving on to the next task. If the sandbox terminal shows a failed deployment instead, tell the user to fix or restart the sandbox with npm run amplify:sandbox before continuing.
@@ -455,7 +455,7 @@ Review and accept. Refresh the homepage.
 This step asks for an exhaustive replacement across a whole file, and a partial result is common. The badge near the top may change while the larger elements stay green, which is easy to miss at a glance.
 
 > **Checkpoint. Validate before continuing:**
-> Open `src/routes/index.tsx` and use Find (Cmd+F / CTRL+F) to search for `emerald` and then `cyan`. **Both must return zero results.** Checking by eye is not reliable here.
+> Open `src/routes/index.tsx` and use Find (CMD+F / CTRL+F) to search for `emerald` and then `cyan`. **Both must return zero results.** Checking by eye is not reliable here.
 
 If either search returns a match, push back in chat:
 

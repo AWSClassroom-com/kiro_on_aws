@@ -174,7 +174,7 @@ If anything is off, ask Kiro to fix it in chat (for example: "the hook should al
 >
 > Use the command palette (CMD+SHIFT+P/CTRL+SHIFT+P) and run **Developer: Reload Window**.
 >
-> Skipping this is the most common reason Step 5 appears to do nothing. Your sandbox and dev server terminals survive the reload. Re-select **Haiku 4.5** afterwards, because the model choice is per window.
+> Skipping this is the most common reason Step 5 appears to do nothing. Your sandbox and dev server terminals survive the reload. Reselect **Haiku 4.5** afterwards, because the model choice is per window.
 
 ### Step 5: Test the hook with two strings, one safe and one not
 
@@ -189,7 +189,7 @@ If anything is off, ask Kiro to fix it in chat (for example: "the hook should al
 >
 > That is also the realistic use. In Labs 2 and 4 Kiro writes backend code for you, and a credential scan on what the agent just wrote is exactly the guard you want.
 
-Open the chat panel (CMD+L / CTRL+L) and send:
+Open the chat panel (CMD+L/CTRL+L) and send:
 
 ```
 Create a file src/scratch-credentials.ts with exactly this content:
@@ -246,7 +246,7 @@ Fill in the form:
 Save it. Kiro writes it under `.kiro/hooks/`; the exact filename and the field names in the form may differ slightly by version, which is fine as long as it fires on save and runs a command.
 
 > [!WARNING]
-> ⚠️ **Reload Kiro before testing.** As in Part B, a newly created hook does not fire until the window reloads. Command palette (CMD+SHIFT+P/CTRL+SHIFT+P), then **Developer: Reload Window**. Re-select **Haiku 4.5** afterwards.
+> ⚠️ **Reload Kiro before testing.** As in Part B, a newly created hook does not fire until the window reloads. Command palette (CMD+SHIFT+P/CTRL+SHIFT+P), then **Developer: Reload Window**. Reselect **Haiku 4.5** afterwards.
 
 Building it by hand also shows you the JSON structure behind every hook, including the one Kiro generated for you in Part B. Open both files under `.kiro/hooks/` and compare them. They may not even use the same keys, because Kiro writes hooks in more than one format.
 

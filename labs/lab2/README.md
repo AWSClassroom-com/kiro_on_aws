@@ -188,7 +188,7 @@ Then run these review checks. Use Find (CMD+F/CTRL+F) in the file:
 >
 > Two specific things to look for in the code examples:
 >
-> 1. **Every Amplify schema call must be real.** `a.customType()`, `a.ref()`, `a.json()`, `a.enum()`, `a.string()` and `a.integer()` exist. `a.object()` does not. If you see a call you do not recognise, ask Kiro to confirm it exists in `@aws-amplify/data-schema` before approving.
+> 1. **Every Amplify schema call must be real.** `a.customType()`, `a.ref()`, `a.json()`, `a.enum()`, `a.string()` and `a.integer()` exist. `a.object()` does not. If you see a call you do not recognize, ask Kiro to confirm it exists in `@aws-amplify/data-schema` before approving.
 > 2. **Custom query arguments cannot reference a model.** `a.ref("FoodItem")` as an argument fails at deploy time, because AppSync accepts only custom types and enums there. The argument should be `a.json()`.
 >
 > Correcting these now takes a sentence. Finding them in Part D costs several failed deploys.

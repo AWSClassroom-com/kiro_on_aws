@@ -4,7 +4,7 @@
 
 **Time:** 60 minutes<br>
 **Course repo:** https://github.com/AWSClassroom-com/kiro_on_aws
-The course repo has been pre-fetched and Node dependencies installed to prevent class day-of network errors blocking lab progress.
+The course repo has been prefetched and Node dependencies installed to prevent class day-of network errors blocking lab progress.
 
 ---
 
@@ -22,7 +22,7 @@ The course repo has been pre-fetched and Node dependencies installed to prevent 
 
 ## Part A: Install Kiro
 
-If you are using the Course VM, Kiro has already been downloaded to your /downloads folder. Run the `.exe` installer with default settings and skip to "On the install wizard" below.
+If you are using the Course VM, Kiro has already been downloaded and installed, so you can launch it from the Kiro shortcut on the desktop and skip to Step 2b: Sign in with AWS Classroom credentials.
 
 ### Step 1: Download Kiro (own machine only)
 
@@ -40,7 +40,7 @@ On the install wizard:
 3. Keep all defaults and keep pressing **Next** until Kiro is installed.
 4. Make sure **Launch Kiro** is checked and press **Finish**.
 
-### Step 2: Sign in with Builder ID
+### Step 2a: Sign in with Builder ID
 
 On the Kiro welcome screen, choose **Sign in**, then select **AWS Builder ID**.
 
@@ -58,6 +58,25 @@ After entering your Builder ID information:
 
 > **Checkpoint. Validate before continuing:**
 > Hover over the profile icon in the bottom-left of the Kiro interface. It must show you are signed in with your Builder ID. If it does not, repeat Step 2.
+
+### Step 2b: Sign in with AWS Classroom credentials
+
+On the Kiro welcome screen, choose **Sign in**, then select **Your organization**.
+
+1. Enter the AWS Start URL: 
+```
+https://roi.awsapps.com/start
+```
+2. Click **Continue**
+3. At the AWS Classroom sign in portal, enter the same credentials your instructor provided you to access the Course VM.
+4. On the "Allow Kiro IDE to access your data?" screen, press **Allow Access**.
+5. Close the browser and return to Kiro.
+6. Choose **Skip All** for Configuration Imports if prompted.
+
+> Note: The AWS Classroom credentials give you access to Kiro as well as the AWS account you will authenticate to in Part B which gives the Amplify sandbox access to AWS services.
+
+> **Checkpoint. Validate before continuing:**
+> Click on the profile icon in the bottom-left of the Kiro interface. It must show you are signed in with AWS IAM Identity Center with an active Kiro Pro subscription. If it does not, repeat Step 2b.
 
 ### Step 3: Get the project onto your machine
 
@@ -108,35 +127,51 @@ The status bar shows an indexing indicator while Kiro analyzes the codebase.
 
 ## Part B: Set Up AWS Credentials
 
-The Amplify sandbox needs to call AWS services on your behalf. You authenticate the AWS CLI by signing in to the Management Console first, then running `aws login` from your terminal: a browser-based flow that hands the CLI a temporary 12-hour session. Full reference: [Sign in through the AWS CLI](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html).
+The Amplify sandbox needs to call AWS services on your behalf. You authenticate the AWS CLI by signing in to the AWS access portal first, then running `aws configure sso` from your terminal: a browser-based flow that hands the CLI a temporary 12-hour session. Full reference: [Sign in through the AWS CLI](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html#command-line-sign-in-sso).
 
-### Step 5: Sign in to the AWS Management Console
+### Step 5: Sign in to the AWS access portal
 
-In your browser, go to https://console.aws.amazon.com and sign in using the credentials your instructor provided (account ID or alias, IAM username, and password). Complete MFA if prompted.
+When you signed in to Kiro, you already logged into the AWS access portal with your AWS Classroom credentials. In your browser, go to https://roi.awsapps.com/start/#/ and verify that you can access the classroom AWS account with the KiroClassroomAccountUser role.
 
 Check the region selector in the top-right corner and set it to the region your instructor specified. You use the same region in the next step.
 
-> Note: keep this browser tab open. The `aws login` command in Step 6 reuses this signed-in session so the CLI can authenticate without asking for your password again.
+> Note: keep this browser tab open. The `aws configure sso` command in Step 6 reuses this signed-in session so the CLI can authenticate without asking for your password again.
 
-### Step 6: Authenticate the AWS CLI with `aws login`
+### Step 6: Authenticate the AWS CLI with `aws configure sso`
 
 In Kiro, open the integrated terminal: CTRL+` (backtick), or Terminal > New Terminal from the menu bar.
 
-1. Verify your AWS CLI version is at least 2.32.0 (earlier versions do not have the `aws login` command):
+1. Verify your AWS CLI version is at least 2.32.0 (earlier versions do not have the `aws configure sso` command):
 
 ```bash
 aws --version
 ```
 
-If the version is too old (or the CLI is not installed), follow the [AWS CLI install/upgrade guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), then re-check.
+If the version is too old (or the CLI is not installed), follow the [AWS CLI install/upgrade guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), then recheck.
 
-2. Log in. Replace `<your-region>` with the region from Step 5 (for example `us-east-1` or `ap-southeast-2`):
+2. Log in:
 
 ```bash
-aws login --region <your-region>
+aws configure sso
 ```
+SSO session name (Recommended): default
 
-Your default browser opens a confirmation page. Review what is being authorized and click **Allow (or Confirm)**. When the page reports success, return to your terminal.
+SSO start URL [None]: https://roi.awsapps.com/start/
+
+SSO region [None]: us-east-1
+
+SSO registration scopes [sso:account:access]
+
+Allow botocore-client-default to access your data?
+**Allow access**
+
+Only one account and role are available to your user so they will get selected automatically.
+
+For Default client Region, enter **us-east-1**
+
+CLI default output format can be json or text.
+
+For Profile name, enter **default**
 
 3. Verify:
 
@@ -225,7 +260,8 @@ The first deploy takes roughly 3-5 minutes. Leave this terminal running afterwar
 > ```
 > Remove-Item ".amplify\artifacts\cdk.out\read.*.lock" -Force -ErrorAction SilentlyContinue
 > ```
->
+
+>  [!WARNING]
 > ⚠️ **This failure is quiet.** After the error the sandbox prints `Watching for file changes...` and looks perfectly healthy, while nothing you save reaches AWS. In a real run it went unnoticed for hours. If a deploy you are expecting never appears, check here first.
 >
 > Your cloud resources are unaffected by either fix.
@@ -263,7 +299,7 @@ The seed script loads 30 sample food items (with realistic added and expiration 
 ## Part D: Explore Kiro
 
 > [!WARNING]
-> **Set two things in the chat panel before you send a single prompt.** Open it with Cmd+L (macOS) / CTRL+L (Windows/Linux).
+> ⚠️ **Set two things in the chat panel before you send a single prompt.** Open it with CMD+L (macOS) / CTRL+L (Windows/Linux).
 >
 > **1. Model: choose Haiku 4.5.** Click the model selector at the bottom of the input box. Do not leave it on **Auto**.
 >
@@ -285,11 +321,11 @@ Open each panel once so you know where things live:
   - Expand `amplify/`. You should see `backend.ts`, plus `auth/` and `data/` folders.
   - Expand `amplify/data/`. You should see `resource.ts` (the FoodItem schema).
 - Kiro Panel (ghost icon in the activity bar). You should see four sections: **Specs**, **Agent Hooks**, **Agent Steering & Skills**, and **MCP Servers**. Steering and Skills share one section; they are not listed separately.
-- Chat Panel: Cmd+L (macOS) / CTRL+L (Windows/Linux), or via command palette "Kiro: Open Chat".
+- Chat Panel: CMD+L (macOS)/CTRL+L (Windows/Linux), or via command palette "Kiro: Open Chat".
 
 Now install the Biome extension. This is required: Biome is the formatter and linter this project uses, and the format-on-save hook you build in Lab 3 depends on this tooling.
 
-1. Open the Extensions panel: Cmd+SHIFT+X (macOS) / CTRL+SHIFT+X (Windows/Linux).
+1. Open the Extensions panel: CMD+SHIFT+X (macOS)/CTRL+SHIFT+X (Windows/Linux).
 2. Search for "Biome" (publisher: biomejs).
 3. Click **Install**.
 
@@ -309,9 +345,9 @@ Now install the Biome extension. This is required: Biome is the formatter and li
 
 Steering files are project-level markdown that Kiro loads on every interaction so it knows what your project is, what tech stack to stick to, and how the code is organized, without you having to explain it each time.
 
-Open the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P), search for "Steering", and select **Kiro: Generate project steering documents**.
+Open the command palette (CMD+SHIFT+P/CTRL+SHIFT+P), search for "Steering", and select **Kiro: Generate project steering documents**.
 
-> Note: Throughout these labs, prefer the command palette (Cmd+SHIFT+P / CTRL+SHIFT+P) over clicking buttons. Button labels change between Kiro versions; palette command names are stable.
+> Note: Throughout these labs, prefer the command palette (CMD+SHIFT+P/CTRL+SHIFT+P) over clicking buttons. Button labels change between Kiro versions; palette command names are stable.
 
 Kiro explores key files (`README.md`, `package.json`, `amplify/`, `src/`) and proposes a `.kiro/steering/` folder with three files:
 
@@ -322,7 +358,7 @@ Kiro explores key files (`README.md`, `package.json`, `amplify/`, `src/`) and pr
 > [!WARNING]
 > **Click Accept all. The files do not exist until you do.**
 >
-> Kiro does not write the files straight to disk. It shows a **Review changes (3 of 3 pending)** panel listing one change each to `product.md`, `tech.md` and `structure.md`, with a tick and a cross beside each, and **Accept all** and **Reject all** at the bottom.
+> Kiro does not write the files straight to disk. It shows a **Review changes (3 of 3 pending)** panel listing one change each to `product.md`, `tech.md` and `structure.md`, with a check and a cross beside each, and **Accept all** and **Reject all** at the bottom.
 >
 > Click **Accept all**.
 >
@@ -330,7 +366,7 @@ Kiro explores key files (`README.md`, `package.json`, `amplify/`, `src/`) and pr
 
 Once the files are written, open each one and skim it. If something is wrong (for example it lists a library you do not use), edit the file directly. These are plain markdown and your edits stick.
 
-Now add one more instruction via the chat panel (Cmd+L / CTRL+L). Paste this prompt and press ENTER:
+Now add one more instruction via the chat panel (CMD+L/CTRL+L). Paste this prompt and press ENTER:
 
 ```
 Add an instruction to the steering files: whenever you create or edit files under amplify/, remind the user to watch the Amplify sandbox terminal and wait for it to print "Deployment completed" before testing the change or moving on to the next task. If the sandbox terminal shows a failed deployment instead, tell the user to fix or restart the sandbox with npm run amplify:sandbox before continuing.
@@ -370,7 +406,7 @@ Always allow applies to that exact command. Kiro may choose a different command 
 >
 > Do not click **Deny** or **Always deny**. Kiro cannot verify its work, and Always deny blocks the command for future sessions too.
 >
-> This dialog is not the same as the **Run / Trust / Reject** dialog you may see elsewhere. Kiro has more than one way of asking.
+> This dialog is not the same as the **Run/Trust/Reject** dialog you may see elsewhere. Kiro has more than one way of asking.
 
 > [!NOTE]
 > **If a prompt appears to do nothing, look for a pending approval before assuming it failed.**
@@ -455,7 +491,7 @@ Review and accept. Refresh the homepage.
 This step asks for an exhaustive replacement across a whole file, and a partial result is common. The badge near the top may change while the larger elements stay green, which is easy to miss at a glance.
 
 > **Checkpoint. Validate before continuing:**
-> Open `src/routes/index.tsx` and use Find (Cmd+F / CTRL+F) to search for `emerald` and then `cyan`. **Both must return zero results.** Checking by eye is not reliable here.
+> Open `src/routes/index.tsx` and use Find (CMD+F / CTRL+F) to search for `emerald` and then `cyan`. **Both must return zero results.** Checking by eye is not reliable here.
 
 If either search returns a match, push back in chat:
 

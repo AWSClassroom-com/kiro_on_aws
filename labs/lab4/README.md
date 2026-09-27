@@ -36,7 +36,7 @@ You need a GitHub account to host the repo Amplify deploys from. If you do not h
 > [!WARNING]
 > **Confirm the chat model is Haiku 4.5, not Auto, before starting the spec session.**
 >
-> In the chat panel (Cmd+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
+> In the chat panel (CMD+L/CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
 >
 > This is the most credit-hungry lab in the course: a full spec workflow followed by **Run all tasks** in Part D, which executes every remaining task back to back. If your credits run out mid-run you will be left with a partially implemented feature and a broken sandbox deploy.
 
@@ -46,7 +46,7 @@ You need a GitHub account to host the repo Amplify deploys from. If you do not h
 
 ### Step 1: Start a spec session
 
-Open a new chat session: Cmd+L (macOS) / CTRL+L (Windows/Linux), or the **+** button in the chat panel.
+Open a new chat session: CMD+L (macOS)/CTRL+L (Windows/Linux), or the **+** button in the chat panel.
 
 The new session screen offers two cards, **Vibe** and **Spec**. Choose **Spec**.
 
@@ -94,7 +94,7 @@ Kiro may ask follow-up questions before it generates anything. Typical questions
 
 Open `requirements.md`. Confirm it covers user stories, acceptance criteria for the happy path, the new-conversation reset, and error handling.
 
-Then run these critical review checks with Find (Cmd+F / CTRL+F):
+Then run these critical review checks with Find (CMD+F/CTRL+F):
 
 1. Search for `arn:` and for `Agent ID`. There must be NO hardcoded or invented ARNs or ID values anywhere. The backend wires the real runtime ARN from the `mealAgent` construct at deploy time, and an invented one fails at runtime with AccessDeniedException. Any mention of an agent alias is a sign the requirements were written against Bedrock Agents Classic rather than AgentCore.
 2. Search for `IAM` and `policy`. The requirements must not contain IAM or permission-scoping criteria; those belong to the design phase.
@@ -136,7 +136,7 @@ Hard constraint on credentials: same rule as requirements. The Lambda uses its e
 
 Open `design.md` and confirm all four sections are present.
 
-Then run these critical review checks with Find (Cmd+F / CTRL+F):
+Then run these critical review checks with Find (CMD+F/CTRL+F):
 
 1. Search for `agentRuntimeArn`. The backend wiring must read the ARN from the `mealAgent` construct; there must be no hardcoded or invented ARN strings anywhere in the design. Search for `grantInvokeRuntime` as well: the design should use it instead of a hand-written IAM policy.
 2. Search for `timeoutSeconds` and `resourceGroupName`. The function resource example must set `timeoutSeconds: 60` and `resourceGroupName: "data"`; the wrong stack placement fails the whole deploy with a circular dependency.
@@ -151,7 +151,7 @@ Then run these critical review checks with Find (Cmd+F / CTRL+F):
 >
 > Three things to look for in the code examples:
 >
-> 1. **Every Amplify schema call must be real.** `a.customType()`, `a.ref()`, `a.json()`, `a.enum()`, `a.string()` and `a.integer()` exist. `a.object()` does not. If you see a call you do not recognise, ask Kiro to confirm it exists in `@aws-amplify/data-schema` before approving.
+> 1. **Every Amplify schema call must be real.** `a.customType()`, `a.ref()`, `a.json()`, `a.enum()`, `a.string()` and `a.integer()` exist. `a.object()` does not. If you see a call you do not recognize, ask Kiro to confirm it exists in `@aws-amplify/data-schema` before approving.
 > 2. **Custom query arguments cannot reference a model.** `a.ref("FoodItem")` as an argument fails at deploy time, because AppSync accepts only custom types and enums there. Arguments here should be plain scalars: `prompt` and `sessionId` are both strings.
 > 3. **The return type must be a named custom type.** `{ sessionId, completion }` are two strings, and the query has to hand them back as an object the frontend can read. Do not accept a design that nests `a.customType()` inside `.returns()`; that produces a generated type the Lambda handler cannot satisfy, and the deploy fails type checking. Do not accept `.returns(a.json())` either. It compiles, but AppSync exposes it as `AWSJSON` and sends the result as one JSON-encoded string, and the chat panel in Part D then displays raw JSON instead of the answer. The shape that works is a custom type declared at the top level of the schema and referenced with `a.ref()`.
 >

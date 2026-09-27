@@ -66,7 +66,7 @@ npx tsx scripts/test-bedrock.ts
 > [!WARNING]
 > **Confirm the chat model is Haiku 4.5, not Auto, before starting the spec session.**
 >
-> In the chat panel (Cmd+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
+> In the chat panel (CMD+L / CTRL+L), check the model selector at the bottom of the input box. If it reads **Auto**, change it to **Haiku 4.5**.
 >
 > This lab runs a full three-phase spec workflow plus four to six implementation tasks. On Auto, that can exhaust the 50-credit monthly free tier before you reach Part D, and individual steps may hit rate limits and stall the lab.
 
@@ -76,7 +76,7 @@ npx tsx scripts/test-bedrock.ts
 
 ### Step 1: Start a spec session
 
-Open a new chat session: Cmd+L (macOS) / CTRL+L (Windows/Linux), or the **+** button in the chat panel.
+Open a new chat session: CMD+L (macOS) / CTRL+L (Windows/Linux), or the **+** button in the chat panel.
 
 The new session screen offers two cards, **Vibe** and **Spec**. Choose **Spec**.
 
@@ -122,7 +122,7 @@ Open `requirements.md`. Confirm it covers:
 > [!NOTE]
 > **Kiro's Problems panel may flag the generated document**, for example `Missing required heading: # Requirements Document`. Kiro's spec format checker and its document generator do not always agree. Correct the heading if it is flagged, then continue. The spec workflow works either way.
 
-Then run these review checks. Use Find (Cmd+F / CTRL+F) in the file:
+Then run these review checks. Use Find (CMD+F / CTRL+F) in the file:
 
 1. Search for `us.anthropic` and `au.anthropic`. Both must return zero results. If found, the model ID drifted; tell Kiro to use exactly `global.anthropic.claude-sonnet-4-6` everywhere.
 2. Search for `IAM` and `policy`. The requirements must not contain IAM or permission-scoping criteria; those belong to the design phase. If found, tell Kiro to remove them.
@@ -172,7 +172,7 @@ Open `design.md` and confirm all four sections are present. In the TypeScript in
 > [!NOTE]
 > **Kiro's Problems panel may flag the generated document**, for example `Missing required heading: # Requirements Document`. Kiro's spec format checker and its document generator do not always agree. Correct the heading if it is flagged, then continue. The spec workflow works either way.
 
-Then run these review checks. Use Find (Cmd+F / CTRL+F) in the file:
+Then run these review checks. Use Find (CMD+F/CTRL+F) in the file:
 
 1. Search for `us.anthropic` and `au.anthropic`. Both must return zero results in every code example. This drift has happened even when the requirements carried the correct ID.
 2. Search for `timeoutSeconds`. The function resource example must set `timeoutSeconds: 30`; the 3-second default guarantees a timeout on Bedrock calls.
@@ -188,7 +188,7 @@ Then run these review checks. Use Find (Cmd+F / CTRL+F) in the file:
 >
 > Two specific things to look for in the code examples:
 >
-> 1. **Every Amplify schema call must be real.** `a.customType()`, `a.ref()`, `a.json()`, `a.enum()`, `a.string()` and `a.integer()` exist. `a.object()` does not. If you see a call you do not recognise, ask Kiro to confirm it exists in `@aws-amplify/data-schema` before approving.
+> 1. **Every Amplify schema call must be real.** `a.customType()`, `a.ref()`, `a.json()`, `a.enum()`, `a.string()` and `a.integer()` exist. `a.object()` does not. If you see a call you do not recognize, ask Kiro to confirm it exists in `@aws-amplify/data-schema` before approving.
 > 2. **Custom query arguments cannot reference a model.** `a.ref("FoodItem")` as an argument fails at deploy time, because AppSync accepts only custom types and enums there. The argument should be `a.json()`.
 >
 > Correcting these now takes a sentence. Finding them in Part D costs several failed deploys.

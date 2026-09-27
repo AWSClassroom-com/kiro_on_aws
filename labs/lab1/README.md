@@ -22,7 +22,7 @@ The course repo has been prefetched and Node dependencies installed to prevent c
 
 ## Part A: Install Kiro
 
-If you are using the Course VM, Kiro has already been downloaded to your /downloads folder. Run the `.exe` installer with default settings and skip to "On the install wizard" below.
+If you are using the Course VM, Kiro has already been downloaded and installed, so you can launch it from the Kiro shortcut on the desktop and skip to Step 2b: Sign in with AWS Classroom credentials.
 
 ### Step 1: Download Kiro (own machine only)
 
@@ -40,7 +40,7 @@ On the install wizard:
 3. Keep all defaults and keep pressing **Next** until Kiro is installed.
 4. Make sure **Launch Kiro** is checked and press **Finish**.
 
-### Step 2: Sign in with Builder ID
+### Step 2a: Sign in with Builder ID
 
 On the Kiro welcome screen, choose **Sign in**, then select **AWS Builder ID**.
 
@@ -58,6 +58,25 @@ After entering your Builder ID information:
 
 > **Checkpoint. Validate before continuing:**
 > Hover over the profile icon in the bottom-left of the Kiro interface. It must show you are signed in with your Builder ID. If it does not, repeat Step 2.
+
+### Step 2b: Sign in with AWS Classroom credentials
+
+On the Kiro welcome screen, choose **Sign in**, then select **Your organization**.
+
+1. Enter the AWS Start URL: 
+```
+https://roi.awsapps.com/start
+```
+2. Click **Continue**
+3. At the AWS Classroom sign in portal, enter the same credentials your instructor provided you to access the Course VM.
+4. On the "Allow Kiro IDE to access your data?" screen, press **Allow Access**.
+5. Close the browser and return to Kiro.
+6. Choose **Skip All** for Configuration Imports if prompted.
+
+> Note: The AWS Classroom credentials give you access to Kiro as well as the AWS account you will authenticate to in Part B which gives the Amplify sandbox access to AWS services.
+
+> **Checkpoint. Validate before continuing:**
+> Click on the profile icon in the bottom-left of the Kiro interface. It must show you are signed in with AWS IAM Identity Center with an active Kiro Pro subscription. If it does not, repeat Step 2b.
 
 ### Step 3: Get the project onto your machine
 
@@ -108,21 +127,21 @@ The status bar shows an indexing indicator while Kiro analyzes the codebase.
 
 ## Part B: Set Up AWS Credentials
 
-The Amplify sandbox needs to call AWS services on your behalf. You authenticate the AWS CLI by signing in to the Management Console first, then running `aws login` from your terminal: a browser-based flow that hands the CLI a temporary 12-hour session. Full reference: [Sign in through the AWS CLI](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html).
+The Amplify sandbox needs to call AWS services on your behalf. You authenticate the AWS CLI by signing in to the AWS access portal first, then running `aws configure sso` from your terminal: a browser-based flow that hands the CLI a temporary 12-hour session. Full reference: [Sign in through the AWS CLI](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html#command-line-sign-in-sso).
 
-### Step 5: Sign in to the AWS Management Console
+### Step 5: Sign in to the AWS access portal
 
-In your browser, go to https://console.aws.amazon.com and sign in using the credentials your instructor provided (account ID or alias, IAM username, and password). Complete MFA if prompted.
+When you signed in to Kiro, you already logged into the AWS access portal with your AWS Classroom credentials. In your browser, go to https://roi.awsapps.com/start/#/ and verify that you can access the classroom AWS account with the KiroClassroomAccountUser role.
 
 Check the region selector in the top-right corner and set it to the region your instructor specified. You use the same region in the next step.
 
-> Note: keep this browser tab open. The `aws login` command in Step 6 reuses this signed-in session so the CLI can authenticate without asking for your password again.
+> Note: keep this browser tab open. The `aws configure sso` command in Step 6 reuses this signed-in session so the CLI can authenticate without asking for your password again.
 
-### Step 6: Authenticate the AWS CLI with `aws login`
+### Step 6: Authenticate the AWS CLI with `aws configure sso`
 
 In Kiro, open the integrated terminal: CTRL+` (backtick), or Terminal > New Terminal from the menu bar.
 
-1. Verify your AWS CLI version is at least 2.32.0 (earlier versions do not have the `aws login` command):
+1. Verify your AWS CLI version is at least 2.32.0 (earlier versions do not have the `aws configure sso` command):
 
 ```bash
 aws --version
@@ -130,13 +149,29 @@ aws --version
 
 If the version is too old (or the CLI is not installed), follow the [AWS CLI install/upgrade guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), then recheck.
 
-2. Log in. Replace `<your-region>` with the region from Step 5 (for example `us-east-1` or `ap-southeast-2`):
+2. Log in:
 
 ```bash
-aws login --region <your-region>
+aws configure sso
 ```
+SSO session name (Recommended): default
 
-Your default browser opens a confirmation page. Review what is being authorized and click **Allow (or Confirm)**. When the page reports success, return to your terminal.
+SSO start URL [None]: https://roi.awsapps.com/start/
+
+SSO region [None]: us-east-1
+
+SSO registration scopes [sso:account:access]
+
+Allow botocore-client-default to access your data?
+**Allow access**
+
+Only one account and role are available to your user so they will get selected automatically.
+
+For Default client Region, enter **us-east-1**
+
+CLI default output format can be json or text.
+
+For Profile name, enter **default**
 
 3. Verify:
 
